@@ -24,7 +24,8 @@
 ; MARKDOWN_PROGID must stay in sync with the extension list handled by
 ; isMarkdownDocumentName() in src/main/ipc/markdown-documents.ts.
 ; ---------------------------------------------------------------------------
-!define MARKDOWN_PROGID "Orca.Markdown"
+; Why the fork prefix: upstream Orca registers Orca.Markdown in the same HKCU hive.
+!define MARKDOWN_PROGID "OrcaKnwr.Markdown"
 
 !macro ORCA_REGISTER_MARKDOWN_OPEN_WITH EXT
   WriteRegNone SHELL_CONTEXT "Software\Classes\${EXT}\OpenWithProgids" "${MARKDOWN_PROGID}"
@@ -52,7 +53,7 @@
 ; Clean up the relocated terminal daemon on a REAL uninstall.
 ;
 ; Why: the daemon host is deliberately copied OUT of the install dir into
-; %LOCALAPPDATA%\Orca\daemon-host so that app UPDATES cannot kill it —
+; %LOCALAPPDATA%\${PRODUCT_NAME}\daemon-host so that app UPDATES cannot kill it —
 ; electron-builder's kill sweep selects processes whose image path is under
 ; $INSTDIR, and that relocation is what keeps terminals alive across updates.
 ; The same design means a normal uninstall's process sweep and file removal both
@@ -71,7 +72,8 @@
     Push $1
     Push $2
     ; The host exe is a verbatim copy of the app exe, so the app's own image name
-    ; reaches it; the second name covers hosts left by builds that renamed the copy.
+    ; reaches it. The legacy orca-terminal-daemon.exe name is not killed: this fork
+    ; never shipped it, so it can only belong to an upstream Orca install.
     ; Filtered to the current user like upstream's per-user KILL_PROCESS, so an
     ; elevated machine-wide uninstall cannot reach another logged-on user's session.
     ; NSIS expands USERNAME itself: routing through cmd.exe only to get %USERNAME%
@@ -88,14 +90,12 @@
     ${endIf}
     nsExec::Exec 'taskkill /F /IM "${APP_EXECUTABLE_FILENAME}" $2'
     Pop $0
-    nsExec::Exec 'taskkill /F /IM "orca-terminal-daemon.exe" $2'
-    Pop $0
     Pop $2
     Pop $1
     Pop $0
     ; Give the OS a moment to release the image lock before removing the tree.
     Sleep 500
-    RMDir /r "$LOCALAPPDATA\Orca\daemon-host"
+    RMDir /r "$LOCALAPPDATA\${PRODUCT_NAME}\daemon-host"
   ${endIf}
   ; Why outside the ${isUpdated} guard: customInstall rewrites these on every update, so
   ; dropping them during uninstallOldVersion is correct and keeps the pair symmetric.

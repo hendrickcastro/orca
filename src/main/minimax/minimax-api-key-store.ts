@@ -2,6 +2,7 @@ import { safeStorage } from 'electron'
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { PRODUCT_HOME_STATE_DIR_NAME } from '../../shared/product-identity'
 import { hardenExistingSecureFile, writeSecureFile } from '../../shared/secure-file'
 import type { SecretAtRestProtection } from '../../shared/secret-at-rest-protection'
 
@@ -16,7 +17,7 @@ type MiniMaxApiKeyEnvelope = {
 }
 
 function getOrcaDir(): string {
-  return join(homedir(), '.orca')
+  return join(homedir(), PRODUCT_HOME_STATE_DIR_NAME)
 }
 
 function getMiniMaxApiKeyPath(): string {

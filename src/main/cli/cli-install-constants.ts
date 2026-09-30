@@ -1,4 +1,7 @@
-export const DEFAULT_MAC_COMMAND_PATH = '/usr/local/bin/orca'
+import { PRODUCT_CLI_ALIAS } from '../../shared/product-identity'
+
+// Why the alias: upstream Orca owns /usr/local/bin/orca.
+export const DEFAULT_MAC_COMMAND_PATH = `/usr/local/bin/${PRODUCT_CLI_ALIAS}`
 export const DEV_COMMAND_NAME = 'orca-dev'
 export const LEGACY_LINUX_COMMAND_NAME = 'orca'
 export const DEV_LAUNCHER_DIR = ['cli', 'bin'] as const

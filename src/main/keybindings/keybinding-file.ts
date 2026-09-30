@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { PRODUCT_HOME_STATE_DIR_NAME } from '../../shared/product-identity'
 import {
   findKeybindingConflicts,
   formatKeybindingList,
@@ -25,7 +26,7 @@ import {
 } from './keybinding-file-parser'
 
 export function getUserKeybindingsPath(homePath: string): string {
-  return join(homePath, '.orca', 'keybindings.json')
+  return join(homePath, PRODUCT_HOME_STATE_DIR_NAME, 'keybindings.json')
 }
 
 export function readKeybindingFile(

@@ -31,6 +31,7 @@ const {
 const { verifySkillsCliRuntime } = require('./scripts/verify-skills-cli-runtime.cjs')
 const { verifyStaticAppImagePackage } = require('./scripts/static-appimage-package-contract.cjs')
 const { signWindowsUninstallerViaSignPath } = require('./scripts/windows-uninstaller-signing.cjs')
+const productIdentity = require('./product-identity.cjs')
 
 // Why: dev-channel builds must carry the *release* identity — same bundle id,
 // Developer ID signature, and notarization ticket — or Squirrel.Mac refuses to
@@ -74,7 +75,7 @@ const devChannelRepo = isHourlyChannel
     : isAdhocChannel
       ? 'orca-adhoc'
       : null
-const appId = 'com.stablyai.orca'
+const appId = productIdentity.PRODUCT_APP_ID
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
   to: 'onboarding/feature-wall'
@@ -172,14 +173,21 @@ const windowsRuntimeResources = existsSync(
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId,
-  productName: 'Orca',
-  protocols: [{ name: 'Orca', schemes: ['orca'] }],
+  productName: productIdentity.PRODUCT_NAME,
+  // Why not `orca`: the last installer to run owns that scheme, so the fork would steal upstream's links.
+  protocols: [
+    { name: productIdentity.PRODUCT_NAME, schemes: [productIdentity.PRODUCT_PACKAGE_NAME] }
+  ],
   toolsets: { appimage: '1.0.3' },
-  ...(devChannelBuildVersion
-    ? { extraMetadata: { version: devChannelBuildVersion } }
-    : localBuildVersion
-      ? { extraMetadata: { version: localBuildVersion } }
-      : {}),
+  // Why name: it drives the NSIS install folder, the updater cache folder and Electron's userData.
+  extraMetadata: {
+    name: productIdentity.PRODUCT_PACKAGE_NAME,
+    ...(devChannelBuildVersion
+      ? { version: devChannelBuildVersion }
+      : localBuildVersion
+        ? { version: localBuildVersion }
+        : {})
+  },
   directories: {
     buildResources: 'resources/build'
   },
@@ -432,7 +440,8 @@ module.exports = {
     }
   },
   win: {
-    executableName: 'Orca',
+    // Why not 'Orca': the uninstaller's taskkill /IM would also stop upstream Orca.
+    executableName: productIdentity.PRODUCT_WINDOWS_EXECUTABLE_NAME,
     // Why: Windows installers are signed after electron-builder packaging by
     // SignPath, so the packager cannot infer the updater publisherName.
     //
@@ -450,11 +459,12 @@ module.exports = {
     // to and from the CI SignPath request, and is inert when the relay env vars
     // are unset, so local and dev builds are unaffected. publisherName stays on
     // its existing channel split above.
+    // Why no publisherName on any channel: fork builds ship unsigned, and a baked-in name would make
+    // the installed app reject its own next update (see the dev-channel note above).
     signtoolOptions: {
-      sign: signWindowsUninstallerViaSignPath,
-      ...(isWinDevChannel ? {} : { publisherName: 'SignPath Foundation' })
+      sign: signWindowsUninstallerViaSignPath
     },
-    ...(isWinDevChannel ? { verifyUpdateCodeSignature: false } : {}),
+    verifyUpdateCodeSignature: false,
     extraResources: [
       ...commonExtraResources,
       ...windowsRuntimeResources,
@@ -466,6 +476,11 @@ module.exports = {
       {
         from: 'native/windows-cli-launcher/.build/orca.exe',
         to: 'bin/orca.exe'
+      },
+      // Why a second copy: the launcher locates the app from its own folder, not its file name.
+      {
+        from: 'native/windows-cli-launcher/.build/orca.exe',
+        to: `bin/${productIdentity.PRODUCT_CLI_ALIAS}.exe`
       },
       {
         from: 'node_modules/agent-browser/bin/agent-browser-win32-x64.exe',
@@ -479,7 +494,7 @@ module.exports = {
     ]
   },
   nsis: {
-    artifactName: 'orca-windows-setup.${ext}',
+    artifactName: `${productIdentity.PRODUCT_PACKAGE_NAME}-windows-setup.\${ext}`,
     shortcutName: '${productName}',
     uninstallDisplayName: '${productName}',
     createDesktopShortcut: 'always',
@@ -585,7 +600,7 @@ module.exports = {
   // silently downgrading to ad-hoc artifacts that look shippable in CI logs.
   forceCodeSigning: isMacRelease,
   dmg: {
-    artifactName: 'orca-macos-${arch}.${ext}'
+    artifactName: `${productIdentity.PRODUCT_PACKAGE_NAME}-macos-\${arch}.\${ext}`
   },
   linux: {
     // Why mimeTypes and not fileAssociations: shared-mime-info already maps *.md/*.markdown to
@@ -683,7 +698,7 @@ module.exports = {
   npmRebuild: true,
   publish: {
     provider: 'github',
-    owner: 'stablyai',
+    owner: productIdentity.PRODUCT_RELEASE_OWNER,
     repo: devChannelRepo ?? 'orca',
     // Why draft on the main repo: `--publish always` otherwise creates a
     // public GitHub release as soon as the first platform uploads, and

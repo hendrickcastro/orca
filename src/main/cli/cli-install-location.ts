@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { getAppEnvironment } from '../../shared/app-environment'
+import { PRODUCT_CLI_ALIAS } from '../../shared/product-identity'
 import type { CliInstallStatus } from '../../shared/cli-install-types'
 import {
   hasAppImagePathEnvironment,
@@ -64,8 +65,9 @@ export abstract class CliInstallLocation {
       // Why: development builds must not claim the production shell command.
       return DEV_COMMAND_NAME
     }
-    // Why: packaged Linux uses `orca-ide` to avoid shadowing GNOME Orca's /usr/bin/orca.
-    return this.platform === 'linux' ? LINUX_CLI_COMMAND_NAME : 'orca'
+    // Why: packaged Linux uses `orca-ide` to avoid shadowing GNOME Orca's /usr/bin/orca; elsewhere
+    // the fork alias, because upstream Orca may own `orca` on the same PATH.
+    return this.platform === 'linux' ? LINUX_CLI_COMMAND_NAME : PRODUCT_CLI_ALIAS
   }
 
   constructor(options: CliInstallerOptions = {}) {
@@ -87,7 +89,7 @@ export abstract class CliInstallLocation {
     const candidateMacPath = options.defaultMacCommandPath ?? DEFAULT_MAC_COMMAND_PATH
     this.macCommandPath = existsSync(dirname(candidateMacPath))
       ? candidateMacPath
-      : join(this.homePath, '.local', 'bin', 'orca')
+      : join(this.homePath, '.local', 'bin', basename(candidateMacPath))
     this.privilegedRunner = options.privilegedRunner ?? runMacPrivilegedCommand
     this.userPathReader = options.userPathReader ?? readWindowsUserPathRegistry
     this.userPathMutationReader =

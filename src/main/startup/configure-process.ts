@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { getVersionManagerBinPaths } from '../codex-cli/command'
 import { getMainE2EConfig } from '../e2e-config'
+import { PRODUCT_PACKAGE_NAME } from '../../shared/product-identity'
 import { DISABLED_CHROMIUM_FEATURES } from './disabled-chromium-features'
 import { readHttp1CompatibilityMarker } from './http1-compatibility-marker'
 import {
@@ -209,6 +210,9 @@ export function configureDevUserDataPath(isDev: boolean): void {
   }
 
   if (!isDev) {
+    // Why pinned: the post-ready app.setName(PRODUCT_NAME) must not move userData off the folder
+    // the installer, CLI and hook scripts derive from PRODUCT_PACKAGE_NAME.
+    app.setPath('userData', join(app.getPath('appData'), PRODUCT_PACKAGE_NAME))
     return
   }
   const overrideUserDataPath = process.env.ORCA_DEV_USER_DATA_PATH

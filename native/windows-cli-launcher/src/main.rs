@@ -14,6 +14,9 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 
+// Keep in sync with PRODUCT_WINDOWS_EXECUTABLE_NAME in src/shared/product-identity.ts.
+const APP_EXECUTABLE: &str = "OrcaKnwr.exe";
+
 fn main() {
     let launcher = match env::current_exe() {
         Ok(path) => path,
@@ -22,21 +25,21 @@ fn main() {
 
     let Some(resources_directory) = launcher.parent().and_then(Path::parent) else {
         fail(&format!(
-            "Unable to locate Orca.exe next to \"{}\"",
+            "Unable to locate {APP_EXECUTABLE} next to \"{}\"",
             launcher.display()
         ))
     };
     let Some(app_directory) = resources_directory.parent() else {
         fail(&format!(
-            "Unable to locate Orca.exe next to \"{}\"",
+            "Unable to locate {APP_EXECUTABLE} next to \"{}\"",
             resources_directory.display()
         ))
     };
 
-    let electron_path = app_directory.join("Orca.exe");
+    let electron_path = app_directory.join(APP_EXECUTABLE);
     if !electron_path.is_file() {
         fail(&format!(
-            "Unable to locate Orca.exe next to \"{}\"",
+            "Unable to locate {APP_EXECUTABLE} next to \"{}\"",
             resources_directory.display()
         ));
     }
