@@ -81,6 +81,9 @@ describe('multi-repository creation with real Git fixtures', () => {
       creation.group!
     ])
     expect(restored[0].folderPath).toBe(creation.members[0].worktree.path)
-    expect(restored[0].comment).toContain(creation.members[1].worktree.path)
+    // The comment stores paths as JSON, which escapes Windows separators.
+    expect(restored[0].comment).toContain(
+      JSON.stringify(creation.members[1].worktree.path).slice(1, -1)
+    )
   })
 })

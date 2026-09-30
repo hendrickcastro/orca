@@ -99,5 +99,38 @@ describe('multi-repository feature creation', () => {
     expect(prompt).toContain('request and response shapes')
     expect(prompt).toContain('not the original checkouts')
     expect(prompt).toContain('Add search')
+    const refPrompt = buildMultiRepoCoordinatorPrompt(
+      'search',
+      [
+        {
+          repo: request.repos[1],
+          worktree: { ...worktree(args, '/wt/backend'), branch: 'refs/heads/fix/search' }
+        }
+      ],
+      'Add search'
+    )
+    expect(refPrompt).toContain('"branch": "fix/search"')
+  })
+
+  it('frames the request by task type and appends mentioned references', () => {
+    const args = { repoId: 'backend', name: 'timeout' }
+    const prompt = buildMultiRepoCoordinatorPrompt(
+      'Login timeout',
+      [{ repo: request.repos[1], worktree: worktree(args, '/wt/backend') }],
+      'Fix it per @backend/docs/auth.md',
+      'bugfix',
+      [
+        {
+          kind: 'doc',
+          scope: { kind: 'repo', repoId: 'backend', repoName: 'backend' },
+          name: 'docs/auth.md',
+          path: 'docs/auth.md',
+          token: '@backend/docs/auth.md'
+        }
+      ]
+    )
+    expect(prompt).toContain('Fix the bug "Login timeout"')
+    expect(prompt).toContain('root cause')
+    expect(prompt).toContain('/wt/backend/docs/auth.md')
   })
 })

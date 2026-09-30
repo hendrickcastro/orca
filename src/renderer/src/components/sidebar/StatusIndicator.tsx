@@ -19,6 +19,8 @@ type StatusIndicatorProps = Omit<React.ComponentProps<'span'>, 'title'> & {
   status: Status
   showTooltip?: boolean
   tooltipSide?: StateIndicatorTooltipSide
+  /** Replaces the default state label, e.g. to name whose agent the state belongs to. */
+  tooltipLabel?: string
 }
 
 const AGENT_STATUS_TOOLTIP_STATUSES = new Set<Status>([
@@ -35,10 +37,13 @@ const StatusIndicator = React.memo(function StatusIndicator({
   className,
   showTooltip = true,
   tooltipSide,
+  tooltipLabel: tooltipLabelOverride,
   ...rest
 }: StatusIndicatorProps) {
   const tooltipLabel =
-    showTooltip && AGENT_STATUS_TOOLTIP_STATUSES.has(status) ? getWorktreeStatusLabel(status) : null
+    showTooltip && AGENT_STATUS_TOOLTIP_STATUSES.has(status)
+      ? (tooltipLabelOverride ?? getWorktreeStatusLabel(status))
+      : null
   let indicator: React.JSX.Element
 
   if (status === 'working') {

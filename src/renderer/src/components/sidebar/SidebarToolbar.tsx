@@ -86,13 +86,13 @@ const SidebarToolbar = React.memo(function SidebarToolbar({
                 size="icon-xs"
                 type="button"
                 onClick={() => setMultiRepoOpen(true)}
-                aria-label={translate('multiRepo.title', 'New multi-repository feature')}
+                aria-label={translate('multiRepo.title', 'New multi-repository task')}
               >
                 <FolderPlus className="size-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top" sideOffset={4}>
-              {translate('multiRepo.title', 'New multi-repository feature')}
+              {translate('multiRepo.title', 'New multi-repository task')}
             </TooltipContent>
           </Tooltip>
           <ScrollToCurrentWorkspaceToolbarButton />

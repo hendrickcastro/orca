@@ -9,6 +9,10 @@ import {
 import { shouldHideNonOpenReviewOnDefaultBranch } from '../source-control/repo-default-branch'
 import { getAzureDevOpsRepoRef, type AzureDevOpsRepoRef } from './repository-ref'
 import {
+  getStoredAzureDevOpsOrganizations,
+  hasStoredAzureDevOpsCredential
+} from './credential-store'
+import {
   getHostedReviewLocalGitOptions,
   type HostedReviewExecutionOptions
 } from '../source-control/hosted-review-git-options'
@@ -134,6 +138,18 @@ export async function getAzureDevOpsAuthStatus(): Promise<AzureDevOpsAuthStatus>
   const config = getAzureDevOpsAuthConfig()
   const baseUrl = config.apiBaseUrl ? normalizeAzureDevOpsApiBaseUrl(config.apiBaseUrl) : null
   const hasToken = azureDevOpsTokenConfigured(config)
+  const stored = hasToken ? [] : getStoredAzureDevOpsOrganizations()
+  if (stored.length > 0 && hasStoredAzureDevOpsCredential()) {
+    // Why: each organization was verified when it was saved; probing here would decrypt on every status read.
+    return {
+      configured: true,
+      authenticated: true,
+      account:
+        [...new Set(stored.map((entry) => entry.account).filter(Boolean))].join(', ') || null,
+      baseUrl: stored.map((entry) => entry.organizationUrl).join(', '),
+      tokenConfigured: true
+    }
+  }
   if (!baseUrl && !hasToken) {
     return {
       configured: false,

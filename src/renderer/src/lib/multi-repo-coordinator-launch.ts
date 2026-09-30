@@ -33,7 +33,13 @@ export async function launchMultiRepoCoordinator(
       terminalWindowsShell: settings?.terminalWindowsShell
     }) ?? (CLIENT_PLATFORM === 'win32' ? 'powershell' : 'posix')
   const startup = buildMultiRepoCoordinatorStartup({
-    prompt: buildMultiRepoCoordinatorPrompt(request.name, members, request.prompt),
+    prompt: buildMultiRepoCoordinatorPrompt(
+      request.name,
+      members,
+      request.prompt,
+      request.kind,
+      request.references
+    ),
     commandOverride: settings?.agentCmdOverrides?.claude,
     platform: CLIENT_PLATFORM,
     shell,

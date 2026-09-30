@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it, vi } from 'vitest'
 import { createHookListenerState } from '../../shared/agent-hook-listener/listener-state'
 import { lookupOpenCodeSessionPane } from '../../shared/agent-hook-listener/opencode-session-registry'
 import { makePaneKey } from '../../shared/stable-pane-id'
@@ -6,6 +8,7 @@ import type { ProcessIdentityRow } from './opencode-client-sweep'
 import {
   advanceBinderCursor,
   applyBinderOwnerships,
+  listOpenCodeDbSessions,
   OPENCODE_SESSION_CURSOR_START,
   runOpenCodeBinderRound,
   type BinderPaneSnapshot
@@ -172,5 +175,18 @@ describe('applyBinderOwnerships', () => {
       paneKey: PANE_A,
       worktreeId: 'repo::/Users/jin/work/mocitec'
     })
+  })
+})
+
+describe('listOpenCodeDbSessions', () => {
+  it('skips a missing OpenCode database without warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const missing = join(tmpdir(), `orca-no-opencode-${process.pid}`, 'opencode.db')
+      expect(listOpenCodeDbSessions(missing, OPENCODE_SESSION_CURSOR_START)).toEqual([])
+      expect(warn).not.toHaveBeenCalled()
+    } finally {
+      warn.mockRestore()
+    }
   })
 })
