@@ -24,6 +24,8 @@ import type { useFileExplorerTree } from './useFileExplorerTree'
 type UseFileExplorerTreePaneStateParams = {
   onRevealOutsideRoot?: () => void
   activeWorktreeId: string | null
+  /** Worktree whose git status decorates the tree; differs from the active one when a coordinator browses a member. */
+  gitStatusWorktreeId?: string | null
   activeRepo: Repo | null
   worktreePath: string | null
   visibleFilesWorktreePath: string | null
@@ -69,6 +71,7 @@ type UseFileExplorerTreePaneStateResult = {
 export function useFileExplorerTreePaneState({
   onRevealOutsideRoot,
   activeWorktreeId,
+  gitStatusWorktreeId = activeWorktreeId,
   activeRepo,
   worktreePath,
   visibleFilesWorktreePath,
@@ -150,8 +153,8 @@ export function useFileExplorerTreePaneState({
   const isWindows = useMemo(() => navigator.userAgent.includes('Windows'), [])
 
   const entries = useMemo(
-    () => (activeWorktreeId ? (gitStatusByWorktree[activeWorktreeId] ?? []) : []),
-    [activeWorktreeId, gitStatusByWorktree]
+    () => (gitStatusWorktreeId ? (gitStatusByWorktree[gitStatusWorktreeId] ?? []) : []),
+    [gitStatusWorktreeId, gitStatusByWorktree]
   )
   const statusByRelativePath = useMemo(() => buildStatusMap(entries), [entries])
   const folderStatusByRelativePath = useMemo(() => buildFolderStatusMap(entries), [entries])

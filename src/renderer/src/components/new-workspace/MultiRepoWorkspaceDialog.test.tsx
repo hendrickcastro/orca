@@ -19,8 +19,58 @@ vi.mock('@/store', () => ({
 
 import MultiRepoWorkspaceDialog from './MultiRepoWorkspaceDialog'
 
+function catalogFixture() {
+  return {
+    ...fixture(),
+    skills: {
+      discover: vi.fn(async () => ({
+        skills: [
+          {
+            id: 'tdd',
+            name: 'tdd',
+            description: 'Test first',
+            providers: ['claude'],
+            sourceKind: 'home',
+            sourceLabel: 'Claude',
+            rootPath: 'C:/Users/me/.claude/skills',
+            directoryPath: 'C:/Users/me/.claude/skills/tdd',
+            skillFilePath: 'C:/Users/me/.claude/skills/tdd/SKILL.md',
+            installed: true,
+            updatedAt: null
+          }
+        ],
+        sources: [],
+        scannedAt: 0
+      }))
+    },
+    fs: {
+      listMarkdownDocuments: vi.fn(async ({ rootPath }: { rootPath: string }) =>
+        rootPath === 'E:\\Back'
+          ? [
+              {
+                filePath: 'E:\\Back\\docs\\api.md',
+                relativePath: 'docs/api.md',
+                basename: 'api.md',
+                name: 'api'
+              }
+            ]
+          : []
+      ),
+      listFiles: vi.fn(async () => ['src/index.ts']),
+      readDir: vi.fn(async () => []),
+      readFile: vi.fn(async () => ({ content: '', isBinary: false }))
+    },
+    claudeMcp: {
+      listClaudeUserServers: vi.fn(async () => ({
+        user: [{ name: 'cosmosdb', transport: 'stdio', status: 'enabled' }],
+        projects: {}
+      }))
+    }
+  }
+}
+
 let root: Root
-let api: ReturnType<typeof fixture>
+let api: ReturnType<typeof catalogFixture>
 const close = vi.fn()
 
 beforeEach(() => {
@@ -30,7 +80,7 @@ beforeEach(() => {
   mocks.repos = [repo('front', 'D:\\Front'), repo('back', 'E:\\Back')]
   mocks.launch.mockClear()
   close.mockClear()
-  api = fixture()
+  api = catalogFixture()
   Object.defineProperty(window, 'api', { value: api, configurable: true })
 })
 afterEach(() => {
@@ -70,8 +120,8 @@ function renderFilled(): void {
   fill('multi-repo-prompt', 'Implement UI and API')
 }
 
-describe('multi-repository feature dialog', () => {
-  it('requires a feature name, branch, prompt and two eligible repositories', () => {
+describe('multi-repository task dialog', () => {
+  it('requires a task name, branch, prompt and two eligible repositories', () => {
     act(() => root.render(<MultiRepoWorkspaceDialog onClose={close} />))
     expect(button('Create and start Claude').disabled).toBe(true)
     fill('multi-repo-name', 'Search')
@@ -106,5 +156,39 @@ describe('multi-repository feature dialog', () => {
     expect(api.projectGroups.create).toHaveBeenCalledTimes(1)
     expect(api.worktrees.create).toHaveBeenCalledTimes(3)
     expect(mocks.launch).toHaveBeenCalledTimes(1)
+  })
+
+  it('suggests a branch from the task type and name until the user edits it', () => {
+    act(() => root.render(<MultiRepoWorkspaceDialog onClose={close} />))
+    fill('multi-repo-name', 'Login timeout')
+    const branch = document.getElementById('multi-repo-branch')
+    expect(branch instanceof HTMLInputElement && branch.value).toBe('feature/login-timeout')
+    act(() => button('Bug fix').click())
+    expect(branch instanceof HTMLInputElement && branch.value).toBe('fix/login-timeout')
+    fill('multi-repo-branch', 'hotfix/custom')
+    fill('multi-repo-name', 'Other')
+    expect(branch instanceof HTMLInputElement && branch.value).toBe('hotfix/custom')
+  })
+
+  it('lists skills, MCP servers and docs on @ and resolves the picked one for Claude', async () => {
+    await act(async () => root.render(<MultiRepoWorkspaceDialog onClose={close} />))
+    fill('multi-repo-name', 'Search')
+    fill('multi-repo-prompt', 'Follow @')
+    const options = Array.from(document.body.querySelectorAll('[role="option"]'))
+    expect(options.map((option) => option.textContent)).toEqual([
+      expect.stringContaining('tdd'),
+      expect.stringContaining('cosmosdb'),
+      expect.stringContaining('docs/api.md')
+    ])
+    expect(options[1].textContent).toContain('Global')
+    expect(options[2].textContent).toContain('back')
+    act(() => {
+      options[2].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+    })
+    const prompt = document.getElementById('multi-repo-prompt')
+    expect(prompt instanceof HTMLTextAreaElement && prompt.value).toBe('Follow @back/docs/api.md')
+    await act(async () => button('Create and start Claude').click())
+    const comment = api.folderWorkspaces.update.mock.calls.at(-1)?.[0].updates.comment
+    expect(comment).toContain('@back/docs/api.md: document in repository "back" at /worktrees/back')
   })
 })

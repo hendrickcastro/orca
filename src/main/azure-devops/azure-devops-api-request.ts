@@ -1,5 +1,5 @@
-import { Buffer } from 'node:buffer'
 import type { AzureDevOpsRepoRef } from './repository-ref'
+import { azureDevOpsAuthHeadersFor, getAzureDevOpsAuthConfig } from './azure-devops-auth'
 import { cancelUnreadResponseBody } from '../lib/unread-response-body'
 
 const REQUEST_TIMEOUT_MS = 5000
@@ -40,21 +40,9 @@ export function isAzureDevOpsPreviewVersionRejection(status: number | null, body
   }
 }
 
-type AzureDevOpsAuthConfig = {
-  apiBaseUrl: string | null
-  pat: string | null
-  accessToken: string | null
-  username: string | null
-}
-
 export type AzureDevOpsRequestOptions = {
   searchParams?: Record<string, string | number>
   timeoutMs?: number
-}
-
-function envValue(name: string): string | null {
-  const value = process.env[name]?.trim() ?? ''
-  return value.length > 0 ? value : null
 }
 
 export function normalizeAzureDevOpsApiBaseUrl(value: string): string {
@@ -64,29 +52,7 @@ export function normalizeAzureDevOpsApiBaseUrl(value: string): string {
     .replace(/\/_apis$/i, '')
 }
 
-export function getAzureDevOpsAuthConfig(): AzureDevOpsAuthConfig {
-  return {
-    apiBaseUrl: envValue('ORCA_AZURE_DEVOPS_API_BASE_URL'),
-    pat: envValue('ORCA_AZURE_DEVOPS_TOKEN') ?? envValue('ORCA_AZURE_DEVOPS_PAT'),
-    accessToken: envValue('ORCA_AZURE_DEVOPS_ACCESS_TOKEN'),
-    username: envValue('ORCA_AZURE_DEVOPS_USERNAME')
-  }
-}
-
-export function azureDevOpsTokenConfigured(config: AzureDevOpsAuthConfig): boolean {
-  return Boolean(config.pat || config.accessToken)
-}
-
-function authHeaders(config: AzureDevOpsAuthConfig): Record<string, string> {
-  if (config.accessToken) {
-    return { Authorization: `Bearer ${config.accessToken}` }
-  }
-  if (config.pat) {
-    const encoded = Buffer.from(`${config.username ?? ''}:${config.pat}`).toString('base64')
-    return { Authorization: `Basic ${encoded}` }
-  }
-  return {}
-}
+export { azureDevOpsTokenConfigured, getAzureDevOpsAuthConfig } from './azure-devops-auth'
 
 function isUrlPathAncestor(ancestor: string, descendant: string): boolean {
   try {
@@ -155,13 +121,10 @@ export async function requestAzureDevOpsJsonAtBase<T>(
   // throws instead of collapsing to null so callers never report false not_found.
   throwOnFailure = false
 ): Promise<T | null> {
-  const config = getAzureDevOpsAuthConfig()
+  const headers = { Accept: 'application/json', ...azureDevOpsAuthHeadersFor(baseUrl) }
   const doFetch = (url: URL): Promise<Response> =>
     fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        ...authHeaders(config)
-      },
+      headers,
       signal: AbortSignal.timeout(options.timeoutMs ?? REQUEST_TIMEOUT_MS)
     })
   try {

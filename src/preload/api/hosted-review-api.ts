@@ -1,4 +1,9 @@
 import type {
+  AzureDevOpsConnectArgs,
+  AzureDevOpsConnectResult,
+  AzureDevOpsConnectionStatus
+} from '../../shared/azure-devops-credentials'
+import type {
   BitbucketConnectArgs,
   BitbucketConnectionStatus
 } from '../../shared/bitbucket-credentials'
@@ -20,6 +25,12 @@ export type HostedReviewApi = {
   ) => Promise<HostedReviewCreationEligibility>
   create: (args: CreateHostedReviewArgs) => Promise<CreateHostedReviewResult>
   createStacked: (args: CreateStackedHostedReviewArgs) => Promise<CreateStackedHostedReviewResult>
+}
+
+export type AzureDevOpsApi = {
+  connect: (args: AzureDevOpsConnectArgs) => Promise<AzureDevOpsConnectResult>
+  disconnect: (organizationUrl: string) => Promise<void>
+  status: () => Promise<AzureDevOpsConnectionStatus>
 }
 
 export type BitbucketApi = {

@@ -28,6 +28,7 @@ import { ghApi } from './api/gh-bridge'
 import { hostedReviewApi } from './api/hosted-review-bridge'
 import { glApiBridge } from './api/gl-bridge'
 import { bitbucketApi } from './api/bitbucket-bridge'
+import { azureDevOpsApi } from './api/azure-devops-bridge'
 import { linearApi } from './api/linear-bridge'
 import { jiraApi } from './api/jira-bridge'
 import { starNagApi } from './api/star-nag-bridge'
@@ -50,6 +51,7 @@ import { developerPermissionsApi } from './api/developer-permissions-bridge'
 import { computerUsePermissionsApi } from './api/computer-use-permissions-bridge'
 import { shellApi } from './api/shell-bridge'
 import { skillsApi } from './api/skills-bridge'
+import { claudeMcpApi } from './api/claude-mcp-bridge'
 import { petApi } from './api/pet-bridge'
 import { browserApi } from './api/browser-bridge'
 import { emulatorApi } from './api/emulator-bridge'
@@ -123,6 +125,7 @@ const api = {
   hostedReview: hostedReviewApi,
   gl: glApiBridge,
   bitbucket: bitbucketApi,
+  azureDevOps: azureDevOpsApi,
   linear: linearApi,
   jira: jiraApi,
   starNag: starNagApi,
@@ -149,6 +152,7 @@ const api = {
   computerUsePermissions: computerUsePermissionsApi,
   shell: shellApi,
   skills: skillsApi,
+  claudeMcp: claudeMcpApi,
   pet: petApi,
   browser: browserApi,
   emulator: emulatorApi,

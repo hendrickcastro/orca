@@ -227,6 +227,14 @@ vi.mock('../settings', () => ({
   registerSettingsHandlers: registerSettingsHandlersMock
 }))
 
+vi.mock('../azure-devops', () => ({
+  registerAzureDevOpsHandlers: vi.fn()
+}))
+
+vi.mock('../claude-mcp-servers', () => ({
+  registerClaudeMcpServerHandlers: vi.fn()
+}))
+
 vi.mock('../skills', () => ({
   registerSkillsHandlers: registerSkillsHandlersMock
 }))

@@ -8,6 +8,7 @@ import type {
 } from './api/agent-account-api'
 import type { HooksApi } from './api/agent-hook-api'
 import type { SkillsApi } from './api/agent-skill-api'
+import type { ClaudeUserMcpServers } from '../shared/claude-user-mcp-servers'
 import type { AgentAwakeApi, AgentStatusApi } from './api/agent-status-api'
 import type {
   ClaudeUsageApi,
@@ -33,7 +34,7 @@ import type { GithubAccountApi } from './api/github-account-api'
 import type { GithubPullRequestApi } from './api/github-pull-request-api'
 import type { GithubWorkItemApi } from './api/github-work-item-api'
 import type { GitLabApi } from './api/gitlab-api'
-import type { BitbucketApi, HostedReviewApi } from './api/hosted-review-api'
+import type { AzureDevOpsApi, BitbucketApi, HostedReviewApi } from './api/hosted-review-api'
 import type { JiraApi } from './api/jira-api'
 import type { LinearApi } from './api/linear-api'
 import type { MobileApi } from './api/mobile-api'
@@ -90,6 +91,7 @@ export type PreloadApi = {
   hostedReview: HostedReviewApi
   gl: GitLabApi
   bitbucket: BitbucketApi
+  azureDevOps: AzureDevOpsApi
   linear: LinearApi
   jira: JiraApi
   starNag: StarNagApi
@@ -116,6 +118,10 @@ export type PreloadApi = {
   computerUsePermissions: ComputerUsePermissionsApi
   shell: ShellApi
   skills: SkillsApi
+  claudeMcp: {
+    /** MCP servers from Claude's global config (user scope plus each project's local scope). */
+    listClaudeUserServers: (projectPaths: string[]) => Promise<ClaudeUserMcpServers>
+  }
   pet: PetApi
   browser: BrowserApi
   emulator: EmulatorApi

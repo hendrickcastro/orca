@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { resolveOpenCodeDataDirectory } from './opencode-data-directory'
 import {
   bindOpenCodeSession,
@@ -276,6 +277,10 @@ export function listOpenCodeDbSessions(
       }
     })
   } catch (err) {
+    // Why: OpenCode not installed (or not yet run) is the normal state for most users, not a read failure.
+    if (!existsSync(dbPath)) {
+      return []
+    }
     console.warn('[opencode-binder] session store read failed; skipping round', err)
     return []
   }

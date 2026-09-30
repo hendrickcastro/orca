@@ -15,6 +15,7 @@ import { registerHostedReviewHandlers } from '../hosted-review'
 import { registerLinearHandlers } from '../linear'
 import { registerJiraHandlers } from '../jira'
 import { registerBitbucketHandlers } from '../bitbucket'
+import { registerAzureDevOpsHandlers } from '../azure-devops'
 import { registerFeedbackHandlers } from '../feedback'
 import { registerCrashReportingHandlers } from '../crash-reporting'
 import { registerExportHandlers } from '../export'
@@ -40,6 +41,7 @@ import { registerSessionHandlers } from '../session'
 import { registerSettingsHandlers } from '../settings'
 import { registerDiagnosticsHandlers } from '../diagnostics'
 import { registerSkillsHandlers } from '../skills'
+import { registerClaudeMcpServerHandlers } from '../claude-mcp-servers'
 import { registerSkillDeleteIpcHandlers } from '../skill-delete/handlers'
 import { registerWorkspaceSpaceHandlers } from '../workspace-space'
 import { registerWorkspacePortHandlers } from '../workspace-ports'
@@ -160,6 +162,7 @@ export function registerCoreHandlers(
   registerLinearHandlers()
   registerJiraHandlers()
   registerBitbucketHandlers()
+  registerAzureDevOpsHandlers()
   registerFeedbackHandlers()
   if (crashReports) {
     registerCrashReportingHandlers(crashReports)
@@ -182,6 +185,7 @@ export function registerCoreHandlers(
   registerComputerUsePermissionHandlers()
   registerSettingsHandlers(store, agentAwakeService)
   registerSkillsHandlers(store, runtime)
+  registerClaudeMcpServerHandlers()
   registerSkillDeleteIpcHandlers(store, runtime)
   if (automations) {
     registerAutomationHandlers(store, automations)

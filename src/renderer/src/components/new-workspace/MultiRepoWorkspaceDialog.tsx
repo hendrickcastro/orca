@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   Dialog,
   DialogContent,
@@ -13,13 +13,39 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import RepoMultiCombobox from '@/components/ui/repo-multi-combobox'
+import { MentionSuggestionTextarea } from '@/components/mention-textarea/MentionSuggestionTextarea'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import {
   isMultiRepoLocalRepository,
-  MultiRepoWorkspaceCreation
+  MULTI_REPO_BRANCH_PREFIX,
+  MULTI_REPO_TASK_KINDS,
+  MultiRepoWorkspaceCreation,
+  type MultiRepoTaskKind
 } from '@/lib/multi-repo-workspace-creation'
 import { launchMultiRepoCoordinator } from '@/lib/multi-repo-coordinator-launch'
+import {
+  collectMentionedReferences,
+  findMultiRepoMentionQuery,
+  type MultiRepoReference
+} from '@/lib/multi-repo-prompt-references'
+import { rankMultiRepoMentionSuggestions } from '@/lib/multi-repo-mention-suggestions'
+import { slugifyForWorkspaceName } from '../../../../shared/workspace-name'
+import { useMultiRepoMentionCatalog } from './use-multi-repo-mention-catalog'
+import { MultiRepoMentionOption, multiRepoMentionGroupLabel } from './MultiRepoMentionOption'
+
+function taskKindLabel(kind: MultiRepoTaskKind): string {
+  switch (kind) {
+    case 'feature':
+      return translate('multiRepo.kind.feature', 'Feature')
+    case 'bugfix':
+      return translate('multiRepo.kind.bugfix', 'Bug fix')
+    case 'refactor':
+      return translate('multiRepo.kind.refactor', 'Refactor')
+    case 'chore':
+      return translate('multiRepo.kind.chore', 'Maintenance')
+  }
+}
 
 export default function MultiRepoWorkspaceDialog({
   onClose
@@ -31,15 +57,29 @@ export default function MultiRepoWorkspaceDialog({
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(eligibleRepos.slice(0, 2).map((repo) => repo.id))
   )
+  const [kind, setKind] = useState<MultiRepoTaskKind>('feature')
   const [name, setName] = useState('')
   const [branch, setBranch] = useState('')
+  const [branchEdited, setBranchEdited] = useState(false)
   const [prompt, setPrompt] = useState('')
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState('')
   const [error, setError] = useState<string | null>(null)
   const creationRef = useRef<MultiRepoWorkspaceCreation | null>(null)
   const submittingRef = useRef(false)
+  const promptRef = useRef<HTMLTextAreaElement | null>(null)
+  const insertedReferencesRef = useRef(new Map<string, MultiRepoReference>())
   const [started, setStarted] = useState(false)
+  const selectedRepos = eligibleRepos.filter((repo) => selected.has(repo.id))
+  const { catalog, loading: catalogLoading } = useMultiRepoMentionCatalog(selectedRepos)
+  const getSuggestions = useCallback(
+    (query: string) => rankMultiRepoMentionSuggestions(query, catalog),
+    [catalog]
+  )
+  const suggestedBranch = (nextKind: MultiRepoTaskKind, nextName: string): string => {
+    const slug = slugifyForWorkspaceName(nextName)
+    return slug ? `${MULTI_REPO_BRANCH_PREFIX[nextKind]}${slug}` : ''
+  }
 
   const submit = async (): Promise<void> => {
     if (submittingRef.current) {
@@ -53,7 +93,9 @@ export default function MultiRepoWorkspaceDialog({
         name,
         branch,
         prompt,
-        repos: eligibleRepos.filter((repo) => selected.has(repo.id))
+        kind,
+        references: collectMentionedReferences(prompt, insertedReferencesRef.current.values()),
+        repos: selectedRepos
       })
       setStarted(true)
       await creationRef.current.create(window.api, setProgress)
@@ -83,13 +125,22 @@ export default function MultiRepoWorkspaceDialog({
             event.preventDefault()
           }
         }}
+        onEscapeKeyDown={(event) => {
+          // Why: Escape first dismisses an open reference list, not the whole dialog.
+          if (
+            event.target === promptRef.current &&
+            promptRef.current?.getAttribute('aria-expanded') === 'true'
+          ) {
+            event.preventDefault()
+          }
+        }}
       >
         <DialogHeader>
-          <DialogTitle>{translate('multiRepo.title', 'New multi-repository feature')}</DialogTitle>
+          <DialogTitle>{translate('multiRepo.title', 'New multi-repository task')}</DialogTitle>
           <DialogDescription>
             {translate(
               'multiRepo.description',
-              'Create a worktree in each selected repository and open one Claude coordinator for the feature. Repository folders stay where they are.'
+              'Create a worktree in each selected repository and open one Claude coordinator for a feature, bug fix or any other cross-repository task. Repository folders stay where they are.'
             )}
           </DialogDescription>
         </DialogHeader>
@@ -110,11 +161,41 @@ export default function MultiRepoWorkspaceDialog({
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="multi-repo-name">{translate('multiRepo.name', 'Feature name')}</Label>
+            <Label>{translate('multiRepo.kind', 'Type')}</Label>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={kind}
+              onValueChange={(value) => {
+                const nextKind = MULTI_REPO_TASK_KINDS.find((entry) => entry === value)
+                if (!nextKind) {
+                  return
+                }
+                setKind(nextKind)
+                if (!branchEdited) {
+                  setBranch(suggestedBranch(nextKind, name))
+                }
+              }}
+            >
+              {MULTI_REPO_TASK_KINDS.map((entry) => (
+                <ToggleGroupItem key={entry} value={entry}>
+                  {taskKindLabel(entry)}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="multi-repo-name">{translate('multiRepo.name', 'Task name')}</Label>
             <Input
               id="multi-repo-name"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => {
+                setName(event.target.value)
+                if (!branchEdited) {
+                  setBranch(suggestedBranch(kind, event.target.value))
+                }
+              }}
               placeholder="Patient search"
               autoFocus
             />
@@ -126,8 +207,11 @@ export default function MultiRepoWorkspaceDialog({
             <Input
               id="multi-repo-branch"
               value={branch}
-              onChange={(event) => setBranch(event.target.value)}
-              placeholder="feature/patient-search"
+              onChange={(event) => {
+                setBranch(event.target.value)
+                setBranchEdited(event.target.value.trim() !== '')
+              }}
+              placeholder={`${MULTI_REPO_BRANCH_PREFIX[kind]}patient-search`}
             />
             <p className="text-xs text-muted-foreground">
               {translate(
@@ -138,14 +222,34 @@ export default function MultiRepoWorkspaceDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="multi-repo-prompt">
-              {translate('multiRepo.prompt', 'What should Claude implement?')}
+              {translate('multiRepo.prompt', 'What should Claude do?')}
             </Label>
-            <Textarea
+            <MentionSuggestionTextarea
               id="multi-repo-prompt"
+              appearance="field"
               value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              rows={4}
+              onValueChange={setPrompt}
+              rows={5}
+              textareaRef={promptRef}
+              findQuery={findMultiRepoMentionQuery}
+              getSuggestions={getSuggestions}
+              getOptionKey={(option) => option.token}
+              getInsertText={(option) => option.token}
+              getOptionGroup={(option) => multiRepoMentionGroupLabel(option.kind)}
+              onInsert={(option) => insertedReferencesRef.current.set(option.token, option)}
+              renderOption={(option) => <MultiRepoMentionOption reference={option} />}
             />
+            <p className="text-xs text-muted-foreground">
+              {catalogLoading
+                ? translate(
+                    'multiRepo.referencesLoading',
+                    'Loading skills, MCP servers, docs and files from the selected repositories…'
+                  )
+                : translate(
+                    'multiRepo.referencesHint',
+                    'Type @ to reference skills, MCP servers, docs or files. Use @skill: or @mcp: to narrow the list.'
+                  )}
+            </p>
           </div>
         </fieldset>
         {busy && (
