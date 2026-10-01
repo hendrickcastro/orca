@@ -76,6 +76,10 @@ function openHost(
   probeOwner?: (record: AgentSessionRecord) => Promise<AgentSessionOwnerProbe>
 ): void {
   host = new StructuredAgentSessionHost({
+    logger: {
+      warn: (_message, fields) => hostErrors.push(fields.error),
+      error: (_message, fields) => hostErrors.push(fields.error)
+    },
     store,
     adapter: adapter(),
     journalDatabase: openTestJournalHostDatabase(root),
@@ -83,7 +87,6 @@ function openHost(
     mintSpawnToken: () => `spawn-${acquire.mock.calls.length}`,
     idleSweep: { intervalMs: SWEEP_MS, idleMs: IDLE_MS },
     now: () => clock,
-    onEventSinkError: ({ error }) => hostErrors.push(error),
     statusSink,
     ...(probeOwner ? { probeOwner } : {})
   })
@@ -132,7 +135,7 @@ function emitTurnLifecycle(state: 'running' | 'completed', ordinal: number): voi
 /** The sweep stops the child first and closes the conversation last. */
 function waitForEviction(): Promise<void> {
   return vi.waitFor(() => {
-    expect(closeSession).toHaveBeenCalledWith(SESSION)
+    expect(closeSession).toHaveBeenCalledWith(SESSION, 'evict')
     expect(host.hasSession(SESSION)).toBe(false)
   })
 }
@@ -245,9 +248,9 @@ describe('a chat that closes', () => {
   it('stops the provider child it started', async () => {
     await attach()
 
-    await host.close(SESSION)
+    await host.close(SESSION, 'evict')
 
-    expect(closeSession).toHaveBeenCalledWith(SESSION)
+    expect(closeSession).toHaveBeenCalledWith(SESSION, 'evict')
     expect(host.hasSession(SESSION)).toBe(false)
     expect(hostErrors).toEqual([])
     // The record and its journal stay; only the process and the claim on it go.
@@ -264,7 +267,7 @@ describe('a chat that closes', () => {
   it('answers a read from the pane that outlived it without starting a child', async () => {
     await attach()
 
-    await host.close(SESSION)
+    await host.close(SESSION, 'evict')
     expect(host.hasSession(SESSION)).toBe(false)
 
     expect((await host.history({ sessionId: SESSION, direction: 'tail' })).ok).toBe(true)
@@ -297,7 +300,7 @@ describe('a chat that closes', () => {
     await vi.waitFor(() => expect(dispatch).toHaveBeenCalled())
     const settlement = host.waitForSendSettlement(SESSION, result.value.clientMessageId)
 
-    await host.close(SESSION)
+    await host.close(SESSION, 'evict')
 
     // Eviction's settlement is a journal write, so the wait sees it rather than timing out.
     await expect(settlement).resolves.toMatchObject({
@@ -321,14 +324,14 @@ describe('a chat that closes', () => {
 
     // The child is stopped and the lease released before the handle closes; the entry is dropped
     // before that close, so a lost result leaves no closing handle for a reader to find.
-    await expect(host.close(SESSION)).rejects.toThrow('journal close result lost')
+    await expect(host.close(SESSION, 'evict')).rejects.toThrow('journal close result lost')
     expect(host.hasSession(SESSION)).toBe(false)
     expect(store.getRecord(SESSION)?.lease).toMatchObject({
       claimStatus: 'released',
       ownerProcess: null
     })
 
-    await expect(host.close(SESSION)).resolves.toBeUndefined()
+    await expect(host.close(SESSION, 'evict')).resolves.toBeUndefined()
     expect(closeSession).toHaveBeenCalledOnce()
   })
 
@@ -349,12 +352,12 @@ describe('a chat that closes', () => {
     })
     const settled = captureSettledSubmissions()
 
-    await expect(host.close(SESSION)).rejects.toMatchObject({ step: 'drain-published' })
+    await expect(host.close(SESSION, 'evict')).rejects.toMatchObject({ step: 'drain-published' })
     // The child is proven gone, but the wind-down it owes is not done: nothing settled, no release.
     expect(session!.child).toBeNull()
     expect(store.getRecord(SESSION)?.lease.claimStatus).not.toBe('released')
 
-    await expect(host.close(SESSION)).resolves.toBeUndefined()
+    await expect(host.close(SESSION, 'evict')).resolves.toBeUndefined()
     expect(closeSession).toHaveBeenCalledOnce()
     expect(store.getRecord(SESSION)?.lease).toMatchObject({
       claimStatus: 'released',
@@ -462,7 +465,7 @@ describe('startup', () => {
 describe('a session closed and started again', () => {
   it('publishes provider events to the reattached chat', async () => {
     await attach()
-    await host.close(SESSION)
+    await host.close(SESSION, 'evict')
     expect(host.hasSession(SESSION)).toBe(false)
 
     await startAgent()
@@ -820,7 +823,7 @@ describe('a quit over an eviction that never got its retry', () => {
     const settled = captureSettledSubmissions()
     failNextDrain()
 
-    await expect(host.close(SESSION)).rejects.toMatchObject({ step: 'drain-published' })
+    await expect(host.close(SESSION, 'evict')).rejects.toMatchObject({ step: 'drain-published' })
     expect(host['sessions'].get(SESSION)?.child).toBeNull()
     expect(store.getRecord(SESSION)?.lease.claimStatus).not.toBe('released')
 
