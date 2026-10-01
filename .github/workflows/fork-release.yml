@@ -70,9 +70,20 @@ jobs:
             gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes
           fi
           # Why draft: the updater must never see a release until both platforms uploaded.
+          {
+            echo "Automatic build of ${GITHUB_SHA} from main."
+            echo
+            echo "**macOS** (unsigned build), install or update with:"
+            echo
+            echo '```'
+            echo "curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/install-macos.sh | bash"
+            echo '```'
+            echo
+            echo "**Windows**: run orca-knwr-windows-setup.exe; installed copies update themselves from the app."
+          } >"$RUNNER_TEMP/notes.md"
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
             --title "Orca knwr $VERSION" \
-            --notes "Automatic build of ${GITHUB_SHA} from main."
+            --notes-file "$RUNNER_TEMP/notes.md"
 
   build-windows:
     needs: prepare
@@ -212,6 +223,18 @@ jobs:
     needs: [prepare, build-windows, build-macos]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # Why: the Mac build is not notarized; this script installs it the way Gatekeeper accepts.
+      - name: Attach the macOS install script
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release upload "$TAG" config/fork/install-macos.sh --repo "$GITHUB_REPOSITORY" --clobber
+
       - name: Verify assets and publish the release
         shell: bash
         env:
@@ -223,7 +246,7 @@ jobs:
           echo "Assets on $TAG:"
           echo "$assets"
           for required in latest.yml latest-mac.yml orca-knwr-windows-setup.exe \
-            orca-knwr-macos-arm64.dmg orca-knwr-macos-x64.dmg; do
+            orca-knwr-macos-arm64.dmg orca-knwr-macos-x64.dmg install-macos.sh; do
             if ! grep -qx "$required" <<<"$assets"; then
               echo "::error::$TAG is missing $required; leaving the release as a draft."
               exit 1
