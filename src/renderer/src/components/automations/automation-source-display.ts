@@ -41,6 +41,10 @@ function getProviderLabel(provider: TaskSourceContext['provider']): string {
       return 'Linear'
     case 'jira':
       return 'Jira'
+    case 'azure-devops':
+      return 'Azure DevOps'
+    case 'asana':
+      return 'Asana'
   }
 }
 
@@ -58,6 +62,12 @@ function getSourceIdentityLabel(sourceContext: TaskSourceContext): string | null
         return identity.workspaceName ?? identity.workspaceId ?? null
       case 'jira':
         return identity.siteUrl ?? identity.siteId ?? null
+      case 'azure-devops':
+        return identity.project && identity.repository
+          ? `${identity.project}/${identity.repository}`
+          : (identity.organizationUrl ?? null)
+      case 'asana':
+        return identity.workspaceName ?? identity.workspaceId ?? null
     }
   }
   return sourceContext.accountLabel ?? sourceContext.repoId ?? null

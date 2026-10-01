@@ -14,6 +14,33 @@ import { LoaderCircle } from 'lucide-react'
 import { TaskPageGitHubRows } from './Rows'
 import { PaginationBar } from '../PaginationBar'
 import { supersedeGitHubListScrollRestore } from '../../task-page-github-list-scroll-restore'
+function otherForgeSourceNotice(
+  forge: NonNullable<TaskPageComposerActionsModel['unresolvedSourceRepos'][number]['otherForge']>
+): string {
+  switch (forge) {
+    case 'azure-devops':
+      return translate(
+        'auto.components.TaskPage.otherForgeAzureDevOps',
+        'is hosted on Azure DevOps. Its work items and pull requests are in the Azure DevOps tab.'
+      )
+    case 'gitlab':
+      return translate(
+        'auto.components.TaskPage.otherForgeGitLab',
+        'is hosted on GitLab. Its issues and merge requests are in the GitLab tab.'
+      )
+    case 'bitbucket':
+      return translate(
+        'auto.components.TaskPage.otherForgeBitbucket',
+        'is hosted on Bitbucket, which Tasks does not list.'
+      )
+    case 'gitea':
+      return translate(
+        'auto.components.TaskPage.otherForgeGitea',
+        'is hosted on Gitea, which Tasks does not list.'
+      )
+  }
+}
+
 export function TaskPageGitHubList({
   model
 }: {
@@ -183,42 +210,53 @@ export function TaskPageGitHubList({
             )
           })}
 
-        {unresolvedSourceRepos.map((r) => (
-          // Why: null-source repos (#9660) render empty like genuine zero — name the repo and offer Retry so a transient resolve blip is recoverable.
-          <div
-            key={`source-unresolved-${r.repoId}`}
-            role="status"
-            aria-atomic="true"
-            className="flex items-center justify-between gap-3 border-b border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
-          >
-            <span>
-              {translate(
-                'auto.components.TaskPage.noGithubSourceDetected',
-                'No GitHub source detected for'
-              )}{' '}
-              <span className="font-mono">{r.label}</span> —{' '}
-              {translate(
-                'auto.components.TaskPage.noGithubSourceDetectedHint',
-                'it may have no GitHub remote, or the source could not be resolved.'
-              )}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleRetryIssuesFetch(r.sourceKey)}
-              disabled={tasksLoading || retryingSourceKeys.has(r.sourceKey)}
+        {unresolvedSourceRepos.map((r) =>
+          r.otherForge ? (
+            // Why: a repo on another forge has no GitHub source by design; Retry could never fix it.
+            <div
+              key={`source-other-forge-${r.repoId}`}
+              role="status"
+              className="border-b border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
             >
-              {retryingSourceKeys.has(r.sourceKey) ? (
-                <span className="flex items-center gap-1">
-                  <LoaderCircle className="h-3 w-3 animate-spin" />
-                  {translate('auto.components.TaskPage.5b6b2af943', 'Retrying…')}
-                </span>
-              ) : (
-                translate('auto.components.TaskPage.0bfbf62f75', 'Retry')
-              )}
-            </Button>
-          </div>
-        ))}
+              <span className="font-mono">{r.label}</span> {otherForgeSourceNotice(r.otherForge)}
+            </div>
+          ) : (
+            // Why: null-source repos (#9660) render empty like genuine zero — name the repo and offer Retry so a transient resolve blip is recoverable.
+            <div
+              key={`source-unresolved-${r.repoId}`}
+              role="status"
+              aria-atomic="true"
+              className="flex items-center justify-between gap-3 border-b border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
+            >
+              <span>
+                {translate(
+                  'auto.components.TaskPage.noGithubSourceDetected',
+                  'No GitHub source detected for'
+                )}{' '}
+                <span className="font-mono">{r.label}</span> —{' '}
+                {translate(
+                  'auto.components.TaskPage.noGithubSourceDetectedHint',
+                  'it may have no GitHub remote, or the source could not be resolved.'
+                )}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleRetryIssuesFetch(r.sourceKey)}
+                disabled={tasksLoading || retryingSourceKeys.has(r.sourceKey)}
+              >
+                {retryingSourceKeys.has(r.sourceKey) ? (
+                  <span className="flex items-center gap-1">
+                    <LoaderCircle className="h-3 w-3 animate-spin" />
+                    {translate('auto.components.TaskPage.5b6b2af943', 'Retrying…')}
+                  </span>
+                ) : (
+                  translate('auto.components.TaskPage.0bfbf62f75', 'Retry')
+                )}
+              </Button>
+            </div>
+          )
+        )}
 
         {showGitHubTaskSkeletons ? (
           // Why: render enough shimmer rows to fill a typical viewport
@@ -286,7 +324,7 @@ export function TaskPageGitHubList({
         !tasksError &&
         !githubUnavailable &&
         failedCount === 0 &&
-        unresolvedSourceRepos.length === 0 &&
+        unresolvedSourceRepos.every((r) => r.otherForge) &&
         perRepoSourceState.every((s) => !s.error) ? (
           <div className="px-4 py-10 text-center">
             <p className="text-base font-medium text-foreground">{githubEmptyState.title}</p>

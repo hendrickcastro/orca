@@ -1,3 +1,4 @@
+import type { TaskProvider } from '../../../../shared/task-providers'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
 import type { OrcaHooks, SetupRunPolicy } from '../../../../shared/orca-yaml-hook-types'
 import type { SparsePreset } from '../../../../shared/worktree/create-types'
@@ -16,7 +17,7 @@ export type ComposerDerivedModel = {
   currentYamlHooks: OrcaHooks | null
   setupConfig: SetupConfig | null
   setupPolicy: SetupRunPolicy
-  linkedWorkItemProvider: 'github' | 'gitlab' | 'linear' | 'jira' | null
+  linkedWorkItemProvider: TaskProvider | null
   willApplyIssueCommandAsPrompt: boolean
   shouldWaitForIssueAutomationCheck: boolean
   requiresExplicitSetupChoice: boolean

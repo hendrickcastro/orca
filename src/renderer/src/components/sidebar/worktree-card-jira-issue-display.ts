@@ -14,11 +14,23 @@ export function getWorktreeCardJiraIssueDisplay(
   worktree: Pick<Worktree, 'linkedWorkItem'>
 ): WorktreeCardJiraIssueDisplay | null {
   const item = worktree.linkedWorkItem
+  if (item?.provider === 'asana') {
+    return { provider: 'asana', identifier: '', title: item.title, url: item.url }
+  }
+  if (item?.provider === 'azure-devops') {
+    return {
+      provider: 'azure-devops',
+      identifier: `${item.type === 'pr' ? '!' : '#'}${item.number}`,
+      title: item.title,
+      url: item.url
+    }
+  }
   if (item?.provider !== 'jira' || item.type !== 'issue') {
     return null
   }
   const identifier = item.jiraIdentifier ?? String(item.number)
   return {
+    provider: 'jira',
     identifier,
     title: withoutRepeatedJiraIdentifier(item.title, identifier),
     url: item.url

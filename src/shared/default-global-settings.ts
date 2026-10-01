@@ -207,6 +207,7 @@ export function buildDefaultSettings(args: {
     defaultTaskSource: 'github',
     visibleTaskProviders: [...TASK_PROVIDERS],
     visibleTaskProvidersDefaultedForJira: true,
+    visibleTaskProvidersDefaultedForForkProviders: true,
     defaultRepoSelection: null,
     defaultLinearTeamSelection: null,
     opencodeSessionCookie: '',

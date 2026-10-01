@@ -38,6 +38,9 @@ const SetupGuideModal = lazy(() => import('../components/setup-guide/SetupGuideM
 const FeatureWallModal = lazy(() => import('../components/feature-wall/FeatureWallModal'))
 const FeatureTipsModal = lazy(() => import('../components/feature-tips/FeatureTipsModal'))
 const AddRepoDialog = lazy(() => import('../components/sidebar/AddRepoDialog'))
+const MultiRepoWorkspaceModalHost = lazy(
+  () => import('../components/new-workspace/MultiRepoWorkspaceModalHost')
+)
 const NonGitFolderDialog = lazy(() => import('../components/sidebar/NonGitFolderDialog'))
 const AddProjectFromFolderDialog = lazy(
   () => import('../components/sidebar/AddProjectFromFolderDialog')
@@ -202,6 +205,11 @@ export function AppRootSurfaces(props: {
         {shouldMountAddRepoDialog ? (
           <ModalBoundary boundaryId="modal.add-repo" resetKey={activeModal === 'add-repo'}>
             <AddRepoDialog />
+          </ModalBoundary>
+        ) : null}
+        {activeModal === 'multi-repo-workspace' ? (
+          <ModalBoundary boundaryId="modal.multi-repo-workspace" resetKey>
+            <MultiRepoWorkspaceModalHost />
           </ModalBoundary>
         ) : null}
         {/* Why: Settings can start Add Project without Sidebar, so its handoff dialogs must share the root host. */}

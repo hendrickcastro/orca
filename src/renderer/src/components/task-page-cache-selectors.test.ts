@@ -133,9 +133,45 @@ describe('task page cache selectors', () => {
 
     // Only both-null fetched repos are flagged; label falls back to path when displayName is absent.
     expect(selectTaskPageUnresolvedSourceRepos(repos, sourceState)).toEqual([
-      { repoId: 'unresolved', sourceKey: 'unresolved::local', label: 'unresolved-repo' },
-      { repoId: 'no-name', sourceKey: 'no-name::local', label: '/repos/no-name' }
+      {
+        repoId: 'unresolved',
+        sourceKey: 'unresolved::local',
+        label: 'unresolved-repo',
+        otherForge: null
+      },
+      { repoId: 'no-name', sourceKey: 'no-name::local', label: '/repos/no-name', otherForge: null }
     ])
+  })
+
+  it('marks unresolved repos hosted on another forge so they are not offered a Retry', () => {
+    const remote = (remoteUrl: string) => ({ canonicalKey: '', remoteName: 'origin', remoteUrl })
+    const repos = [
+      {
+        id: 'azure',
+        path: '/repos/azure',
+        gitRemoteIdentity: remote('https://acme@dev.azure.com/acme/Portal/_git/web')
+      },
+      {
+        id: 'gitlab',
+        path: '/repos/gitlab',
+        gitRemoteIdentity: remote('git@gitlab.com:acme/api.git')
+      },
+      {
+        id: 'github',
+        path: '/repos/github',
+        gitRemoteIdentity: remote('git@github.com:acme/app.git')
+      }
+    ]
+    const entries = repos.map((): CacheEntry<GitHubWorkItem[]> => ({
+      data: [],
+      fetchedAt: 1,
+      sources: { originCandidate: null, upstreamCandidate: null, issues: null, prs: null }
+    }))
+    const sourceState = buildTaskPageRepoSourceState(repos, entries)
+
+    expect(
+      selectTaskPageUnresolvedSourceRepos(repos, sourceState).map((repo) => repo.otherForge)
+    ).toEqual(['azure-devops', 'gitlab', null])
   })
 
   it('does not flag an unresolved-source repo that already carries a per-repo error', () => {

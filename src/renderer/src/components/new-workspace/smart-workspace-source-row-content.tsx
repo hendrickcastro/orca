@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { LinearIcon } from '@/components/icons/LinearIcon'
 import { JiraIcon } from '@/components/icons/JiraIcon'
+import { AsanaIcon } from '@/components/icons/AsanaIcon'
+import { AzureDevOpsIcon } from '@/components/icons/AzureDevOpsIcon'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { JiraSite } from '../../../../shared/jira-types'
@@ -77,6 +79,12 @@ export function SelectionIcon({
   }
   if (kind === 'jira') {
     return <JiraIcon className="size-3.5 shrink-0 text-muted-foreground" />
+  }
+  if (kind === 'asana') {
+    return <AsanaIcon className="size-3.5 shrink-0 text-muted-foreground" />
+  }
+  if (kind === 'azure-devops') {
+    return <AzureDevOpsIcon className="size-3.5 shrink-0 text-muted-foreground" />
   }
   return <LinearIcon className="size-3.5 shrink-0 text-muted-foreground" />
 }

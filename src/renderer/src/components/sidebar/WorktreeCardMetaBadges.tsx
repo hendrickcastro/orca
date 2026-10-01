@@ -3,6 +3,8 @@ import { CalendarClock, CircleDot, SquareTerminal, StickyNote } from 'lucide-rea
 import { cn } from '@/lib/utils'
 import { LinearIcon } from '@/components/icons/LinearIcon'
 import { JiraIcon } from '@/components/icons/JiraIcon'
+import { AsanaIcon } from '@/components/icons/AsanaIcon'
+import { AzureDevOpsIcon } from '@/components/icons/AzureDevOpsIcon'
 import { MetaIconBadge } from './WorktreeCardMetadataControls'
 import { getReviewLabel, ReviewIcon } from './worktree-review-helpers'
 import type {
@@ -132,13 +134,33 @@ export const WorktreeCardMetaBadges = React.forwardRef<
       )}
       {jiraIssue && (
         <MetaIconBadge
-          label={translate(
-            'auto.components.sidebar.WorktreeCardMeta.linkedJira',
-            'Linked Jira {{value0}}',
-            { value0: jiraIssue.identifier }
-          )}
+          label={
+            jiraIssue.provider === 'asana'
+              ? translate(
+                  'auto.components.sidebar.WorktreeCardMeta.linkedAsana',
+                  'Linked Asana task {{value0}}',
+                  { value0: jiraIssue.title }
+                )
+              : jiraIssue.provider === 'azure-devops'
+                ? translate(
+                    'auto.components.sidebar.WorktreeCardMeta.linkedAzureDevOps',
+                    'Linked Azure DevOps {{value0}}',
+                    { value0: jiraIssue.identifier }
+                  )
+                : translate(
+                    'auto.components.sidebar.WorktreeCardMeta.linkedJira',
+                    'Linked Jira {{value0}}',
+                    { value0: jiraIssue.identifier }
+                  )
+          }
         >
-          <JiraIcon className="text-muted-foreground" />
+          {jiraIssue.provider === 'asana' ? (
+            <AsanaIcon className="text-muted-foreground" />
+          ) : jiraIssue.provider === 'azure-devops' ? (
+            <AzureDevOpsIcon className="text-muted-foreground" />
+          ) : (
+            <JiraIcon className="text-muted-foreground" />
+          )}
         </MetaIconBadge>
       )}
       {review && (

@@ -104,8 +104,19 @@ export function prepareLoadedProfileSettings(
     : rawTaskProviderSettings.visibleTaskProviders.includes('jira')
       ? rawTaskProviderSettings.visibleTaskProviders
       : [...rawTaskProviderSettings.visibleTaskProviders, 'jira' as const]
+  // Why: fork-only providers must appear once for profiles saved before they existed.
+  const visibleTaskProvidersDefaultedForForkProviders =
+    parsed.settings?.visibleTaskProvidersDefaultedForForkProviders === true
+  const forkVisibleTaskProviders = visibleTaskProvidersDefaultedForForkProviders
+    ? migratedVisibleTaskProviders
+    : [
+        ...migratedVisibleTaskProviders,
+        ...(['azure-devops', 'asana'] as const).filter(
+          (provider) => !migratedVisibleTaskProviders.includes(provider)
+        )
+      ]
   const taskProviderSettings = normalizeTaskProviderSettings({
-    visibleTaskProviders: migratedVisibleTaskProviders,
+    visibleTaskProviders: forkVisibleTaskProviders,
     defaultTaskSource: rawTaskProviderSettings.defaultTaskSource
   })
   const primarySelectionDefaultedForLinux =
@@ -124,7 +135,7 @@ export function prepareLoadedProfileSettings(
   if (migratePrimarySelectionPlatformDefault || stampPrimarySelectionTerminalDefaults) {
     markNeedsSave()
   }
-  if (!visibleTaskProvidersDefaultedForJira) {
+  if (!visibleTaskProvidersDefaultedForJira || !visibleTaskProvidersDefaultedForForkProviders) {
     markNeedsSave()
   }
   const claudeAgentTeamsDefaultDisabledMigrated =

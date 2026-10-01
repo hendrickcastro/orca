@@ -2,6 +2,8 @@ import React from 'react'
 import { Github, Gitlab, LayoutGrid, List } from 'lucide-react'
 
 import { JiraIcon } from '@/components/icons/JiraIcon'
+import { AzureDevOpsIcon } from '@/components/icons/AzureDevOpsIcon'
+import { AsanaIcon } from '@/components/icons/AsanaIcon'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { translate } from '@/i18n/i18n'
 import {
@@ -131,6 +133,16 @@ export const getSourceOptions = createLocalizedCatalog((): SourceOption[] => [
     id: 'jira',
     label: translate('auto.components.TaskPage.9cd11ba218', 'Jira'),
     Icon: ({ className }) => <JiraIcon className={className} />
+  },
+  {
+    id: 'azure-devops',
+    label: translate('auto.components.TaskPage.azureDevOps', 'Azure DevOps'),
+    Icon: ({ className }) => <AzureDevOpsIcon className={className} />
+  },
+  {
+    id: 'asana',
+    label: translate('auto.components.TaskPage.asana', 'Asana'),
+    Icon: ({ className }) => <AsanaIcon className={className} />
   }
 ])
 

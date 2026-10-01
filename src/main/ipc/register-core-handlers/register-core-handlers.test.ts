@@ -231,6 +231,10 @@ vi.mock('../azure-devops', () => ({
   registerAzureDevOpsHandlers: vi.fn()
 }))
 
+vi.mock('../asana', () => ({
+  registerAsanaHandlers: vi.fn()
+}))
+
 vi.mock('../claude-mcp-servers', () => ({
   registerClaudeMcpServerHandlers: vi.fn()
 }))

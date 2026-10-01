@@ -259,6 +259,10 @@ function getAutomationSourceProviderLabel(provider: TaskSourceContext['provider'
       return 'Linear'
     case 'jira':
       return 'Jira'
+    case 'azure-devops':
+      return 'Azure DevOps'
+    case 'asana':
+      return 'Asana'
   }
 }
 

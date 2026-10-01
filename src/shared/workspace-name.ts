@@ -1,3 +1,4 @@
+import type { TaskProvider } from './task-providers'
 import {
   collectCompactWorkspaceWords,
   foldWorkspaceNameWhitespaceToHyphen
@@ -24,11 +25,16 @@ export function slugifyForWorkspaceName(input: string): string {
   const normalized = removeIntraWordApostrophes(input)
     .trim()
     .toLowerCase()
+    // Why: drop accents instead of replacing the letter, so "Envío" seeds "envio", not "env-o".
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
     .replace(/[\\/]+/g, '-')
   return (
     foldWorkspaceNameWhitespaceToHyphen(normalized)
       .replace(/[^a-z0-9._-]+/g, '-')
       .replace(/-+/g, '-')
+      // Why: sentence punctuation before a separator ("ID 6320. Foo") must not leave ".-".
+      .replace(/\.*-[.-]*/g, '-')
       // Why: git check-ref-format rejects any ref containing `..`, so previews
       // must match the main-process sanitizer before workspace creation.
       .replace(/\.{2,}/g, '.')
@@ -47,7 +53,7 @@ export type WorkspaceIntentWorkItem = {
   type: 'issue' | 'pr' | 'mr'
   number: number
   title: string
-  provider?: 'github' | 'gitlab' | 'linear' | 'jira'
+  provider?: TaskProvider
   linearIdentifier?: string
   jiraIdentifier?: string
 }

@@ -10,6 +10,44 @@ import type {
   AzureDevOpsConnectionStatus
 } from '../../shared/azure-devops-credentials'
 import { _resetPreflightCache } from './preflight'
+import { listAzureDevOpsPullRequests, listAzureDevOpsWorkItems } from '../azure-devops/task-queries'
+import type {
+  AzureDevOpsPullRequestFilter,
+  AzureDevOpsTaskListArgs,
+  AzureDevOpsTaskListResult,
+  AzureDevOpsWorkItemFilter
+} from '../../shared/azure-devops-tasks'
+
+const WORK_ITEM_FILTERS: readonly AzureDevOpsWorkItemFilter[] = ['assigned-to-me', 'all-open']
+const PULL_REQUEST_FILTERS: readonly AzureDevOpsPullRequestFilter[] = [
+  'active',
+  'created-by-me',
+  'review-requested'
+]
+
+function normalizeTaskListInput<F extends string>(
+  value: unknown,
+  filters: readonly F[]
+): (AzureDevOpsTaskListArgs & { filter: F }) | null {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    !('repoId' in value) ||
+    !('remoteUrl' in value) ||
+    !('filter' in value) ||
+    typeof value.repoId !== 'string' ||
+    typeof value.remoteUrl !== 'string'
+  ) {
+    return null
+  }
+  const filter = filters.find((entry) => entry === value.filter)
+  return filter ? { repoId: value.repoId, remoteUrl: value.remoteUrl, filter } : null
+}
+
+const invalidTaskListInput: AzureDevOpsTaskListResult = {
+  items: [],
+  error: { type: 'request', message: 'Invalid Azure DevOps task list request' }
+}
 
 function normalizeConnectInput(value: unknown): AzureDevOpsConnectArgs | null {
   if (
@@ -57,4 +95,20 @@ export function registerAzureDevOpsHandlers(): void {
   ipcMain.handle('azureDevOps:status', async (): Promise<AzureDevOpsConnectionStatus> => {
     return getAzureDevOpsConnectionStatus()
   })
+
+  ipcMain.handle(
+    'azureDevOps:listWorkItems',
+    async (_event, args: unknown): Promise<AzureDevOpsTaskListResult> => {
+      const input = normalizeTaskListInput(args, WORK_ITEM_FILTERS)
+      return input ? listAzureDevOpsWorkItems(input) : invalidTaskListInput
+    }
+  )
+
+  ipcMain.handle(
+    'azureDevOps:listPullRequests',
+    async (_event, args: unknown): Promise<AzureDevOpsTaskListResult> => {
+      const input = normalizeTaskListInput(args, PULL_REQUEST_FILTERS)
+      return input ? listAzureDevOpsPullRequests(input) : invalidTaskListInput
+    }
+  )
 }

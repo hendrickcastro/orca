@@ -5,6 +5,10 @@
       "description": "The active workspace is hidden in the sidebar. Revealing it will adjust only the filters hiding it.",
       "confirm": "Adjust filters and reveal",
       "cancel": "Keep filters"
+    },
+    "worktreeCoordinator": {
+      "agentsHeading": "Coordinator · {{value0}}",
+      "statusLabel": "{{value0}} · coordinator {{value1}}"
     }
   },
   "app": {
@@ -213,6 +217,37 @@
       "codexTerminalServerIsolation": {
         "title": "Run each Codex terminal on its own server",
         "description": "Keeps Orca's status and closing tabs working correctly. Turn off to use Codex's shared server and its agents overview. Applies to new terminals."
+      }
+    },
+    "azureDevOps": {
+      "dialog": {
+        "connectFailed": "Connection failed",
+        "title": "Connect an Azure DevOps organization",
+        "description": "Each organization keeps its own token. Repositories use the token of the organization in their git remote. Orca verifies it before saving.",
+        "environmentManaged": "Azure DevOps is configured through ORCA_AZURE_DEVOPS_* environment variables, which take precedence for every organization. Unset them to use saved organizations.",
+        "organization": "Organization",
+        "username": "Username (optional)",
+        "pat": "Personal access token",
+        "patPlaceholder": "Token with Code (Read) access",
+        "hint": "Create the token under User settings → Personal access tokens with Code (Read) scope; add Code (Read & write) to create pull requests from Orca.",
+        "docsLink": "Azure DevOps token docs",
+        "remoteRuntime": "Stored on this machine, not on the active remote runtime — set ORCA_AZURE_DEVOPS_* there instead.",
+        "storageNote": "Stored on this machine with encrypted storage when the OS keychain is available. ORCA_AZURE_DEVOPS_* environment variables take precedence.",
+        "cancel": "Cancel",
+        "verifying": "Verifying...",
+        "connect": "Connect"
+      },
+      "card": {
+        "removeFailed": "Could not remove the saved Azure DevOps organization.",
+        "description": "Pull requests and build statuses for Azure Repos, with a token per organization.",
+        "addOrganization": "Add organization",
+        "connect": "Connect",
+        "replaceToken": "Replace token for {{value0}}",
+        "remove": "Remove {{value0}}",
+        "statusLoadFailed": "Could not check for saved Azure DevOps organizations.",
+        "envManaged": "Configured via ORCA_AZURE_DEVOPS_* environment variables, which apply to every organization. Unset them to use saved organizations.",
+        "stored": "Saved in Orca on this machine. Each repository uses the token of the organization in its git remote.",
+        "notConfigured": "Connect each organization with a personal access token. ORCA_AZURE_DEVOPS_TOKEN works too and takes precedence."
       }
     }
   },
@@ -1757,7 +1792,10 @@
         "addSshHostHint": "Use an existing machine over SSH",
         "addRemoteOrcaServer": "Add Remote Orca Server",
         "addRemoteOrcaServerHint": "Pair another Orca runtime",
-        "hostConnectionFailed": "Connection failed"
+        "hostConnectionFailed": "Connection failed",
+        "agentInstructions": "Instructions for the agent (optional)",
+        "agentInstructionsPlaceholder": "Add context or constraints. The linked task is sent to the agent as well.",
+        "useMultipleRepositories": "Work across several repositories…"
       },
       "NewWorkspaceComposerModal": {
         "createWorktree": "Create worktree",
@@ -2347,7 +2385,67 @@
         "linearModeHasWorktreeTooltip": "Linear tickets linked to an Orca workspace",
         "linearEmptyHasWorktree": "No Linear tickets are linked to an Orca workspace yet. Start work from a Linear issue to see it here.",
         "linearOpenAttachedWorkspace": "Open workspace attached to {{value0}}",
-        "linearWorktreesColumn": "Workspaces"
+        "linearWorktreesColumn": "Workspaces",
+        "asanaConnectTitle": "Connect Asana",
+        "asanaConnectDescription": "Create a personal access token in the Asana developer console and paste it here. It is stored encrypted on this computer.",
+        "asanaOpenTokenPage": "Open the Asana developer console",
+        "asanaToken": "Personal access token",
+        "asanaConnect": "Connect",
+        "asanaTaskCreated": "Asana task created.",
+        "asanaNewTask": "New Asana task",
+        "asanaNewTaskInProject": "In project {{value0}}",
+        "asanaNewTaskInWorkspace": "In the selected workspace, without a project.",
+        "asanaTaskName": "Name",
+        "asanaTaskNotes": "Description",
+        "asanaTaskDue": "Due date",
+        "asanaAssignToMe": "Assign to me",
+        "asanaCancel": "Cancel",
+        "asanaCreate": "Create task",
+        "asanaWorkspace": "Workspace",
+        "asanaMyTasks": "My tasks",
+        "asanaByProject": "By project…",
+        "asanaNewTaskButton": "New task",
+        "asanaRefresh": "Refresh Asana tasks",
+        "asanaDisconnect": "Disconnect Asana",
+        "asanaChecking": "Checking the Asana connection…",
+        "asanaProjects": "Projects",
+        "azureAssignee": "Assignee",
+        "asanaDue": "Due",
+        "asanaPickProject": "Choose a project to see its open tasks.",
+        "asanaNoTasks": "No open tasks here.",
+        "asanaStartWorkspace": "Start workspace from {{value0}}",
+        "asanaOpenInBrowser": "Open in Asana",
+        "azureWorkItems": "Work items",
+        "azurePullRequests": "Pull requests",
+        "azureAssignedToMe": "Assigned to me",
+        "azureAllOpen": "All open",
+        "azureActive": "Active",
+        "azureCreatedByMe": "Created by me",
+        "azureNeedsMyReview": "Needs my review",
+        "azureRefresh": "Refresh Azure DevOps items",
+        "azureNoRepos": "None of the selected projects has an Azure DevOps remote. Select a project hosted on dev.azure.com or visualstudio.com.",
+        "azureNoWorkItems": "No open work items match this filter.",
+        "azureNoPullRequests": "No active pull requests match this filter.",
+        "azureAuthor": "Author",
+        "azureCreated": "Created",
+        "azureStartWorkspace": "Start workspace from {{value0}}",
+        "azureOpenInBrowser": "Open in Azure DevOps",
+        "otherForgeAzureDevOps": "is hosted on Azure DevOps. Its work items and pull requests are in the Azure DevOps tab.",
+        "otherForgeGitLab": "is hosted on GitLab. Its issues and merge requests are in the GitLab tab.",
+        "otherForgeBitbucket": "is hosted on Bitbucket, which Tasks does not list.",
+        "otherForgeGitea": "is hosted on Gitea, which Tasks does not list.",
+        "azureDevOps": "Azure DevOps",
+        "asana": "Asana",
+        "asanaUnavailable": "Asana is not available in this client.",
+        "azureUnavailable": "Azure DevOps is not available in this client.",
+        "asanaFilterAll": "All",
+        "asanaFilterOpen": "Open",
+        "asanaFilterDone": "Done",
+        "asanaName": "Name",
+        "asanaStateDone": "Done",
+        "asanaStateOverdue": "Overdue",
+        "asanaStateOpen": "Open",
+        "asanaContextUnavailable": "Could not load the Asana task details; the agent will only get its link."
       },
       "Terminal": {
         "73768427cf": "Close",
@@ -5480,7 +5578,9 @@
           "fee535205b": "Tasks",
           "d599269755": "Hide from sidebar",
           "artifacts": "Artifacts",
-          "skills": "Skills"
+          "skills": "Skills",
+          "openAzureDevOpsTasks": "Open Azure DevOps tasks",
+          "openAsanaTasks": "Open Asana tasks"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "Clear",
@@ -5715,7 +5815,13 @@
           "cliCreated": "Created by Orca CLI",
           "jiraIssue": "Jira {{value0}}",
           "viewOnJira": "View on Jira",
-          "linkedJira": "Linked Jira {{value0}}"
+          "linkedJira": "Linked Jira {{value0}}",
+          "asanaTask": "Asana task",
+          "azureDevOpsItem": "Azure DevOps {{value0}}",
+          "viewOnAsana": "View on Asana",
+          "viewOnAzureDevOps": "View on Azure DevOps",
+          "linkedAsana": "Linked Asana task {{value0}}",
+          "linkedAzureDevOps": "Linked Azure DevOps {{value0}}"
         },
         "WorktreeCardMetadataStatusBadges": {
           "fe188062a1": "State: Open",
@@ -8706,7 +8812,11 @@
           "integrationsHint": "Credentials for all providers also live under",
           "integrationsLink": "Integrations",
           "skillHint": ". After Linear is connected, usage examples stay under Settings → Linear.",
-          "incompleteBannerBodyWithLinear": "Hide providers you do not use, or expand a card and finish its steps. For Linear: API access, the agent skill, and Show in Tasks."
+          "incompleteBannerBodyWithLinear": "Hide providers you do not use, or expand a card and finish its steps. For Linear: API access, the agent skill, and Show in Tasks.",
+          "azureDevOpsLabel": "Azure DevOps",
+          "azureDevOpsDescription": "Browse Azure Boards work items and pull requests and start workspaces from them.",
+          "asanaLabel": "Asana",
+          "asanaDescription": "Connect Asana to browse and create tasks and start workspaces from them."
         },
         "TerminalAppearanceSection": {
           "a14a427ae4": "Thickness of the pane divider line.",
@@ -18611,6 +18721,10 @@
       "findInFolder": "Find in {{path}}",
       "folderLoadError": "Could not load this folder:",
       "emptyFolder": "No files in this folder"
+    },
+    "member": {
+      "changed": "{{value0}} changed",
+      "label": "Repository to browse"
     }
   },
   "sparsePreset": {
@@ -18651,5 +18765,38 @@
     "addTypedPath": "Add",
     "noDirectories": "No folders added yet.",
     "removePath": "Remove {{name}}"
+  },
+  "multiRepo": {
+    "dropLocalOnly": "Only files and folders on this computer can be added to the prompt.",
+    "references": {
+      "skills": "Skills",
+      "mcp": "MCP servers",
+      "docs": "Docs",
+      "files": "Files",
+      "global": "Global"
+    },
+    "kind": {
+      "feature": "Feature",
+      "bugfix": "Bug fix",
+      "refactor": "Refactor",
+      "chore": "Maintenance"
+    },
+    "title": "New multi-repository task",
+    "description": "Create a worktree in each selected repository and open one Claude coordinator for a feature, bug fix or any other cross-repository task. Repository folders stay where they are.",
+    "repositories": "Repositories",
+    "localOnly": "Choose at least two Git repositories on this computer. SSH, remote servers and WSL are not supported in this version.",
+    "name": "Task name",
+    "branch": "New branch in every repository",
+    "base": "Each repository uses its configured base ref. Setup scripts are skipped; commits and pull requests remain separate.",
+    "prompt": "What should Claude do?",
+    "referencesLoading": "Loading skills, MCP servers, docs and files from the selected repositories…",
+    "referencesHint": "Type @ to reference skills, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill: or @mcp: to narrow the list.",
+    "recovery": "Confirmed worktrees are kept. Retry continues this creation; closing keeps the partial workspace for inspection in Orca.",
+    "close": "Close",
+    "retry": "Retry remaining steps",
+    "create": "Create and start Claude",
+    "kindLabel": "Type",
+    "linkedTaskDetails": "Details included",
+    "removeLinkedTask": "Remove the linked task"
   }
 }

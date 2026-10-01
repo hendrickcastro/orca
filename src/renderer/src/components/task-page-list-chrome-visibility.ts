@@ -30,5 +30,8 @@ export function shouldHideTaskPageListChrome({
       return hasJiraDetail
     case 'linear':
       return hasLinearIssueDetail || hasLinearProjectContext || hasLinearViewContext
+    case 'azure-devops':
+    case 'asana':
+      return false
   }
 }

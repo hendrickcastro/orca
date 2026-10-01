@@ -5,6 +5,11 @@ import type {
   WorkItemsCacheSources
 } from '@/store/github/cache-model'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import type { GitRemoteIdentity } from '../../../shared/git-remote-identity'
+import {
+  parseRemoteRepo,
+  type ManualReviewProvider
+} from './right-sidebar/source-control/review/remote-repo'
 import {
   taskPageWorkItemKey,
   taskPageWorkItemStatusSignature,
@@ -90,6 +95,15 @@ export type TaskPageUnresolvedSourceRepo = {
   repoId: string
   sourceKey: string
   label: string
+  /** Set when the remote is on another forge, so the repo is expected to have no GitHub source. */
+  otherForge: Exclude<ManualReviewProvider, 'github'> | null
+}
+
+function nonGitHubForgeForRemote(
+  remoteUrl: string | undefined
+): TaskPageUnresolvedSourceRepo['otherForge'] {
+  const provider = remoteUrl ? parseRemoteRepo(remoteUrl)?.provider : null
+  return provider && provider !== 'github' ? provider : null
 }
 
 /**
@@ -102,7 +116,12 @@ export type TaskPageUnresolvedSourceRepo = {
  * function), a non-null side = resolved (genuine zero), `null` = not yet fetched.
  */
 export function selectTaskPageUnresolvedSourceRepos(
-  repos: readonly { id: string; displayName?: string; path: string }[],
+  repos: readonly {
+    id: string
+    displayName?: string
+    path: string
+    gitRemoteIdentity?: GitRemoteIdentity | null
+  }[],
   sourceState: readonly TaskPageRepoSourceState[]
 ): TaskPageUnresolvedSourceRepo[] {
   const stateByRepoId = new Map(sourceState.map((state) => [state.repoId, state]))
@@ -113,7 +132,8 @@ export function selectTaskPageUnresolvedSourceRepos(
       unresolved.push({
         repoId: repo.id,
         sourceKey: state.sourceKey,
-        label: repo.displayName ?? repo.path
+        label: repo.displayName ?? repo.path,
+        otherForge: nonGitHubForgeForRemote(repo.gitRemoteIdentity?.remoteUrl)
       })
     }
   }

@@ -43,6 +43,8 @@ export function isAzureDevOpsPreviewVersionRejection(status: number | null, body
 export type AzureDevOpsRequestOptions = {
   searchParams?: Record<string, string | number>
   timeoutMs?: number
+  /** JSON body; sends a POST (WIQL and work-item batch reads are POST-only). */
+  body?: unknown
 }
 
 export function normalizeAzureDevOpsApiBaseUrl(value: string): string {
@@ -121,10 +123,16 @@ export async function requestAzureDevOpsJsonAtBase<T>(
   // throws instead of collapsing to null so callers never report false not_found.
   throwOnFailure = false
 ): Promise<T | null> {
-  const headers = { Accept: 'application/json', ...azureDevOpsAuthHeadersFor(baseUrl) }
+  const hasBody = options.body !== undefined
+  const headers = {
+    Accept: 'application/json',
+    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+    ...azureDevOpsAuthHeadersFor(baseUrl)
+  }
   const doFetch = (url: URL): Promise<Response> =>
     fetch(url, {
       headers,
+      ...(hasBody ? { method: 'POST', body: JSON.stringify(options.body) } : {}),
       signal: AbortSignal.timeout(options.timeoutMs ?? REQUEST_TIMEOUT_MS)
     })
   try {

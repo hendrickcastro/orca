@@ -4,7 +4,8 @@ import type { ExecutionHostScope } from '../../../shared/execution-host'
 import type { ExecutionHostHealth } from '../../../shared/execution-host-registry'
 import type { SshConnectionStatus } from '../../../shared/ssh-types'
 import type { TaskProvider } from '../../../shared/task-providers'
-import type { TaskProviderIdentity, TaskSourceContext } from '../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../shared/task-source-context'
+import { getProviderIdentityLabel } from './task-provider-identity-label'
 
 export type TaskSourceContextSummary = {
   label: string
@@ -49,6 +50,7 @@ export function getTaskSourceContextSummary(args: {
   switch (args.provider) {
     case 'github':
     case 'gitlab':
+    case 'azure-devops':
       return getRepoBackedTaskSourceSummary(args)
     case 'linear':
       return getAccountBackedTaskSourceSummary(args.providerLabel, {
@@ -58,8 +60,9 @@ export function getTaskSourceContextSummary(args: {
         hostAvailability: args.hostAvailability
       })
     case 'jira':
+    case 'asana':
       return getAccountBackedTaskSourceSummary(args.providerLabel, {
-        accountLabel: args.jiraSiteName,
+        accountLabel: args.provider === 'jira' ? args.jiraSiteName : null,
         accountHostId: args.accountHostId,
         hostLabelById: args.hostLabelById,
         hostAvailability: args.hostAvailability
@@ -178,26 +181,6 @@ function getAccountBackedTaskSourceSummary(
       .filter((part): part is string => Boolean(part))
       .join(' · '),
     title: titleParts.join(' · ')
-  }
-}
-
-function getProviderIdentityLabel(
-  identity: TaskProviderIdentity | null | undefined
-): string | null {
-  if (!identity) {
-    return null
-  }
-  switch (identity.provider) {
-    case 'github':
-      return `${identity.owner}/${identity.repo}`
-    case 'gitlab':
-      return identity.namespace && identity.project
-        ? `${identity.namespace}/${identity.project}`
-        : (identity.projectId ?? null)
-    case 'linear':
-      return identity.workspaceName ?? identity.workspaceId ?? null
-    case 'jira':
-      return identity.siteUrl ?? identity.siteId ?? null
   }
 }
 

@@ -69,4 +69,25 @@ describe('Azure DevOps auth per organization', () => {
       isAzureDevOpsOrganizationAncestor('https://dev.azure.com/org', 'https://other.com/org/p')
     ).toBe(false)
   })
+
+  it('treats org.visualstudio.com and dev.azure.com/org as the same organization', () => {
+    expect(
+      isAzureDevOpsOrganizationAncestor(
+        'https://dev.azure.com/Org',
+        'https://org.visualstudio.com/p'
+      )
+    ).toBe(true)
+    expect(
+      isAzureDevOpsOrganizationAncestor(
+        'https://org.visualstudio.com',
+        'https://dev.azure.com/org/p'
+      )
+    ).toBe(true)
+    expect(
+      isAzureDevOpsOrganizationAncestor(
+        'https://dev.azure.com/org',
+        'https://other.visualstudio.com/p'
+      )
+    ).toBe(false)
+  })
 })

@@ -100,6 +100,11 @@ export type NewWorkspaceComposerCardProps = {
   onCreate: () => void
   note: string
   onNoteChange: (value: string) => void
+  /** Extra agent instructions, sent before the linked task's details. */
+  agentPrompt?: string
+  onAgentPromptChange?: (value: string) => void
+  /** Hands the current task over to the multi-repository flow. */
+  onUseMultipleRepos?: () => void
   setupConfig: SetupConfig | null
   requiresExplicitSetupChoice: boolean
   setupDecision: 'run' | 'skip' | null

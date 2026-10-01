@@ -2,6 +2,7 @@ import type { ComposerModel } from './composer-model'
 
 type QuickCreationExecutionInput = Pick<
   ComposerModel,
+  | 'agentPrompt'
   | 'clearNewWorkspaceDraft'
   | 'createMultiple'
   | 'effectivePresetId'
@@ -42,7 +43,7 @@ import { ensureHooksConfirmed } from '@/lib/ensure-hooks-confirmed'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { runBackgroundWorktreeCreation } from '@/lib/worktree-creation-flow'
 import { translate } from '@/i18n/i18n'
-import { resolveQuickCreateLinkedWorkItemPrompt } from '@/lib/linked-work-item-context'
+import { resolveQuickCreateAgentPrompt } from './quick-agent-instructions'
 import { buildQuickComposerStartup } from './quick-startup-plan'
 import { buildQuickCreationRequest } from './quick-creation-request'
 import type { PendingSmartGitHubSubmitResolution } from './source-selection-decisions'
@@ -50,6 +51,7 @@ import { planAgentSessionLaunch } from '@/lib/agent-session-launch-plan'
 
 export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
   const {
+    agentPrompt,
     clearNewWorkspaceDraft,
     createMultiple,
     effectivePresetId,
@@ -123,8 +125,12 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
 
       const promptLinkedWorkItem = agent === null ? null : submitLinkedWorkItem
 
-      const { prompt: quickPrompt, draftPrompt: quickDraftPrompt } =
-        resolveQuickCreateLinkedWorkItemPrompt(promptLinkedWorkItem, trimmedNote)
+      const { prompt: quickPrompt, draftPrompt: quickDraftPrompt } = resolveQuickCreateAgentPrompt({
+        hasAgent: agent !== null,
+        linkedWorkItem: promptLinkedWorkItem,
+        instructions: agentPrompt,
+        note: trimmedNote
+      })
 
       const {
         startupPlan,
@@ -276,6 +282,7 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
       }
     },
     [
+      agentPrompt,
       clearNewWorkspaceDraft,
       createMultiple,
       effectivePresetId,

@@ -19,6 +19,13 @@ describe('slugifyForWorkspaceName', () => {
     expect(slugifyForWorkspaceName('a'.repeat(80))).toBe('a'.repeat(48))
   })
 
+  it('drops accents and sentence punctuation instead of splitting words', () => {
+    expect(slugifyForWorkspaceName('Envío justificantes. 63580 id')).toBe(
+      'envio-justificantes-63580-id'
+    )
+    expect(slugifyForWorkspaceName('Migración v1.2 añadida')).toBe('migracion-v1.2-anadida')
+  })
+
   it('removes apostrophes inside words instead of splitting them', () => {
     expect(slugifyForWorkspaceName("Can't enable browser notifications")).toBe(
       'cant-enable-browser-notifications'

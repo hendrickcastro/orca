@@ -25,6 +25,8 @@ export type WorktreeCardLinearIssueDisplay = {
 }
 
 export type WorktreeCardJiraIssueDisplay = {
+  /** Account-backed task providers share this row; Jira is the original. */
+  provider: 'jira' | 'asana' | 'azure-devops'
   identifier: string
   title: string
   url: string

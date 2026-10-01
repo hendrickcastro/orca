@@ -193,6 +193,14 @@ function QuickTabBody({
   const handleCreate = useCallback(async (): Promise<void> => {
     await submitQuick(quickAgent)
   }, [quickAgent, submitQuick])
+  const openModal = useAppStore((s) => s.openModal)
+  // Why: replacing the modal slot hands the task and typed instructions to the multi-repo flow.
+  const handleUseMultipleRepos = useCallback((): void => {
+    openModal('multi-repo-workspace', {
+      prompt: cardProps.agentPrompt,
+      linkedWorkItem: cardProps.smartNameSelection ? (modalData.linkedWorkItem ?? null) : null
+    })
+  }, [cardProps.agentPrompt, cardProps.smartNameSelection, modalData.linkedWorkItem, openModal])
   // Why: Add Project layers over the composer as a nested dialog instead of
   // replacing it in the activeModal slot — closing the composer mid-flow (and
   // losing the typed name/prompt) was the old, abrupt behavior. Once opened it
@@ -312,6 +320,7 @@ function QuickTabBody({
         onCreate={() => void handleCreate()}
         onAddProjectOverride={handleOpenAddProject}
         onNestedDialogOpenChange={setSetLocationOpen}
+        onUseMultipleRepos={handleUseMultipleRepos}
       />
       <AgentSettingsDialog open={agentSettingsOpen} onOpenChange={setAgentSettingsOpen} />
       {addProjectMounted ? (

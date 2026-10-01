@@ -1,3 +1,4 @@
+import type { WorkspaceSourceSelectionKind } from '../../../../shared/new-workspace/workspace-source'
 import type React from 'react'
 import type { useAppStore } from '@/store'
 import type { parseGitHubIssueOrPRLink, RepoSlug } from '@/lib/github-links'
@@ -63,7 +64,7 @@ export type NormalizedSmartWorkspaceNameFieldProps = Omit<
 }
 
 export type SmartWorkspaceNameSelection = {
-  kind: 'github-pr' | 'github-issue' | 'gitlab-mr' | 'gitlab-issue' | 'branch' | 'linear' | 'jira'
+  kind: WorkspaceSourceSelectionKind
   label: string
   url?: string
 }

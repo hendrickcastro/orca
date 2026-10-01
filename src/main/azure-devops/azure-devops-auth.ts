@@ -37,19 +37,32 @@ function envAuthHeaders(config: AzureDevOpsAuthConfig): Record<string, string> {
   return config.pat ? basicAuthHeaders(config.username, config.pat) : {}
 }
 
+// Why: `org.visualstudio.com` is the legacy host of `dev.azure.com/org`; a PAT saved under one
+// must authenticate remotes that use the other.
+function canonicalAzureDevOpsLocation(value: string): { origin: string; path: string } {
+  const url = new URL(value)
+  const host = url.hostname.toLowerCase()
+  const path = url.pathname.replace(/\/+$/, '').toLowerCase()
+  if (host.endsWith('.visualstudio.com')) {
+    return {
+      origin: 'https://dev.azure.com',
+      path: `/${host.slice(0, -'.visualstudio.com'.length)}${path}`
+    }
+  }
+  return { origin: url.origin.toLowerCase(), path }
+}
+
 /** Organization names are case-insensitive, so `dev.azure.com/Org` covers `dev.azure.com/org/project`. */
 export function isAzureDevOpsOrganizationAncestor(
   organizationUrl: string,
   baseUrl: string
 ): boolean {
   try {
-    const organization = new URL(organizationUrl)
-    const target = new URL(baseUrl)
-    const organizationPath = organization.pathname.replace(/\/+$/, '').toLowerCase()
-    const targetPath = target.pathname.replace(/\/+$/, '').toLowerCase()
+    const organization = canonicalAzureDevOpsLocation(organizationUrl)
+    const target = canonicalAzureDevOpsLocation(baseUrl)
     return (
-      organization.origin.toLowerCase() === target.origin.toLowerCase() &&
-      (targetPath === organizationPath || targetPath.startsWith(`${organizationPath}/`))
+      organization.origin === target.origin &&
+      (target.path === organization.path || target.path.startsWith(`${organization.path}/`))
     )
   } catch {
     return false

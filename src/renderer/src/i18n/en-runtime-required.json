@@ -166,6 +166,8 @@
         "9ae151b26b": "linear",
         "a70153f583": "connecting",
         "a9f256ecea": "No GitLab issues match this filter.",
+        "asanaNoTasks": "No open tasks here.",
+        "asanaPickProject": "Choose a project to see its open tasks.",
         "b2007ba885": "project",
         "b95623e93f": "Atlassian API token",
         "bbec4717ee": "mr",
@@ -1810,10 +1812,18 @@
             "control": {
               "integration": {
                 "cards": {
+                  "087feb92f1": ", or set",
+                  "0eb50d5593": "Pull requests and build statuses via Azure DevOps REST API tokens.",
+                  "186a6689df": "ORCA_AZURE_DEVOPS_API_BASE_URL",
                   "19416c874c": "ORCA_BITBUCKET_API_TOKEN",
+                  "48842720d2": "ORCA_AZURE_DEVOPS_TOKEN",
                   "63a7f47392": "ORCA_BITBUCKET_EMAIL",
+                  "7bbc9c64f0": "Set",
+                  "7bd345e3f6": "only when Orca cannot derive the API base URL from the git remote.",
                   "a924e8dcd1": "Pull requests and build statuses via Bitbucket Cloud API tokens.",
+                  "b8a10b07c1": ". Set",
                   "e63fe8f627": "ORCA_BITBUCKET_ACCESS_TOKEN",
+                  "fbfd237f5e": "ORCA_AZURE_DEVOPS_ACCESS_TOKEN",
                   "fc71a0e7aa": "and",
                   "statusAuthFailed": "Auth failed",
                   "statusConfigured": "Configured",
@@ -2801,9 +2811,6 @@
         "toggleDetails": "Toggle turn details",
         "workedFor": "Worked for {{value0}}",
         "workingFor": "Working for {{value0}}"
-      },
-      "subagents": {
-        "unnamed": "Subagent"
       },
       "tool": {
         "countN": "{{value0}} tool calls",

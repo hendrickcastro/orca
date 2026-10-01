@@ -4,6 +4,11 @@ import type {
   AzureDevOpsConnectionStatus
 } from '../../shared/azure-devops-credentials'
 import type {
+  AzureDevOpsPullRequestListArgs,
+  AzureDevOpsTaskListResult,
+  AzureDevOpsWorkItemListArgs
+} from '../../shared/azure-devops-tasks'
+import type {
   BitbucketConnectArgs,
   BitbucketConnectionStatus
 } from '../../shared/bitbucket-credentials'
@@ -31,6 +36,8 @@ export type AzureDevOpsApi = {
   connect: (args: AzureDevOpsConnectArgs) => Promise<AzureDevOpsConnectResult>
   disconnect: (organizationUrl: string) => Promise<void>
   status: () => Promise<AzureDevOpsConnectionStatus>
+  listWorkItems: (args: AzureDevOpsWorkItemListArgs) => Promise<AzureDevOpsTaskListResult>
+  listPullRequests: (args: AzureDevOpsPullRequestListArgs) => Promise<AzureDevOpsTaskListResult>
 }
 
 export type BitbucketApi = {

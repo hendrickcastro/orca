@@ -29,11 +29,26 @@ export type JiraTaskProviderIdentity = {
   projectKey?: string | null
 }
 
+export type AzureDevOpsTaskProviderIdentity = {
+  provider: 'azure-devops'
+  organizationUrl?: string | null
+  project?: string | null
+  repository?: string | null
+}
+
+export type AsanaTaskProviderIdentity = {
+  provider: 'asana'
+  workspaceId?: string | null
+  workspaceName?: string | null
+}
+
 export type TaskProviderIdentity =
   | GitHubTaskProviderIdentity
   | GitLabTaskProviderIdentity
   | LinearTaskProviderIdentity
   | JiraTaskProviderIdentity
+  | AzureDevOpsTaskProviderIdentity
+  | AsanaTaskProviderIdentity
 
 export function normalizeTaskProviderIdentity(
   provider: TaskProvider,
@@ -79,6 +94,19 @@ export function normalizeTaskProviderIdentity(
         siteUrl: normalizeNonEmptyString(raw.siteUrl),
         projectKey: normalizeNonEmptyString(raw.projectKey)
       }
+    case 'azure-devops':
+      return {
+        provider,
+        organizationUrl: normalizeNonEmptyString(raw.organizationUrl),
+        project: normalizeNonEmptyString(raw.project),
+        repository: normalizeNonEmptyString(raw.repository)
+      }
+    case 'asana':
+      return {
+        provider,
+        workspaceId: normalizeNonEmptyString(raw.workspaceId),
+        workspaceName: normalizeNonEmptyString(raw.workspaceName)
+      }
   }
 }
 
@@ -112,6 +140,12 @@ export function isStoredTaskProviderIdentity(provider: TaskProvider, identity: u
       )
     case 'jira':
       return ['siteId', 'siteUrl', 'projectKey'].every((key) => isNullableOptionalString(raw[key]))
+    case 'azure-devops':
+      return ['organizationUrl', 'project', 'repository'].every((key) =>
+        isNullableOptionalString(raw[key])
+      )
+    case 'asana':
+      return ['workspaceId', 'workspaceName'].every((key) => isNullableOptionalString(raw[key]))
   }
 }
 
@@ -119,7 +153,9 @@ const TASK_PROVIDER_IDENTITY_FIELDS: Record<TaskProvider, readonly string[]> = {
   github: ['owner', 'repo', 'host'],
   gitlab: ['projectId', 'namespace', 'project', 'webUrl'],
   linear: ['workspaceId', 'workspaceName', 'teamId', 'teamKey'],
-  jira: ['siteId', 'siteUrl', 'projectKey']
+  jira: ['siteId', 'siteUrl', 'projectKey'],
+  'azure-devops': ['organizationUrl', 'project', 'repository'],
+  asana: ['workspaceId', 'workspaceName']
 }
 
 export function areTaskProviderIdentitiesEqual(
@@ -157,6 +193,12 @@ export function taskProviderIdentityCachePart(
       return [identity.workspaceId, identity.teamId ?? identity.teamKey].filter(Boolean).join('/')
     case 'jira':
       return [identity.siteId ?? identity.siteUrl, identity.projectKey].filter(Boolean).join('/')
+    case 'azure-devops':
+      return [identity.organizationUrl, identity.project, identity.repository]
+        .filter(Boolean)
+        .join('/')
+    case 'asana':
+      return identity.workspaceId ?? ''
   }
 }
 

@@ -35,6 +35,7 @@ import type { GithubPullRequestApi } from './api/github-pull-request-api'
 import type { GithubWorkItemApi } from './api/github-work-item-api'
 import type { GitLabApi } from './api/gitlab-api'
 import type { AzureDevOpsApi, BitbucketApi, HostedReviewApi } from './api/hosted-review-api'
+import type { AsanaApi } from './api/asana-bridge'
 import type { JiraApi } from './api/jira-api'
 import type { LinearApi } from './api/linear-api'
 import type { MobileApi } from './api/mobile-api'
@@ -92,6 +93,7 @@ export type PreloadApi = {
   gl: GitLabApi
   bitbucket: BitbucketApi
   azureDevOps: AzureDevOpsApi
+  asana: AsanaApi
   linear: LinearApi
   jira: JiraApi
   starNag: StarNagApi

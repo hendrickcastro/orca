@@ -150,6 +150,33 @@ function capLinkedContextSourceLines(args: { sourceLines: string; fixedChars: nu
   return [capped, truncationLine].filter(Boolean).join('\n')
 }
 
+const LINKED_TASK_PROVIDER_LABELS: Partial<Record<TaskProvider, string>> = {
+  asana: 'Asana task',
+  'azure-devops': 'Azure DevOps item',
+  jira: 'Jira issue'
+}
+
+/** Instruction plus the contained provider prose, when the source fetched the task's content. */
+function buildLinkedTaskContextBlocks(linkedWorkItem: {
+  provider?: TaskProvider
+  title?: string
+  linkedContext?: LinkedWorkItemContext
+}): string[] {
+  const contained = buildContainedLinkedContextBlock(linkedWorkItem.linkedContext)
+  if (!contained) {
+    return []
+  }
+  const label =
+    LINKED_TASK_PROVIDER_LABELS[linkedWorkItem.linkedContext?.provider ?? 'github'] ?? 'task'
+  const title = linkedWorkItem.title?.trim()
+  // Why outside the block: the block's own header tells the agent not to obey its contents, so
+  // the request to work on the task has to come from the trusted part of the prompt.
+  const instruction = title
+    ? `Work on the linked ${label} "${title}". Its details follow.`
+    : `Work on the linked ${label}. Its details follow.`
+  return [instruction, contained]
+}
+
 export function getLinkedWorkItemPromptContext(
   linkedWorkItem:
     | (Pick<
@@ -171,9 +198,8 @@ export function getLinkedWorkItemPromptContext(
       : { linkedUrls: [], linkedContextBlocks: [] }
   }
   const linkedUrl = linkedWorkItem?.url?.trim()
-  return linkedUrl
-    ? { linkedUrls: [linkedUrl], linkedContextBlocks: [] }
-    : { linkedUrls: [], linkedContextBlocks: [] }
+  const linkedContextBlocks = linkedWorkItem ? buildLinkedTaskContextBlocks(linkedWorkItem) : []
+  return { linkedUrls: linkedUrl ? [linkedUrl] : [], linkedContextBlocks }
 }
 
 export function getLaunchableWorkItemDraftContent(args: {
@@ -196,7 +222,10 @@ export function getLaunchableWorkItemDraftContent(args: {
     })
     return linearBlock ? formatDraftContextBlock(linearBlock) : ''
   }
-  return args.url
+  const taskBlocks = buildLinkedTaskContextBlocks(args)
+  return taskBlocks.length > 0
+    ? formatDraftContextBlock([args.url, ...taskBlocks].join('\n\n'))
+    : args.url
 }
 
 export function resolveQuickCreateLinkedWorkItemPrompt(
@@ -225,7 +254,13 @@ export function resolveQuickCreateLinkedWorkItemPrompt(
       })
     : null
   const linearDraft = linearBlock ? formatDraftContextBlock(linearBlock) : null
-  const linkedUrl = linkedWorkItem?.url?.trim() || null
+  const taskBlocks =
+    linkedWorkItem && !linearBlock ? buildLinkedTaskContextBlocks(linkedWorkItem) : []
+  const urlOnly = linkedWorkItem?.url?.trim() || null
+  const linkedUrl =
+    taskBlocks.length > 0
+      ? formatDraftContextBlock([urlOnly, ...taskBlocks].filter(Boolean).join('\n\n'))
+      : urlOnly
   const draftPrompt = linearDraft
     ? [trimmedNote, linearDraft].filter(Boolean).join('\n\n')
     : linkedUrl

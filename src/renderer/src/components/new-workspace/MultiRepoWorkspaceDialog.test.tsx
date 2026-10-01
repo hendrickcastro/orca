@@ -4,6 +4,12 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../../../shared/repo-types'
 import { fixture, repo } from '@/lib/multi-repo-workspace-test-fixtures'
+import {
+  encodeWorkspaceFilePaths,
+  WORKSPACE_FILE_DRAG_SOURCE_MIME,
+  WORKSPACE_FILE_PATHS_MIME,
+  WORKSPACE_FILE_PATH_MIME
+} from '@/lib/workspace-file-drag'
 
 const mocks = vi.hoisted(() => {
   const repos: Repo[] = []
@@ -113,6 +119,32 @@ function fill(id: string, value: string): void {
   })
 }
 
+function dropOnPrompt(paths: string[], executionHostId: string): void {
+  const data: Record<string, string> = {
+    [WORKSPACE_FILE_PATH_MIME]: paths[0],
+    [WORKSPACE_FILE_PATHS_MIME]: encodeWorkspaceFilePaths(paths),
+    [WORKSPACE_FILE_DRAG_SOURCE_MIME]: JSON.stringify({
+      executionHostId,
+      workspaceId: 'workspace-1',
+      version: 1
+    })
+  }
+  const dataTransfer = {
+    types: Object.keys(data),
+    getData: (type: string) => data[type] ?? '',
+    dropEffect: 'none',
+    effectAllowed: 'copyMove'
+  }
+  const target = document.getElementById('multi-repo-prompt')!
+  act(() => {
+    for (const type of ['dragover', 'drop']) {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+      target.dispatchEvent(event)
+    }
+  })
+}
+
 function renderFilled(): void {
   act(() => root.render(<MultiRepoWorkspaceDialog onClose={close} />))
   fill('multi-repo-name', 'Search')
@@ -168,6 +200,54 @@ describe('multi-repository task dialog', () => {
     fill('multi-repo-branch', 'hotfix/custom')
     fill('multi-repo-name', 'Other')
     expect(branch instanceof HTMLInputElement && branch.value).toBe('hotfix/custom')
+  })
+
+  it('starts from a task handed over by the composer and sends its details to Claude', async () => {
+    const linkedWorkItem = {
+      provider: 'asana' as const,
+      type: 'issue' as const,
+      number: 0,
+      title: 'Envío justificantes',
+      url: 'https://app.asana.com/0/9/42',
+      linkedContext: {
+        provider: 'asana' as const,
+        version: 1 as const,
+        renderedText: 'Asana task: Envío justificantes\n\nDescription:\nRevisar la cola.'
+      }
+    }
+    await act(async () =>
+      root.render(<MultiRepoWorkspaceDialog onClose={close} initial={{ linkedWorkItem }} />)
+    )
+    const name = document.getElementById('multi-repo-name')
+    const branch = document.getElementById('multi-repo-branch')
+    expect(name instanceof HTMLInputElement && name.value).toBe('Envío justificantes')
+    expect(branch instanceof HTMLInputElement && branch.value).toBe('feature/envio-justificantes')
+    expect(document.body.textContent).toContain('Details included')
+    expect(button('Create and start Claude').disabled).toBe(false)
+
+    await act(async () => button('Create and start Claude').click())
+
+    const comment = api.folderWorkspaces.update.mock.calls.at(-1)?.[0].updates.comment
+    expect(comment).toContain('https://app.asana.com/0/9/42')
+    expect(comment).toContain('Revisar la cola.')
+    expect(mocks.launch).toHaveBeenCalledTimes(1)
+  })
+
+  it('adds the path of a local file dragged from the explorer to the prompt', () => {
+    renderFilled()
+    dropOnPrompt(['D:\\Front\\src\\app.ts', 'E:\\Back\\docs'], 'local')
+    const prompt = document.getElementById('multi-repo-prompt')
+    expect(prompt instanceof HTMLTextAreaElement && prompt.value).toBe(
+      'Implement UI and API D:\\Front\\src\\app.ts E:\\Back\\docs'
+    )
+  })
+
+  it('refuses a path dragged from a remote workspace', () => {
+    renderFilled()
+    dropOnPrompt(['/home/me/app.ts'], 'ssh:server')
+    const prompt = document.getElementById('multi-repo-prompt')
+    expect(prompt instanceof HTMLTextAreaElement && prompt.value).toBe('Implement UI and API')
+    expect(document.body.textContent).toContain('Only files and folders on this computer')
   })
 
   it('lists skills, MCP servers and docs on @ and resolves the picked one for Claude', async () => {

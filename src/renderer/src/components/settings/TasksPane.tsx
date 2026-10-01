@@ -7,6 +7,8 @@ import {
   normalizeVisibleTaskProviders,
   resolveVisibleTaskProvider
 } from '../../../../shared/task-providers'
+import { AsanaIcon } from '@/components/icons/AsanaIcon'
+import { AzureDevOpsIcon } from '@/components/icons/AzureDevOpsIcon'
 import { JiraIcon } from '@/components/icons/JiraIcon'
 import { LinearIcon } from '@/components/icons/LinearIcon'
 import { Button } from '@/components/ui/button'
@@ -89,6 +91,30 @@ const PROVIDER_META: Record<
       )
     },
     Icon: ({ className }) => <JiraIcon className={className} />
+  },
+  'azure-devops': {
+    get label() {
+      return translate('auto.components.settings.TasksPane.azureDevOpsLabel', 'Azure DevOps')
+    },
+    get description() {
+      return translate(
+        'auto.components.settings.TasksPane.azureDevOpsDescription',
+        'Browse Azure Boards work items and pull requests and start workspaces from them.'
+      )
+    },
+    Icon: ({ className }) => <AzureDevOpsIcon className={className} />
+  },
+  asana: {
+    get label() {
+      return translate('auto.components.settings.TasksPane.asanaLabel', 'Asana')
+    },
+    get description() {
+      return translate(
+        'auto.components.settings.TasksPane.asanaDescription',
+        'Connect Asana to browse and create tasks and start workspaces from them.'
+      )
+    },
+    Icon: ({ className }) => <AsanaIcon className={className} />
   }
 }
 

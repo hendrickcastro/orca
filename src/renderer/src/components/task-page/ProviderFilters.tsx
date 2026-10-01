@@ -3,6 +3,8 @@ import { TaskPageGitHubFilters } from './github/Filters'
 import { TaskPageLinearFilters } from './linear/Filters'
 import { TaskPageJiraFilters } from './jira/Filters'
 import { TaskPageGitLabFilters } from './gitlab/Filters'
+import { TaskPageAzureDevOpsFilters } from './azure-devops/Filters'
+import { TaskPageAsanaFilters } from './asana/Filters'
 export function TaskPageProviderFilters({
   model
 }: {
@@ -19,5 +21,9 @@ export function TaskPageProviderFilters({
     <TaskPageJiraFilters model={model} />
   ) : taskSource === 'gitlab' ? (
     <TaskPageGitLabFilters model={model} />
+  ) : taskSource === 'azure-devops' ? (
+    <TaskPageAzureDevOpsFilters model={model} />
+  ) : taskSource === 'asana' ? (
+    <TaskPageAsanaFilters />
   ) : null
 }
