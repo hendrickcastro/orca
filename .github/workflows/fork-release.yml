@@ -65,6 +65,10 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
+          # Why: a failed run leaves its draft behind without a tag, so this run reuses the number.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' 2>/dev/null | grep -qx true; then
+            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes
+          fi
           # Why draft: the updater must never see a release until both platforms uploaded.
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
             --title "Orca knwr $VERSION" \
@@ -138,7 +142,8 @@ jobs:
 
   build-macos:
     needs: prepare
-    runs-on: macos-14
+    # Why macos-15: the Computer Use helper needs Swift 6 tools (Xcode 16).
+    runs-on: macos-15
     timeout-minutes: 150
     env:
       NODE_OPTIONS: --max-old-space-size=4096
