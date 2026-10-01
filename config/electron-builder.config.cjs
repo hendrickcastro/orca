@@ -534,6 +534,8 @@ module.exports = {
       role: 'Editor',
       rank: 'Alternate'
     })),
+    // Why: the default zip name embeds productName, and a space in a GitHub asset name breaks the updater feed.
+    artifactName: `${productIdentity.PRODUCT_PACKAGE_NAME}-macos-\${arch}.\${ext}`,
     icon: 'resources/build/icon.icns',
     entitlements: 'resources/build/entitlements.mac.plist',
     entitlementsInherit: 'resources/build/entitlements.mac.plist',

@@ -34,11 +34,12 @@ afterEach(() => {
 })
 
 describe('electron-builder dev-channel identity', () => {
-  it('keeps the SignPath publisherName on stable Windows builds', () => {
+  // Why: fork builds ship unsigned on every channel, so stable must not pin a publisherName either.
+  it('ships stable Windows builds without a publisherName in the fork', () => {
     const config = loadConfigWithEnv({})
 
-    expect(config.win.signtoolOptions.publisherName).toBe('SignPath Foundation')
-    expect(config.win.verifyUpdateCodeSignature).toBeUndefined()
+    expect(config.win.signtoolOptions.publisherName).toBeUndefined()
+    expect(config.win.verifyUpdateCodeSignature).toBe(false)
     expect(config.publish.repo).toBe('orca')
     expect(config.publish.releaseType).toBe('draft')
   })

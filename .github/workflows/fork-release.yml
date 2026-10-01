@@ -1,0 +1,228 @@
+name: Fork Release (Orca knwr)
+
+# Builds Windows and macOS installers for every push to main of this fork and publishes them
+# as one GitHub release, which is the feed the installed app's updater reads.
+# Kept in its own file so upstream syncs never conflict with it.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # Why serialized: each run takes the next version number from the tags of the previous one.
+  group: fork-release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository == 'hendrickcastro/orca'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Compute the fork version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(node -p "require('./package.json').version")"
+          IFS=. read -r major minor patch <<<"${base%%-*}"
+          # Why patch*100+n: every fork build must sort above the last one and above the upstream
+          # version it is built from, and Windows caps each version part at 65535.
+          floor=$((patch * 100))
+          last="$(git ls-remote --tags "https://github.com/${GITHUB_REPOSITORY}.git" "refs/tags/v${major}.${minor}.*" \
+            | sed -E 's#.*refs/tags/v##; s#\^\{\}$##' \
+            | awk -F. -v M="$major" -v m="$minor" -v lo="$floor" \
+                '$1 == M && $2 == m && $3 >= lo && $3 < lo + 100 { print $3 - lo }' \
+            | sort -n | tail -1)"
+          next=$(( ${last:-0} + 1 ))
+          if (( next > 99 )); then
+            echo "::error::99 fork releases already exist for upstream ${base}; merge a newer upstream version first."
+            exit 1
+          fi
+          version="${major}.${minor}.$(( floor + next ))"
+          echo "version=${version}" >>"$GITHUB_OUTPUT"
+          echo "tag=v${version}" >>"$GITHUB_OUTPUT"
+          echo "Fork version ${version} (upstream ${base}, build ${next})"
+
+      - name: Create the draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Why draft: the updater must never see a release until both platforms uploaded.
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
+            --title "Orca knwr $VERSION" \
+            --notes "Automatic build of ${GITHUB_SHA} from main."
+
+  build-windows:
+    needs: prepare
+    runs-on: windows-2022
+    timeout-minutes: 120
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/setup@v2
+        with:
+          install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      - name: Cache electron-builder downloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: electron-builder-win-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            electron-builder-win-
+
+      - name: Install dependencies
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: pnpm install --frozen-lockfile
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Stamp the fork version
+        shell: bash
+        run: npm pkg set "version=${VERSION}"
+
+      - name: Build app
+        shell: bash
+        run: pnpm build:release
+
+      - name: Publish Windows installer
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORCA_BUILD_COMMIT: ${{ github.sha }}
+          EP_GH_IGNORE_TIME: 'true'
+        run: |
+          set -euo pipefail
+          node config/scripts/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder --config config/electron-builder.config.cjs --win \
+            --publish always -c.publish.releaseType=draft
+
+  build-macos:
+    needs: prepare
+    runs-on: macos-14
+    timeout-minutes: 150
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+      VERSION: ${{ needs.prepare.outputs.version }}
+      ORCA_COMPUTER_MACOS_BUNDLE_ID: com.knwr.orca.computer-use
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/setup@v2
+        with:
+          install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+
+      - name: Cache electron-builder downloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: electron-builder-mac-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            electron-builder-mac-
+
+      # Why both CPUs: the DMG and ZIP targets ship x64 and arm64 from one runner.
+      - name: Install dependencies
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: pnpm install --frozen-lockfile --cpu=current,x64,arm64
+
+      - uses: ./.github/actions/install-mobile-dependencies
+
+      - name: Stamp the fork version
+        run: npm pkg set "version=${VERSION}"
+
+      - name: Build app
+        run: pnpm build:release
+
+      # Why ad-hoc signing: the fork has no Apple Developer ID; arm64 still needs a signature to launch.
+      - name: Publish macOS installers
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORCA_BUILD_COMMIT: ${{ github.sha }}
+          EP_GH_IGNORE_TIME: 'true'
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          set -euo pipefail
+          node config/scripts/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder --config config/electron-builder.config.cjs --mac \
+            --publish always -c.publish.releaseType=draft -c.mac.identity=-
+
+  publish:
+    needs: [prepare, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify assets and publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          echo "Assets on $TAG:"
+          echo "$assets"
+          for required in latest.yml latest-mac.yml orca-knwr-windows-setup.exe \
+            orca-knwr-macos-arm64.dmg orca-knwr-macos-x64.dmg; do
+            if ! grep -qx "$required" <<<"$assets"; then
+              echo "::error::$TAG is missing $required; leaving the release as a draft."
+              exit 1
+            fi
+          done
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          echo "Published $TAG."
