@@ -28,8 +28,10 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
     steps:
+      # Why full history: the release notes list every commit since the previous release.
       - uses: actions/checkout@v6
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Compute the fork version
@@ -69,18 +71,17 @@ jobs:
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft' 2>/dev/null | grep -qx true; then
             gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes
           fi
-          # Why draft: the updater must never see a release until both platforms uploaded.
+          # Why the marker: only releases with generated notes bound the next changelog, so the
+          # first one lists everything the fork added and later ones only what is new.
+          previous="$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=50" \
+            --jq '[.[] | select(.draft == false and (.body // "" | contains("<!-- fork-release-notes -->")))][0].tag_name // ""')"
+          git fetch -q https://github.com/stablyai/orca.git main
           {
-            echo "Automatic build of ${GITHUB_SHA} from main."
-            echo
-            echo "**macOS** (unsigned build), install or update with:"
-            echo
-            echo '```'
-            echo "curl -fsSL https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/install-macos.sh | bash"
-            echo '```'
-            echo
-            echo "**Windows**: run orca-knwr-windows-setup.exe; installed copies update themselves from the app."
+            echo '<!-- fork-release-notes -->'
+            bash config/fork/release-notes.sh "$previous" "$GITHUB_SHA" FETCH_HEAD "$GITHUB_REPOSITORY"
           } >"$RUNNER_TEMP/notes.md"
+          echo "Changelog base: ${previous:-everything the fork added}"
+          # Why draft: the updater must never see a release until both platforms uploaded.
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
             --title "Orca knwr $VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md"
@@ -216,8 +217,10 @@ jobs:
         run: |
           set -euo pipefail
           node config/scripts/ensure-native-runtime.mjs --runtime=electron
-          pnpm exec electron-builder --config config/electron-builder.config.cjs --mac \
-            --publish always -c.publish.releaseType=draft -c.mac.identity=-
+          # Why DMG only: the ZIP and latest-mac.yml feed only Squirrel.Mac, which cannot install an
+          # unsigned build; install-macos.sh uses the DMG, so the rest would just take space.
+          pnpm exec electron-builder --config config/electron-builder.config.cjs --mac dmg --x64 --arm64 \
+            --publish always -c.publish.releaseType=draft -c.mac.identity=- -c.dmg.writeUpdateInfo=false
 
   publish:
     needs: [prepare, build-windows, build-macos]
@@ -245,7 +248,7 @@ jobs:
           assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
           echo "Assets on $TAG:"
           echo "$assets"
-          for required in latest.yml latest-mac.yml orca-knwr-windows-setup.exe \
+          for required in latest.yml orca-knwr-windows-setup.exe \
             orca-knwr-macos-arm64.dmg orca-knwr-macos-x64.dmg install-macos.sh; do
             if ! grep -qx "$required" <<<"$assets"; then
               echo "::error::$TAG is missing $required; leaving the release as a draft."
