@@ -1809,7 +1809,8 @@
         "hostConnectionFailed": "Connection failed",
         "agentInstructions": "Instructions for the agent (optional)",
         "agentInstructionsPlaceholder": "Add context or constraints. The linked task is sent to the agent as well.",
-        "useMultipleRepositories": "Work across several repositories…"
+        "useMultipleRepositories": "Work across several repositories…",
+        "agentInstructionsMentionPlaceholder": "Add context or constraints. Type @ for skills, workflows and files. The linked task is sent as well."
       },
       "NewWorkspaceComposerModal": {
         "createWorktree": "Create worktree",
@@ -2425,8 +2426,8 @@
         "asanaProjects": "Projects",
         "azureAssignee": "Assignee",
         "asanaDue": "Due",
-        "asanaPickProject": "Choose a project to see its open tasks.",
-        "asanaNoTasks": "No open tasks here.",
+        "asanaPickProject": "Choose a project to see its tasks.",
+        "asanaNoTasks": "No tasks here.",
         "asanaStartWorkspace": "Start workspace from {{value0}}",
         "asanaOpenInBrowser": "Open in Asana",
         "azureWorkItems": "Work items",
@@ -18806,7 +18807,9 @@
       "docs": "Docs",
       "files": "Files",
       "global": "Global",
-      "workflows": "Workflows"
+      "workflows": "Workflows",
+      "globalScope": "global",
+      "select": "Select"
     },
     "kind": {
       "feature": "Feature",
@@ -18831,6 +18834,7 @@
     "kindLabel": "Type",
     "linkedTaskDetails": "Details included",
     "removeLinkedTask": "Remove the linked task",
-    "repoReferencesTitle": "Repository skills and workflows (click to reference them):"
+    "repoReferencesTitle": "Repository skills and workflows (click to reference them):",
+    "referencesHintWorkflows": "Type @ to reference skills, workflows, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill:, @workflow: or @mcp: to narrow the list."
   }
 }

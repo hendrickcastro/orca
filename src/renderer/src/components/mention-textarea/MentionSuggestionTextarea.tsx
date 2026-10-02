@@ -1,4 +1,4 @@
-import React, { useCallback, useId, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
@@ -28,6 +28,8 @@ export type MentionSuggestionTextareaProps<T> = {
   /** Rendered as a heading whenever it differs from the previous option's group. */
   getOptionGroup?: (option: T) => string
   renderOption: (option: T) => React.ReactNode
+  /** Opens a side preview of the highlighted option; a click then previews and `select` inserts. */
+  renderPreview?: (option: T, select: () => void) => React.ReactNode
 }
 
 export function MentionSuggestionTextarea<T>({
@@ -47,7 +49,8 @@ export function MentionSuggestionTextarea<T>({
   getOptionKey,
   getInsertText,
   getOptionGroup,
-  renderOption
+  renderOption,
+  renderPreview
 }: MentionSuggestionTextareaProps<T>): React.JSX.Element {
   const listboxId = useId()
   const [mentionQuery, setMentionQuery] = useState<MentionQuery | null>(null)
@@ -89,6 +92,12 @@ export function MentionSuggestionTextarea<T>({
     },
     [findQuery, getInsertText, mentionQuery, onInsert, onValueChange, textareaRef, value]
   )
+
+  useEffect(() => {
+    if (showSuggestions) {
+      document.getElementById(`${listboxId}-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
+    }
+  }, [activeIndex, listboxId, showSuggestions])
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (showSuggestions) {
@@ -161,43 +170,65 @@ export function MentionSuggestionTextarea<T>({
               event.preventDefault()
             }
           }}
-          className="w-[var(--radix-popper-anchor-width)]"
+          className={cn(
+            renderPreview
+              ? 'w-[min(46rem,calc(100vw-2rem))]'
+              : 'w-[var(--radix-popper-anchor-width)]'
+          )}
         >
-          <div id={listboxId} role="listbox" className="max-h-64 overflow-y-auto scrollbar-sleek">
-            {suggestions.map((option, index) => {
-              const group = getOptionGroup?.(option)
-              const showGroup =
-                group !== undefined &&
-                (index === 0 || getOptionGroup?.(suggestions[index - 1]) !== group)
-              return (
-                <React.Fragment key={getOptionKey(option)}>
-                  {showGroup && (
-                    <div
-                      role="presentation"
-                      className="px-2 pt-1.5 pb-1 text-[11px] font-medium text-muted-foreground"
-                    >
-                      {group}
-                    </div>
-                  )}
-                  <button
-                    id={`${listboxId}-${index}`}
-                    role="option"
-                    aria-selected={index === activeIndex}
-                    type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault()
-                      insertMention(option)
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[12px]',
-                      index === activeIndex && 'bg-accent text-accent-foreground'
+          {/* Why an opaque layer: the popover surface is translucent and the dialog text behind
+              it made the rows unreadable. */}
+          <div className="flex max-h-80 min-h-0 bg-popover">
+            <div
+              id={listboxId}
+              role="listbox"
+              className={cn(
+                'max-h-80 overflow-y-auto p-1 scrollbar-sleek',
+                renderPreview ? 'w-1/2 shrink-0 border-r border-border/60' : 'w-full'
+              )}
+            >
+              {suggestions.map((option, index) => {
+                const group = getOptionGroup?.(option)
+                const showGroup =
+                  group !== undefined &&
+                  (index === 0 || getOptionGroup?.(suggestions[index - 1]) !== group)
+                return (
+                  <React.Fragment key={getOptionKey(option)}>
+                    {showGroup && (
+                      <div
+                        role="presentation"
+                        className="px-2 pt-1.5 pb-1 text-[11px] font-medium text-muted-foreground"
+                      >
+                        {group}
+                      </div>
                     )}
-                  >
-                    {renderOption(option)}
-                  </button>
-                </React.Fragment>
-              )
-            })}
+                    <button
+                      id={`${listboxId}-${index}`}
+                      role="option"
+                      aria-selected={index === activeIndex}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onMouseEnter={renderPreview ? () => setActiveIndex(index) : undefined}
+                      onClick={() =>
+                        renderPreview ? setActiveIndex(index) : insertMention(option)
+                      }
+                      onDoubleClick={renderPreview ? () => insertMention(option) : undefined}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[12px]',
+                        index === activeIndex && 'bg-accent text-accent-foreground'
+                      )}
+                    >
+                      {renderOption(option)}
+                    </button>
+                  </React.Fragment>
+                )
+              })}
+            </div>
+            {renderPreview && suggestions[activeIndex]
+              ? renderPreview(suggestions[activeIndex], () =>
+                  insertMention(suggestions[activeIndex])
+                )
+              : null}
           </div>
         </PopoverContent>
       ) : null}

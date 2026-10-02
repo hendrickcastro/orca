@@ -56,4 +56,25 @@ describe('repository reference chips', () => {
       'Run the "bugfix-asana" workflow (.claude/workflows/bugfix-asana.js) with the Workflow tool.'
     )
   })
+
+  it('describes docs and MCP servers for the single-repository agent', () => {
+    expect(
+      describeSingleRepoReference(
+        {
+          kind: 'doc',
+          scope: repoScope,
+          name: 'docs/api.md',
+          token: '@api/docs/api.md',
+          path: 'docs/api.md'
+        },
+        'D:/work/api'
+      )
+    ).toBe('Read docs/api.md.')
+    expect(
+      describeSingleRepoReference(
+        { kind: 'mcp', scope: { kind: 'global' }, name: 'cosmosdb', token: '@mcp:cosmosdb' },
+        'D:/work/api'
+      )
+    ).toBe('Use the "cosmosdb" MCP server.')
+  })
 })

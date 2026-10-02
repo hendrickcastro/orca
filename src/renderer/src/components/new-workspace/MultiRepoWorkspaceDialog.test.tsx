@@ -260,11 +260,14 @@ describe('multi-repository task dialog', () => {
       expect.stringContaining('cosmosdb'),
       expect.stringContaining('docs/api.md')
     ])
-    expect(options[1].textContent).toContain('Global')
-    expect(options[2].textContent).toContain('back')
+    expect(options[1].textContent).toContain('global:cosmosdb')
+    expect(options[2].textContent).toContain('back:docs/api.md')
+    // Why click then Select: a click only previews, so a long list can be browsed before picking.
     act(() => {
-      options[2].dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+      options[2].dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
     })
+    expect(document.body.textContent).toMatch(/E:.Back.docs.api\.md/)
+    act(() => button('Select').click())
     const prompt = document.getElementById('multi-repo-prompt')
     expect(prompt instanceof HTMLTextAreaElement && prompt.value).toBe('Follow @back/docs/api.md')
     await act(async () => button('Create and start Claude').click())

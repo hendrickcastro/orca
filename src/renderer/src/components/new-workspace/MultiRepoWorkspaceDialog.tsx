@@ -42,6 +42,8 @@ import {
   type MultiRepoInitialValues
 } from './multi-repo-linked-task'
 import { MultiRepoLinkedTaskRow } from './MultiRepoLinkedTaskRow'
+import { MultiRepoReferencePreview } from './MultiRepoReferencePreview'
+import { joinPath } from '@/lib/path'
 
 function taskKindLabel(kind: MultiRepoTaskKind): string {
   switch (kind) {
@@ -89,6 +91,18 @@ export default function MultiRepoWorkspaceDialog({
   const [started, setStarted] = useState(false)
   const selectedRepos = eligibleRepos.filter((repo) => selected.has(repo.id))
   const { catalog, loading: catalogLoading } = useMultiRepoMentionCatalog(selectedRepos)
+  // Why: repo-relative entries are read from the original checkout until the worktrees exist.
+  const resolveReferencePath = (reference: MultiRepoReference): string | null => {
+    if (!reference.path) {
+      return null
+    }
+    if (reference.kind === 'skill' || reference.scope.kind !== 'repo') {
+      return reference.path
+    }
+    const repoId = reference.scope.repoId
+    const repo = selectedRepos.find((entry) => entry.id === repoId)
+    return repo ? joinPath(repo.path, reference.path) : null
+  }
   const repoChips = useMemo(() => selectRepoReferenceChips(catalog.references), [catalog])
   const insertReference = (reference: MultiRepoReference): void => {
     const textarea = promptRef.current
@@ -289,6 +303,13 @@ export default function MultiRepoWorkspaceDialog({
                 getOptionGroup={(option) => multiRepoMentionGroupLabel(option.kind)}
                 onInsert={(option) => insertedReferencesRef.current.set(option.token, option)}
                 renderOption={(option) => <MultiRepoMentionOption reference={option} />}
+                renderPreview={(option, select) => (
+                  <MultiRepoReferencePreview
+                    reference={option}
+                    absolutePath={resolveReferencePath(option)}
+                    onSelect={select}
+                  />
+                )}
               />
             </div>
             {promptDrop.notice && <p className="text-xs text-destructive">{promptDrop.notice}</p>}
@@ -304,7 +325,7 @@ export default function MultiRepoWorkspaceDialog({
                     'Loading skills, MCP servers, docs and files from the selected repositories…'
                   )
                 : translate(
-                    'multiRepo.referencesHint',
+                    'multiRepo.referencesHintWorkflows',
                     'Type @ to reference skills, workflows, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill:, @workflow: or @mcp: to narrow the list.'
                   )}
             </p>

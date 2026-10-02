@@ -81,6 +81,7 @@
         "2132b670da": "both",
         "7711ad5122": "Local setup command",
         "addHostHint": "Register another machine or Orca server",
+        "agentInstructionsPlaceholder": "Add context or constraints. The linked task is sent to the agent as well.",
         "cloneDestinationPlaceholder": "/parent/directory/on/host",
         "cloneHostSetup": "Clone",
         "cloneProjectOnHost": "Clone project",
@@ -166,8 +167,6 @@
         "9ae151b26b": "linear",
         "a70153f583": "connecting",
         "a9f256ecea": "No GitLab issues match this filter.",
-        "asanaNoTasks": "No open tasks here.",
-        "asanaPickProject": "Choose a project to see its open tasks.",
         "b2007ba885": "project",
         "b95623e93f": "Atlassian API token",
         "bbec4717ee": "mr",
@@ -2956,6 +2955,9 @@
     }
   },
   "multiRepo": {
+    "references": {
+      "global": "Global"
+    },
     "referencesHint": "Type @ to reference skills, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill: or @mcp: to narrow the list."
   },
   "runtimeRpc": {
