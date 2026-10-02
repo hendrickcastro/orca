@@ -12,6 +12,7 @@ import {
   selectTaskPageUnresolvedSourceRepos,
   reconcileTaskPagePagesWithWorkItemsCache
 } from '@/components/task-page-cache-selectors'
+import { withoutOtherForgeSourceRepos } from './task-page-other-forge-source-repos'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 export function useTaskPageGitHubCacheReconciliation(model: TaskPageGitHubDetailModel) {
@@ -63,7 +64,11 @@ export function useTaskPageGitHubCacheReconciliation(model: TaskPageGitHubDetail
 
   // Why: repos that fetched but resolved no GitHub source (#9660) show empty like a genuine zero-result; surface them explicitly with Retry.
   const unresolvedSourceRepos = useMemo(
-    () => selectTaskPageUnresolvedSourceRepos(selectedRepos, perRepoSourceState),
+    () =>
+      withoutOtherForgeSourceRepos(
+        selectTaskPageUnresolvedSourceRepos(selectedRepos, perRepoSourceState),
+        selectedRepos
+      ),
     [selectedRepos, perRepoSourceState]
   )
   useEffect(() => {

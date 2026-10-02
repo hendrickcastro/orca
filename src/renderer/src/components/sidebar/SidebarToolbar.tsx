@@ -1,6 +1,6 @@
 import React from 'react'
-import { Kanban, FolderPlus } from 'lucide-react'
-import MultiRepoWorkspaceDialog from '../new-workspace/MultiRepoWorkspaceDialog'
+import { Kanban } from 'lucide-react'
+import { MultiRepoToolbarButton } from './MultiRepoToolbarButton'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
@@ -31,7 +31,6 @@ const SidebarToolbar = React.memo(function SidebarToolbar({
   // is applied asynchronously after the lazy catalog loads.
   useTranslation()
   const [workspaceBoardMovedHintOpen, setWorkspaceBoardMovedHintOpen] = React.useState(false)
-  const [multiRepoOpen, setMultiRepoOpen] = React.useState(false)
   const movedHintEligibleRef = React.useRef<boolean | null>(null)
   const persistedUIReady = useAppStore((state) => state.persistedUIReady)
   const hasUsedWorkspaceBoard = useAppStore((state) =>
@@ -73,28 +72,12 @@ const SidebarToolbar = React.memo(function SidebarToolbar({
 
   return (
     <div className="mt-auto shrink-0">
-      {multiRepoOpen && <MultiRepoWorkspaceDialog onClose={() => setMultiRepoOpen(false)} />}
       <div className="flex items-center justify-between border-t border-worktree-sidebar-border px-2 py-1.5">
         <div className="flex min-w-0 items-center gap-1">
           <SidebarSettingsHelpMenu />
         </div>
         <div className="flex items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                type="button"
-                onClick={() => setMultiRepoOpen(true)}
-                aria-label={translate('multiRepo.title', 'New multi-repository task')}
-              >
-                <FolderPlus className="size-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" sideOffset={4}>
-              {translate('multiRepo.title', 'New multi-repository task')}
-            </TooltipContent>
-          </Tooltip>
+          <MultiRepoToolbarButton />
           <ScrollToCurrentWorkspaceToolbarButton />
           <Tooltip open={workspaceBoardMovedHintOpen ? true : undefined}>
             <TooltipTrigger asChild>

@@ -4,9 +4,11 @@ import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/h
 import { ExternalLink, MonitorUp, Pencil, StickyNote } from 'lucide-react'
 import { toast } from 'sonner'
 import { LinearIcon } from '@/components/icons/LinearIcon'
-import { JiraIcon } from '@/components/icons/JiraIcon'
-import { AsanaIcon } from '@/components/icons/AsanaIcon'
-import { AzureDevOpsIcon } from '@/components/icons/AzureDevOpsIcon'
+import {
+  linkedTaskDetailLabel,
+  linkedTaskViewLabel,
+  WorktreeCardLinkedTaskIcon
+} from './worktree-card-linked-task-provider'
 import { SelectedTextCopyMenu } from '@/components/SelectedTextCopyMenu'
 import { WORKTREE_NATIVE_CONTEXT_MENU_ATTR } from './WorktreeContextMenu'
 import {
@@ -295,46 +297,27 @@ export function WorktreeCardDetailsHover({
             <WorktreeCardDetailSection>
               <DetailHeader
                 icon={
-                  jiraIssue.provider === 'asana' ? (
-                    <AsanaIcon className="size-3 text-muted-foreground" />
-                  ) : jiraIssue.provider === 'azure-devops' ? (
-                    <AzureDevOpsIcon className="size-3 text-muted-foreground" />
-                  ) : (
-                    <JiraIcon className="size-3 text-muted-foreground" />
-                  )
+                  <WorktreeCardLinkedTaskIcon
+                    issue={jiraIssue}
+                    className="size-3 text-muted-foreground"
+                  />
                 }
                 label={
-                  jiraIssue.provider === 'asana'
-                    ? translate('auto.components.sidebar.WorktreeCardMeta.asanaTask', 'Asana task')
-                    : jiraIssue.provider === 'azure-devops'
-                      ? translate(
-                          'auto.components.sidebar.WorktreeCardMeta.azureDevOpsItem',
-                          'Azure DevOps {{value0}}',
-                          { value0: jiraIssue.identifier }
-                        )
-                      : translate(
-                          'auto.components.sidebar.WorktreeCardMeta.jiraIssue',
-                          'Jira {{value0}}',
-                          { value0: jiraIssue.identifier }
-                        )
+                  linkedTaskDetailLabel(jiraIssue) ??
+                  translate(
+                    'auto.components.sidebar.WorktreeCardMeta.jiraIssue',
+                    'Jira {{value0}}',
+                    { value0: jiraIssue.identifier }
+                  )
                 }
                 actions={
                   <MetadataActionIcon
                     label={
-                      jiraIssue.provider === 'asana'
-                        ? translate(
-                            'auto.components.sidebar.WorktreeCardMeta.viewOnAsana',
-                            'View on Asana'
-                          )
-                        : jiraIssue.provider === 'azure-devops'
-                          ? translate(
-                              'auto.components.sidebar.WorktreeCardMeta.viewOnAzureDevOps',
-                              'View on Azure DevOps'
-                            )
-                          : translate(
-                              'auto.components.sidebar.WorktreeCardMeta.viewOnJira',
-                              'View on Jira'
-                            )
+                      linkedTaskViewLabel(jiraIssue) ??
+                      translate(
+                        'auto.components.sidebar.WorktreeCardMeta.viewOnJira',
+                        'View on Jira'
+                      )
                     }
                     href={jiraIssue.url}
                   >

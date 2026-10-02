@@ -30,7 +30,6 @@ export function getWorktreeCardJiraIssueDisplay(
   }
   const identifier = item.jiraIdentifier ?? String(item.number)
   return {
-    provider: 'jira',
     identifier,
     title: withoutRepeatedJiraIdentifier(item.title, identifier),
     url: item.url

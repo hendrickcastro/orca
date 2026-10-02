@@ -1,8 +1,7 @@
 import React from 'react'
 import { EyeOff, Github, Gitlab, List } from 'lucide-react'
 import { JiraIcon } from '@/components/icons/JiraIcon'
-import { AsanaIcon } from '@/components/icons/AsanaIcon'
-import { AzureDevOpsIcon } from '@/components/icons/AzureDevOpsIcon'
+import { ForkTaskProviderShortcuts } from '../fork-task-provider-presentation'
 import { LinearIcon } from '@/components/icons/LinearIcon'
 import {
   ContextMenu,
@@ -230,28 +229,11 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
                 <JiraIcon className="size-3.5" />
               </TaskProviderShortcut>
             ) : null}
-            {visibleTaskProviders.includes('azure-devops') ? (
-              <TaskProviderShortcut
-                label={translate(
-                  'auto.components.sidebar.SidebarNav.openAzureDevOpsTasks',
-                  'Open Azure DevOps tasks'
-                )}
-                onOpen={() => openTaskPage({ taskSource: 'azure-devops' })}
-              >
-                <AzureDevOpsIcon className="size-3.5" />
-              </TaskProviderShortcut>
-            ) : null}
-            {visibleTaskProviders.includes('asana') ? (
-              <TaskProviderShortcut
-                label={translate(
-                  'auto.components.sidebar.SidebarNav.openAsanaTasks',
-                  'Open Asana tasks'
-                )}
-                onOpen={() => openTaskPage({ taskSource: 'asana' })}
-              >
-                <AsanaIcon className="size-3.5" />
-              </TaskProviderShortcut>
-            ) : null}
+            <ForkTaskProviderShortcuts
+              visibleTaskProviders={visibleTaskProviders}
+              onOpen={(taskSource) => openTaskPage({ taskSource })}
+              Shortcut={TaskProviderShortcut}
+            />
           </span>
         </div>
       </ContextMenuTrigger>

@@ -18,7 +18,6 @@ describe('getWorktreeCardJiraIssueDisplay', () => {
         }
       })
     ).toEqual({
-      provider: 'jira',
       identifier: 'KAN-1',
       title: 'Test Jira card icon',
       url: 'https://company.atlassian.net/browse/KAN-1'
@@ -57,35 +56,5 @@ describe('getWorktreeCardJiraIssueDisplay', () => {
       identifier: 'KAN-1',
       title: 'Test Jira card preference'
     })
-  })
-
-  it('shows linked Asana and Azure DevOps items in the same task row', () => {
-    expect(
-      getWorktreeCardJiraIssueDisplay({
-        linkedWorkItem: {
-          provider: 'asana',
-          type: 'issue',
-          number: 0,
-          title: 'Envío justificantes',
-          url: 'https://app.asana.com/0/9/42'
-        }
-      })
-    ).toEqual({
-      provider: 'asana',
-      identifier: '',
-      title: 'Envío justificantes',
-      url: 'https://app.asana.com/0/9/42'
-    })
-    expect(
-      getWorktreeCardJiraIssueDisplay({
-        linkedWorkItem: {
-          provider: 'azure-devops',
-          type: 'pr',
-          number: 12,
-          title: 'Add search',
-          url: 'https://dev.azure.com/acme/Portal/_git/web/pullrequest/12'
-        }
-      })
-    ).toMatchObject({ provider: 'azure-devops', identifier: '!12' })
   })
 })

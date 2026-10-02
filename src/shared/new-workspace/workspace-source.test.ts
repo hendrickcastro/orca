@@ -52,16 +52,6 @@ describe('workspace source policy', () => {
 
   it('preserves global work-item sources across repo changes', () => {
     expect(shouldPreserveWorkspaceSourceOnRepoChange(linear)).toBe(true)
-    // Why: an Asana task is picked before the project, so choosing the repo must not drop it.
-    expect(
-      shouldPreserveWorkspaceSourceOnRepoChange({
-        provider: 'asana',
-        type: 'issue',
-        number: 0,
-        title: 'Envío justificantes',
-        url: 'https://app.asana.com/0/9/42'
-      })
-    ).toBe(true)
     expect(
       shouldPreserveWorkspaceSourceOnRepoChange({
         provider: 'jira',

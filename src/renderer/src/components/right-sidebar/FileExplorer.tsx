@@ -35,8 +35,7 @@ import { useFileExplorerVisibleRowProjection } from './useFileExplorerVisibleRow
 import { useFileExplorerBackgroundMenu } from './use-file-explorer-background-menu'
 import { useFileExplorerNameFilter } from './use-file-explorer-name-filter'
 import { useFileExplorerTreePaneState } from './use-file-explorer-tree-pane-state'
-import { useFolderWorkspaceExplorerMember } from './use-folder-workspace-explorer-member'
-import type { FileExplorerMemberPicker } from './FileExplorerToolbar'
+import { useFileExplorerMemberView } from './use-file-explorer-member-view'
 import { translate } from '@/i18n/i18n'
 import type { RightSidebarExplorerView } from '../../../../shared/ui-chrome-types'
 
@@ -49,26 +48,8 @@ function FileExplorerFiles(): React.JSX.Element {
   const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
   const workspaceWorktree = useActiveWorktree()
   const workspaceRepo = useRepoById(workspaceWorktree?.repoId ?? null)
-  // Why: a coordinator (folder workspace) browses one member worktree at a time; files still open in the coordinator.
-  const member = useFolderWorkspaceExplorerMember(activeWorktreeId)
-  const activeWorktree = member.selected?.worktree ?? workspaceWorktree
-  const activeRepo = member.selected ? member.selected.repo : workspaceRepo
-  const gitStatusWorktreeId = member.selected?.worktree.id ?? activeWorktreeId
-  const gitStatusByWorktree = useAppStore((s) => s.gitStatusByWorktree)
-  const memberPicker = useMemo((): FileExplorerMemberPicker | null => {
-    if (!member.selected) {
-      return null
-    }
-    return {
-      value: member.selected.worktree.id,
-      onValueChange: member.select,
-      options: member.members.map(({ worktree, repo }) => ({
-        value: worktree.id,
-        label: repo?.displayName ?? basename(worktree.path),
-        changedCount: gitStatusByWorktree[worktree.id]?.length ?? null
-      }))
-    }
-  }, [gitStatusByWorktree, member])
+  const { activeWorktree, activeRepo, gitStatusWorktreeId, memberPicker } =
+    useFileExplorerMemberView(activeWorktreeId, workspaceWorktree, workspaceRepo)
   const expandedDirs = useAppStore((s) => s.expandedDirs)
   const collapseAllDirs = useAppStore((s) => s.collapseAllDirs)
   const activeFileId = useAppStore((s) => s.activeFileId)

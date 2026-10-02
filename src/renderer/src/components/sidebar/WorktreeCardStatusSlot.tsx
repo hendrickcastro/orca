@@ -6,9 +6,11 @@ import { cn } from '@/lib/utils'
 import { getWorktreeStatusLabel, type WorktreeStatus } from '@/lib/worktree-status'
 import { FilledBellIcon } from './WorktreeCardHelpers'
 import StatusIndicator from './StatusIndicator'
-import { useWorktreeActivityStatus } from './use-worktree-activity-status'
+import {
+  useCoordinatedWorktreeActivityStatus,
+  withCoordinatorName
+} from './use-coordinated-worktree-activity-status'
 import { useIsSleepingWorktree } from './use-worktree-sleep-state'
-import { resolveCoordinatedWorktreeStatus, useWorktreeCoordinator } from './worktree-coordinator'
 import type { WorktreeCardPrDisplay } from './worktree-card-pr-display'
 import { getReviewLabel, ReviewIcon } from './worktree-review-helpers'
 
@@ -108,24 +110,9 @@ export function WorktreeCardStatusSlot({
   branchIdentityLabel,
   className
 }: WorktreeCardStatusSlotProps): React.JSX.Element | null {
-  const ownStatus = useWorktreeActivityStatus(worktreeId)
-  const coordinator = useWorktreeCoordinator(worktreeId)
-  // Why: hooks cannot be conditional; an unknown key resolves to 'inactive' and is ignored.
-  const coordinatorStatus = useWorktreeActivityStatus(coordinator?.key ?? '')
-  const { status, fromCoordinator } = resolveCoordinatedWorktreeStatus(
-    ownStatus,
-    coordinator ? coordinatorStatus : null
-  )
+  const { status, coordinatorName } = useCoordinatedWorktreeActivityStatus(worktreeId)
   const isSleeping = useIsSleepingWorktree(worktreeId)
-  const ownStatusLabel = getWorktreeStatusLabel(status) || status
-  const statusLabel =
-    fromCoordinator && coordinator
-      ? translate(
-          'sidebar.worktreeCoordinator.statusLabel',
-          '{{value0}} · coordinator {{value1}}',
-          { value0: ownStatusLabel, value1: coordinator.name }
-        )
-      : ownStatusLabel
+  const statusLabel = withCoordinatorName(getWorktreeStatusLabel(status) || status, coordinatorName)
   // Why: sleep must stay distinct from awake completion; a sleeping workspace
   // never collapses into branch/PR, even when retained done rows keep its
   // status at 'done'. Attention states keep their own glyphs by construction.
@@ -182,7 +169,7 @@ export function WorktreeCardStatusSlot({
           status={status}
           aria-hidden="true"
           tooltipSide="right"
-          tooltipLabel={fromCoordinator ? statusLabel : undefined}
+          tooltipLabel={coordinatorName ? statusLabel : undefined}
         />
       </span>
       <span className="sr-only">{passiveStatusAnnouncement}</span>
@@ -194,7 +181,7 @@ export function WorktreeCardStatusSlot({
         aria-hidden="true"
         className={className}
         tooltipSide="right"
-        tooltipLabel={fromCoordinator ? statusLabel : undefined}
+        tooltipLabel={coordinatorName ? statusLabel : undefined}
       />
       <span className="sr-only">{statusLabel}</span>
     </>

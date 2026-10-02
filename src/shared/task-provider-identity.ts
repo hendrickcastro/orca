@@ -1,6 +1,13 @@
 import { githubRepoIdentityKey } from './github/repository-identity-key'
 import type { TaskProvider } from './task-providers'
 import type { ProjectProviderIdentity } from './project-types'
+import {
+  FORK_TASK_PROVIDER_IDENTITY_FIELDS,
+  forkTaskProviderIdentityCachePart,
+  isStoredForkTaskProviderIdentity,
+  normalizeForkTaskProviderIdentity,
+  type ForkTaskProviderIdentity
+} from './fork-task-provider-identity'
 
 export type GitHubTaskProviderIdentity = ProjectProviderIdentity & {
   provider: 'github'
@@ -29,26 +36,12 @@ export type JiraTaskProviderIdentity = {
   projectKey?: string | null
 }
 
-export type AzureDevOpsTaskProviderIdentity = {
-  provider: 'azure-devops'
-  organizationUrl?: string | null
-  project?: string | null
-  repository?: string | null
-}
-
-export type AsanaTaskProviderIdentity = {
-  provider: 'asana'
-  workspaceId?: string | null
-  workspaceName?: string | null
-}
-
 export type TaskProviderIdentity =
   | GitHubTaskProviderIdentity
   | GitLabTaskProviderIdentity
   | LinearTaskProviderIdentity
   | JiraTaskProviderIdentity
-  | AzureDevOpsTaskProviderIdentity
-  | AsanaTaskProviderIdentity
+  | ForkTaskProviderIdentity
 
 export function normalizeTaskProviderIdentity(
   provider: TaskProvider,
@@ -95,18 +88,8 @@ export function normalizeTaskProviderIdentity(
         projectKey: normalizeNonEmptyString(raw.projectKey)
       }
     case 'azure-devops':
-      return {
-        provider,
-        organizationUrl: normalizeNonEmptyString(raw.organizationUrl),
-        project: normalizeNonEmptyString(raw.project),
-        repository: normalizeNonEmptyString(raw.repository)
-      }
     case 'asana':
-      return {
-        provider,
-        workspaceId: normalizeNonEmptyString(raw.workspaceId),
-        workspaceName: normalizeNonEmptyString(raw.workspaceName)
-      }
+      return normalizeForkTaskProviderIdentity(provider, raw)
   }
 }
 
@@ -141,11 +124,8 @@ export function isStoredTaskProviderIdentity(provider: TaskProvider, identity: u
     case 'jira':
       return ['siteId', 'siteUrl', 'projectKey'].every((key) => isNullableOptionalString(raw[key]))
     case 'azure-devops':
-      return ['organizationUrl', 'project', 'repository'].every((key) =>
-        isNullableOptionalString(raw[key])
-      )
     case 'asana':
-      return ['workspaceId', 'workspaceName'].every((key) => isNullableOptionalString(raw[key]))
+      return isStoredForkTaskProviderIdentity(provider, raw)
   }
 }
 
@@ -154,8 +134,7 @@ const TASK_PROVIDER_IDENTITY_FIELDS: Record<TaskProvider, readonly string[]> = {
   gitlab: ['projectId', 'namespace', 'project', 'webUrl'],
   linear: ['workspaceId', 'workspaceName', 'teamId', 'teamKey'],
   jira: ['siteId', 'siteUrl', 'projectKey'],
-  'azure-devops': ['organizationUrl', 'project', 'repository'],
-  asana: ['workspaceId', 'workspaceName']
+  ...FORK_TASK_PROVIDER_IDENTITY_FIELDS
 }
 
 export function areTaskProviderIdentitiesEqual(
@@ -194,11 +173,8 @@ export function taskProviderIdentityCachePart(
     case 'jira':
       return [identity.siteId ?? identity.siteUrl, identity.projectKey].filter(Boolean).join('/')
     case 'azure-devops':
-      return [identity.organizationUrl, identity.project, identity.repository]
-        .filter(Boolean)
-        .join('/')
     case 'asana':
-      return identity.workspaceId ?? ''
+      return forkTaskProviderIdentityCachePart(identity)
   }
 }
 

@@ -13,7 +13,7 @@ import {
   type PressAndHoldRecord
 } from './macos-press-and-hold-default'
 
-const ORCA_DOMAIN = 'com.knwr.orca'
+const ORCA_DOMAIN = 'com.stablyai.orca'
 
 type HostOverrides = Partial<PressAndHoldHost> & { record?: PressAndHoldRecord | null }
 
@@ -141,11 +141,11 @@ describe('ensureMacPressAndHoldDefault', () => {
     })
 
     it('accepts Orca and its channel-scoped bundles, and nothing else', () => {
-      expect(isOrcaPreferencesDomain('com.knwr.orca')).toBe(true)
-      expect(isOrcaPreferencesDomain('com.knwr.orca.dev')).toBe(true)
+      expect(isOrcaPreferencesDomain('com.stablyai.orca')).toBe(true)
+      expect(isOrcaPreferencesDomain('com.stablyai.orca.dev')).toBe(true)
       expect(isOrcaPreferencesDomain('com.github.Electron')).toBe(false)
       // Why: a prefix test without the dot would accept a lookalike bundle id.
-      expect(isOrcaPreferencesDomain('com.knwr.orcafake')).toBe(false)
+      expect(isOrcaPreferencesDomain('com.stablyai.orcafake')).toBe(false)
     })
   })
 
@@ -245,10 +245,10 @@ describe('readBundleIdentifierFromExecutablePath', () => {
   it('reads CFBundleIdentifier from the plist beside the executable', () => {
     const exe = bundleWithPlist(
       '<plist><dict>\n<key>CFBundleName</key>\n<string>Orca</string>\n' +
-        '<key>CFBundleIdentifier</key>\n\t<string>com.knwr.orca</string>\n</dict></plist>'
+        '<key>CFBundleIdentifier</key>\n\t<string>com.stablyai.orca</string>\n</dict></plist>'
     )
 
-    expect(readBundleIdentifierFromExecutablePath(exe)).toBe('com.knwr.orca')
+    expect(readBundleIdentifierFromExecutablePath(exe)).toBe('com.stablyai.orca')
   })
 
   it('returns null when the plist is missing or carries no identifier', () => {

@@ -1,4 +1,5 @@
 import type { TaskProvider } from '../../../shared/task-providers'
+import { linkedTaskInstruction } from './linked-task-instruction'
 
 export type LinkedWorkItemContext = {
   provider: TaskProvider
@@ -150,12 +151,6 @@ function capLinkedContextSourceLines(args: { sourceLines: string; fixedChars: nu
   return [capped, truncationLine].filter(Boolean).join('\n')
 }
 
-const LINKED_TASK_PROVIDER_LABELS: Partial<Record<TaskProvider, string>> = {
-  asana: 'Asana task',
-  'azure-devops': 'Azure DevOps item',
-  jira: 'Jira issue'
-}
-
 /** Instruction plus the contained provider prose, when the source fetched the task's content. */
 function buildLinkedTaskContextBlocks(linkedWorkItem: {
   provider?: TaskProvider
@@ -163,18 +158,7 @@ function buildLinkedTaskContextBlocks(linkedWorkItem: {
   linkedContext?: LinkedWorkItemContext
 }): string[] {
   const contained = buildContainedLinkedContextBlock(linkedWorkItem.linkedContext)
-  if (!contained) {
-    return []
-  }
-  const label =
-    LINKED_TASK_PROVIDER_LABELS[linkedWorkItem.linkedContext?.provider ?? 'github'] ?? 'task'
-  const title = linkedWorkItem.title?.trim()
-  // Why outside the block: the block's own header tells the agent not to obey its contents, so
-  // the request to work on the task has to come from the trusted part of the prompt.
-  const instruction = title
-    ? `Work on the linked ${label} "${title}". Its details follow.`
-    : `Work on the linked ${label}. Its details follow.`
-  return [instruction, contained]
+  return contained ? [linkedTaskInstruction(linkedWorkItem), contained] : []
 }
 
 export function getLinkedWorkItemPromptContext(

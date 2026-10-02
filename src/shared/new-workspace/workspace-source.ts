@@ -200,17 +200,15 @@ export function buildWorkspaceSourceSelection(args: {
       ? 'linear'
       : provider === 'jira'
         ? 'jira'
-        : provider === 'azure-devops' || provider === 'asana'
-          ? provider
-          : provider === 'gitlab'
-            ? linkedWorkItem.type === 'mr'
-              ? 'gitlab-mr'
-              : 'gitlab-issue'
-            : linkedWorkItem.type === 'pr'
-              ? 'github-pr'
-              : 'github-issue'
+        : provider === 'gitlab'
+          ? linkedWorkItem.type === 'mr'
+            ? 'gitlab-mr'
+            : 'gitlab-issue'
+          : linkedWorkItem.type === 'pr'
+            ? 'github-pr'
+            : 'github-issue'
   return {
-    kind,
+    kind: provider === 'azure-devops' || provider === 'asana' ? provider : kind,
     label:
       provider === 'linear' || provider === 'jira' || linkedWorkItem.number === 0
         ? linkedWorkItem.title

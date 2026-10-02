@@ -9,5 +9,6 @@ module.exports = {
   PRODUCT_HOME_STATE_DIR_NAME: '.orca-knwr',
   PRODUCT_DEFAULT_WS_PORT: 6778,
   PRODUCT_RELEASE_OWNER: 'hendrickcastro',
-  PRODUCT_RELEASE_REPO: 'hendrickcastro/orca'
+  PRODUCT_RELEASE_REPO: 'hendrickcastro/orca',
+  PRODUCT_PINS_USER_DATA: true
 }

@@ -303,7 +303,6 @@ describe('WorktreeCardDetailsHover', () => {
 
   it('shows the Jira icon badge and linked issue details', () => {
     const jiraIssue = {
-      provider: 'jira' as const,
       identifier: 'KAN-1',
       title: 'Test Jira card icon',
       url: 'https://company.atlassian.net/browse/KAN-1'

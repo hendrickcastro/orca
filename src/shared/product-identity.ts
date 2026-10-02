@@ -13,3 +13,5 @@ export const PRODUCT_HOME_STATE_DIR_NAME = '.orca-knwr'
 export const PRODUCT_DEFAULT_WS_PORT = 6778
 export const PRODUCT_RELEASE_OWNER = 'hendrickcastro'
 export const PRODUCT_RELEASE_REPO = `${PRODUCT_RELEASE_OWNER}/orca`
+/** The fork pins userData to PRODUCT_PACKAGE_NAME; upstream relies on Electron's default. */
+export const PRODUCT_PINS_USER_DATA = true
