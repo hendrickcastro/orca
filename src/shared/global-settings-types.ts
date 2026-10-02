@@ -3,7 +3,7 @@ import type { GitHubProjectSettings } from './github/project-types'
 import type { VoiceSettings } from './speech-types'
 import type { AiVaultSearchSettings } from './ai-vault-search-settings'
 import type { GitLabProjectSettings } from './gitlab-types'
-import type { TaskProvider } from './task-providers'
+import type { ForkGlobalSettings, TaskProvider } from './task-providers'
 import type { KeybindingOverrides, TerminalShortcutPolicy } from './keybindings'
 import type { AppIconId } from './app-icon'
 import type { SourceControlAiSettings } from './source-control-ai-types'
@@ -55,7 +55,7 @@ export type WorktreeVisibilityDefaults = {
   sourcePreferences?: WorktreeVisibilitySourcePreferences
 }
 
-export type GlobalSettings = {
+export type GlobalSettings = ForkGlobalSettings & {
   workspaceDir: string
   /** Host-owned defaults used when a repository has no explicit visibility override. */
   worktreeVisibilityDefaults?: WorktreeVisibilityDefaults
@@ -382,8 +382,6 @@ export type GlobalSettings = {
   visibleTaskProviders: TaskProvider[]
   /** Why: one-shot guard to make Jira visible for existing profiles once, without re-adding after a later opt-out. */
   visibleTaskProvidersDefaultedForJira: boolean
-  /** Why: one-shot guard to make the fork's Azure DevOps and Asana providers visible once. */
-  visibleTaskProvidersDefaultedForForkProviders: boolean
   /** Persisted repo selection (cross-repo tasks view). null = sticky-all (includes future-added repos);
    *  string[] = frozen curated subset (ineligible ids dropped on load; empty after drop is treated as null). */
   defaultRepoSelection: string[] | null
@@ -422,10 +420,18 @@ export type GlobalSettings = {
   agentYoloDefaultsMigrated?: boolean
   /** Why: disabling must persist so startup doesn't reinstall global agent hook entries the user just removed. */
   agentStatusHooksEnabled: boolean
+  /** A local agent-state-rules.json that replaces downloaded and bundled rules, for testing a rule
+   *  change. */
+  agentStateRulesPath?: string | null
+  /** Off: rules are never downloaded and a cached download is ignored, so the bundled rules (or a
+   *  local override) apply. Absent reads as on. */
+  agentStateRulesLiveUpdates?: boolean
   /** Pre-trust the worktree or folder Orca starts an agent in, so its "trust this folder?" prompt is skipped. Defaults on. */
   agentWorkspaceTrustEnabled: boolean
   /** Why: Codex's shared server runs every tab's hooks with the first tab's env; off opts new terminals back into it. Absent reads as on. */
   codexTerminalServerIsolation?: boolean
+  /** Off hides the banner on a typed `codex` that joined Codex's shared server. Absent reads as on. */
+  codexSharedServerWarning?: boolean
   /** Dismissed freshness tuples: no write authority, just suppress re-nudging the same official placement/revision. */
   dismissedSkillFreshnessNudges?: string[]
   /** Why: generated tab titles are subjective, so they stay opt-in and manual renames win. */

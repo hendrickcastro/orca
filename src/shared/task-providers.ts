@@ -1,3 +1,6 @@
+// Re-exported here so global-settings-types.ts can take it from an import it already has.
+export type { ForkGlobalSettings } from './fork-global-settings-types'
+
 export type TaskProvider = 'github' | 'gitlab' | 'linear' | 'jira' | 'azure-devops' | 'asana'
 
 export const TASK_PROVIDERS: readonly TaskProvider[] = [
