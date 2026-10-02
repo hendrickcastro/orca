@@ -46,22 +46,22 @@ if [[ -f "$GUIDE" ]] && ! git diff --quiet "$base" "$HEAD_SHA" -- "$GUIDE" 2>/de
   echo
 fi
 
-echo "## Novedades de esta versión"
+echo "## What's new"
 echo
 if [[ -z "$fork_commits" ]]; then
-  echo "Sin cambios propios del fork en esta versión."
+  echo "No fork-specific changes in this release."
   echo
 else
-  section "Nuevas funciones" -E '^feat(\(|:)'
-  section "Correcciones" -E '^fix(\(|:)'
-  section "Otros cambios" -vE '^(feat|fix)(\(|:)'
+  section "Features" -E '^feat(\(|:)'
+  section "Fixes" -E '^fix(\(|:)'
+  section "Other changes" -vE '^(feat|fix)(\(|:)'
 fi
 
 if [[ -n "$upstream_commits" ]]; then
   count="$(wc -l <<<"$upstream_commits" | tr -d ' ')"
-  echo "### Sincronizado con stablyai/orca (${count} cambios)"
+  echo "### Synced from stablyai/orca (${count} changes)"
   echo
-  echo "<details><summary>Ver la lista</summary>"
+  echo "<details><summary>Show the list</summary>"
   echo
   while IFS=$'\t' read -r subject sha; do
     echo "- ${subject} (${sha})"
@@ -71,12 +71,12 @@ if [[ -n "$upstream_commits" ]]; then
   echo
 fi
 
-echo "## Instalación"
+echo "## Installation"
 echo
-echo "**macOS** (build sin firma), instalar o actualizar con:"
+echo "**macOS** (unsigned build): install or update with:"
 echo
 echo '```'
 echo "curl -fsSL https://github.com/${REPO}/releases/latest/download/install-macos.sh | bash"
 echo '```'
 echo
-echo "**Windows**: ejecuta \`orca-knwr-windows-setup.exe\`; las instalaciones existentes se actualizan solas desde la app."
+echo "**Windows**: run \`orca-knwr-windows-setup.exe\`; existing installs update themselves from the app."

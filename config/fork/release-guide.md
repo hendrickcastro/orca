@@ -1,4 +1,4 @@
-## Guía rápida
+## Quick guide
 
-### Lista `@` en Crear worktree y en tareas multi-repositorio
-- La lista se desplaza con la rueda del ratón y no se cierra al arrastrar su barra de scroll.
+### `@` list in Create worktree and multi-repository tasks
+- The list now scrolls with the mouse wheel and stays open while you drag its scrollbar.
