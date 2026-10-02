@@ -13,11 +13,12 @@ function formatDroppedPath(path: string): string {
 }
 
 /** Splices dropped paths over the selection, padding with spaces so they never fuse with neighbours. */
-export function insertDroppedPathsIntoPrompt(
+/** Splices text over the selection, padding with spaces so it never fuses with neighbours. */
+export function insertTextIntoPrompt(
   value: string,
   selectionStart: number,
   selectionEnd: number,
-  paths: readonly string[]
+  text: string
 ): { value: string; caret: number } {
   const start = Math.max(0, Math.min(selectionStart, value.length))
   const end = Math.max(start, Math.min(selectionEnd, value.length))
@@ -25,8 +26,22 @@ export function insertDroppedPathsIntoPrompt(
   const after = value.slice(end)
   const prefix = before && !/\s$/.test(before) ? ' ' : ''
   const suffix = after && !/^\s/.test(after) ? ' ' : ''
-  const inserted = `${prefix}${paths.map(formatDroppedPath).join(' ')}${suffix}`
+  const inserted = `${prefix}${text}${suffix}`
   return { value: `${before}${inserted}${after}`, caret: start + inserted.length }
+}
+
+export function insertDroppedPathsIntoPrompt(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+  paths: readonly string[]
+): { value: string; caret: number } {
+  return insertTextIntoPrompt(
+    value,
+    selectionStart,
+    selectionEnd,
+    paths.map(formatDroppedPath).join(' ')
+  )
 }
 
 export function useMultiRepoPromptPathDrop({

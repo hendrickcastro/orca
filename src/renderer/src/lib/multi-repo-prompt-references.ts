@@ -2,7 +2,7 @@ import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
 import { getRelativePathInsideRoot, joinPath } from './path'
 
-export type MultiRepoReferenceKind = 'skill' | 'mcp' | 'doc' | 'file'
+export type MultiRepoReferenceKind = 'skill' | 'workflow' | 'mcp' | 'doc' | 'file'
 
 export type MultiRepoReferenceScope =
   | { kind: 'repo'; repoId: string; repoName: string }
@@ -15,7 +15,7 @@ export type MultiRepoReference = {
   name: string
   /** Inserted into the request text, including the leading `@`. */
   token: string
-  /** Doc/file: repo-relative with `/`. Skill: absolute SKILL.md path. */
+  /** Doc/file/workflow: repo-relative with `/`. Skill: absolute SKILL.md path. */
   path?: string
   description?: string | null
   /** MCP: the config that declares the server. */
@@ -34,7 +34,7 @@ export function buildMultiRepoReferenceToken(
   name: string
 ): string {
   const repoPrefix = scope.kind === 'repo' ? `${tokenSegment(scope.repoName)}/` : ''
-  if (kind === 'skill' || kind === 'mcp') {
+  if (kind === 'skill' || kind === 'workflow' || kind === 'mcp') {
     return `@${kind}:${repoPrefix}${tokenSegment(name)}`
   }
   return `@${repoPrefix}${tokenSegment(name)}`
@@ -115,6 +115,8 @@ export function describeMultiRepoReferences(
     switch (reference.kind) {
       case 'skill':
         return `- ${reference.token}: skill ${JSON.stringify(reference.name)} (${scope}). Read ${location ?? 'its SKILL.md'} and follow it.`
+      case 'workflow':
+        return `- ${reference.token}: Claude Code workflow ${JSON.stringify(reference.name)} (${scope}) at ${location ?? reference.name}. Run it with the Workflow tool when it fits the task.`
       case 'mcp':
         return `- ${reference.token}: MCP server ${JSON.stringify(reference.name)} (${scope}${reference.source ? `, ${reference.source}` : ''}). Use its tools where relevant; say so if it is not connected in this session.`
       case 'doc':

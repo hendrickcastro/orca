@@ -2813,11 +2813,11 @@
         }
       },
       "status": {
+        "failedAfter": "Failed after {{value0}}",
+        "interruptedAfter": "Interrupted after {{value0}}",
         "responding": "Agent is responding",
         "toggleDetails": "Toggle turn details",
         "workedFor": "Worked for {{value0}}",
-        "interruptedAfter": "Interrupted after {{value0}}",
-        "failedAfter": "Failed after {{value0}}",
         "workingFor": "Working for {{value0}}"
       },
       "tool": {
@@ -2954,6 +2954,9 @@
       "viewOnly": "Sparse checkout · View changes do not change checked-out files.",
       "viewing": "Viewing: {{path}}"
     }
+  },
+  "multiRepo": {
+    "referencesHint": "Type @ to reference skills, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill: or @mcp: to narrow the list."
   },
   "runtimeRpc": {
     "startupFailure": {

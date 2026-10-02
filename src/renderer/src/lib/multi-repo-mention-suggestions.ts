@@ -24,8 +24,23 @@ export const EMPTY_MULTI_REPO_MENTION_CATALOG: MultiRepoMentionCatalog = {
   files: []
 }
 
-const GROUP_LIMIT: Record<MultiRepoReferenceKind, number> = { skill: 8, mcp: 6, doc: 8, file: 10 }
-const NAMED_KINDS: readonly MultiRepoReferenceKind[] = ['skill', 'mcp', 'doc']
+const GROUP_LIMIT: Record<MultiRepoReferenceKind, number> = {
+  skill: 8,
+  workflow: 8,
+  mcp: 6,
+  doc: 8,
+  file: 10
+}
+const NAMED_KINDS: readonly MultiRepoReferenceKind[] = ['skill', 'workflow', 'mcp', 'doc']
+const PREFIXED_KINDS: readonly MultiRepoReferenceKind[] = ['skill', 'workflow', 'mcp']
+
+/** Repository entries first: global skills from every agent home would otherwise fill the group. */
+function repoScopedFirst(references: readonly MultiRepoReference[]): MultiRepoReference[] {
+  return [
+    ...references.filter((reference) => reference.scope.kind === 'repo'),
+    ...references.filter((reference) => reference.scope.kind !== 'repo')
+  ]
+}
 
 export function toMultiRepoFileEntry(
   scope: MultiRepoFileEntry['scope'],
@@ -34,13 +49,15 @@ export function toMultiRepoFileEntry(
   return { key: buildMultiRepoReferenceToken('file', scope, path).slice(1), scope, path }
 }
 
-/** Groups stay in skill → MCP → doc → file order; `skill:` and `mcp:` narrow to one kind. */
+/** Groups stay in skill → workflow → MCP → doc → file order; `skill:`, `workflow:` and `mcp:` narrow to one kind. */
 export function rankMultiRepoMentionSuggestions(
   rawQuery: string,
   catalog: MultiRepoMentionCatalog
 ): MultiRepoReference[] {
-  const prefix = /^(skill|mcp):/i.exec(rawQuery)
-  const onlyKind = prefix ? (prefix[1].toLowerCase() === 'skill' ? 'skill' : 'mcp') : null
+  const prefix = /^(skill|workflow|mcp):/i.exec(rawQuery)
+  const onlyKind = prefix
+    ? (PREFIXED_KINDS.find((kind) => kind === prefix[1].toLowerCase()) ?? null)
+    : null
   const query = (prefix ? rawQuery.slice(prefix[0].length) : rawQuery).toLowerCase()
   const matches = (reference: MultiRepoReference): boolean =>
     !query ||
@@ -53,9 +70,9 @@ export function rankMultiRepoMentionSuggestions(
       continue
     }
     suggestions.push(
-      ...catalog.references
-        .filter((reference) => reference.kind === kind && matches(reference))
-        .slice(0, GROUP_LIMIT[kind])
+      ...repoScopedFirst(
+        catalog.references.filter((reference) => reference.kind === kind && matches(reference))
+      ).slice(0, GROUP_LIMIT[kind])
     )
   }
   // Why: listing thousands of files on a bare `@` buries skills and docs.

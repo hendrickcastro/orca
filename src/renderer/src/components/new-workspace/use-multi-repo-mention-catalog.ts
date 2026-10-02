@@ -3,6 +3,7 @@ import type { Repo } from '../../../../shared/repo-types'
 import type { ClaudeMcpServerEntry } from '../../../../shared/claude-user-mcp-servers'
 import { QUICK_OPEN_LISTING_MAX_RESULTS } from '../../../../shared/quick-open-listing-limits'
 import { loadMcpConfigInspections } from '@/components/settings/mcp-config-inspection'
+import { joinPath } from '@/lib/path'
 import {
   buildMultiRepoReferenceToken,
   type MultiRepoReference,
@@ -16,6 +17,32 @@ import {
 } from '@/lib/multi-repo-mention-suggestions'
 
 type RepoCatalogPart = { references: MultiRepoReference[]; files: MultiRepoFileEntry[] }
+
+const WORKFLOW_DIR = '.claude/workflows'
+const WORKFLOW_SCRIPT = /\.(?:c|m)?[jt]s$/i
+
+/** Saved Claude Code workflows: scripts in the repository's `.claude/workflows/`. */
+async function loadRepoWorkflows(
+  repo: Repo,
+  scope: Extract<MultiRepoReferenceScope, { kind: 'repo' }>
+): Promise<MultiRepoReference[]> {
+  const entries = await settle(
+    () => window.api.fs.readDir({ dirPath: joinPath(repo.path, WORKFLOW_DIR) }),
+    []
+  )
+  return entries
+    .filter((entry) => !entry.isDirectory && WORKFLOW_SCRIPT.test(entry.name))
+    .map((entry) => {
+      const name = entry.name.replace(WORKFLOW_SCRIPT, '')
+      return {
+        kind: 'workflow' as const,
+        scope,
+        name,
+        token: buildMultiRepoReferenceToken('workflow', scope, name),
+        path: `${WORKFLOW_DIR}/${entry.name}`
+      }
+    })
+}
 
 async function settle<T>(load: () => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -46,7 +73,7 @@ function mcpReferences(
 
 async function loadRepoPart(repo: Repo): Promise<RepoCatalogPart> {
   const scope = { kind: 'repo', repoId: repo.id, repoName: repo.displayName } as const
-  const [skills, docs, mcpFiles, files] = await Promise.all([
+  const [skills, docs, mcpFiles, files, workflows] = await Promise.all([
     settle(() => window.api.skills.discover({ cwd: repo.path }), null),
     settle(() => window.api.fs.listMarkdownDocuments({ rootPath: repo.path }), []),
     settle(() => loadMcpConfigInspections(repo.path, undefined), []),
@@ -57,9 +84,10 @@ async function loadRepoPart(repo: Repo): Promise<RepoCatalogPart> {
           maxResults: QUICK_OPEN_LISTING_MAX_RESULTS
         }),
       []
-    )
+    ),
+    loadRepoWorkflows(repo, scope)
   ])
-  const references: MultiRepoReference[] = []
+  const references: MultiRepoReference[] = [...workflows]
   for (const skill of skills?.skills ?? []) {
     // The coordinator is Claude, so codex-only roots would be noise.
     if (!skill.providers.includes('claude') && !skill.providers.includes('agent-skills')) {

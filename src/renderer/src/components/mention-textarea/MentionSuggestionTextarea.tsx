@@ -1,6 +1,7 @@
 import React, { useCallback, useId, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Textarea } from '@/components/ui/textarea'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 
 export type MentionQuery = {
   atIndex: number
@@ -89,98 +90,117 @@ export function MentionSuggestionTextarea<T>({
     [findQuery, getInsertText, mentionQuery, onInsert, onValueChange, textareaRef, value]
   )
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (showSuggestions) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        setActiveIndex((current) => (current + 1) % suggestions.length)
+        return
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        setActiveIndex((current) => (current - 1 + suggestions.length) % suggestions.length)
+        return
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault()
+        insertMention(suggestions[activeIndex] ?? suggestions[0])
+        return
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setMentionQuery(null)
+        return
+      }
+    }
+    onKeyDown?.(event)
+  }
+
   return (
-    <div className={cn('relative min-w-0 flex-1', wrapperClassName)}>
-      {showSuggestions && (
-        <div
-          id={listboxId}
-          role="listbox"
-          className="absolute right-0 bottom-[calc(100%+6px)] left-0 z-50 max-h-64 overflow-y-auto rounded-md border border-border/70 bg-popover p-1 text-popover-foreground shadow-lg scrollbar-sleek"
-        >
-          {suggestions.map((option, index) => {
-            const group = getOptionGroup?.(option)
-            const showGroup =
-              group !== undefined &&
-              (index === 0 || getOptionGroup?.(suggestions[index - 1]) !== group)
-            return (
-              <React.Fragment key={getOptionKey(option)}>
-                {showGroup && (
-                  <div
-                    role="presentation"
-                    className="px-2 pt-1.5 pb-1 text-[11px] font-medium text-muted-foreground"
-                  >
-                    {group}
-                  </div>
-                )}
-                <button
-                  id={`${listboxId}-${index}`}
-                  role="option"
-                  aria-selected={index === activeIndex}
-                  type="button"
-                  onMouseDown={(event) => {
-                    event.preventDefault()
-                    insertMention(option)
-                  }}
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[12px]',
-                    index === activeIndex && 'bg-accent text-accent-foreground'
-                  )}
-                >
-                  {renderOption(option)}
-                </button>
-              </React.Fragment>
-            )
-          })}
+    // Why a portaled popover: a list positioned inside a dialog is painted under or clipped by
+    // the fields above the textarea; the popover floats above everything and flips to fit.
+    <Popover open={showSuggestions} onOpenChange={(open) => !open && setMentionQuery(null)}>
+      <PopoverAnchor asChild>
+        <div className={cn('relative min-w-0 flex-1', wrapperClassName)}>
+          <TextareaElement
+            id={id}
+            ref={textareaRef}
+            role="combobox"
+            aria-expanded={showSuggestions}
+            aria-controls={showSuggestions ? listboxId : undefined}
+            aria-activedescendant={showSuggestions ? `${listboxId}-${activeIndex}` : undefined}
+            value={value}
+            onChange={(event) => {
+              onValueChange(event.target.value)
+              syncMentionQuery(event.currentTarget)
+            }}
+            onClick={(event) => syncMentionQuery(event.currentTarget)}
+            onKeyUp={(event) => {
+              if (!['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(event.key)) {
+                syncMentionQuery(event.currentTarget)
+              }
+            }}
+            onBlur={() => setMentionQuery(null)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            rows={rows}
+            className={className}
+          />
         </div>
-      )}
-      <TextareaElement
-        id={id}
-        ref={textareaRef}
-        role="combobox"
-        aria-expanded={showSuggestions}
-        aria-controls={showSuggestions ? listboxId : undefined}
-        aria-activedescendant={showSuggestions ? `${listboxId}-${activeIndex}` : undefined}
-        value={value}
-        onChange={(event) => {
-          onValueChange(event.target.value)
-          syncMentionQuery(event.currentTarget)
-        }}
-        onClick={(event) => syncMentionQuery(event.currentTarget)}
-        onKeyUp={(event) => {
-          if (!['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(event.key)) {
-            syncMentionQuery(event.currentTarget)
-          }
-        }}
-        onBlur={() => setMentionQuery(null)}
-        onKeyDown={(event) => {
-          if (showSuggestions) {
-            if (event.key === 'ArrowDown') {
+      </PopoverAnchor>
+      {showSuggestions ? (
+        <PopoverContent
+          side="top"
+          align="start"
+          sideOffset={6}
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          onCloseAutoFocus={(event) => event.preventDefault()}
+          onInteractOutside={(event) => {
+            // Why: clicking inside the textarea moves the caret; it must not close the list.
+            if (event.target instanceof Node && textareaRef.current?.contains(event.target)) {
               event.preventDefault()
-              setActiveIndex((current) => (current + 1) % suggestions.length)
-              return
             }
-            if (event.key === 'ArrowUp') {
-              event.preventDefault()
-              setActiveIndex((current) => (current - 1 + suggestions.length) % suggestions.length)
-              return
-            }
-            if (event.key === 'Enter' || event.key === 'Tab') {
-              event.preventDefault()
-              insertMention(suggestions[activeIndex] ?? suggestions[0])
-              return
-            }
-            if (event.key === 'Escape') {
-              event.preventDefault()
-              setMentionQuery(null)
-              return
-            }
-          }
-          onKeyDown?.(event)
-        }}
-        placeholder={placeholder}
-        rows={rows}
-        className={className}
-      />
-    </div>
+          }}
+          className="w-[var(--radix-popper-anchor-width)]"
+        >
+          <div id={listboxId} role="listbox" className="max-h-64 overflow-y-auto scrollbar-sleek">
+            {suggestions.map((option, index) => {
+              const group = getOptionGroup?.(option)
+              const showGroup =
+                group !== undefined &&
+                (index === 0 || getOptionGroup?.(suggestions[index - 1]) !== group)
+              return (
+                <React.Fragment key={getOptionKey(option)}>
+                  {showGroup && (
+                    <div
+                      role="presentation"
+                      className="px-2 pt-1.5 pb-1 text-[11px] font-medium text-muted-foreground"
+                    >
+                      {group}
+                    </div>
+                  )}
+                  <button
+                    id={`${listboxId}-${index}`}
+                    role="option"
+                    aria-selected={index === activeIndex}
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault()
+                      insertMention(option)
+                    }}
+                    className={cn(
+                      'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[12px]',
+                      index === activeIndex && 'bg-accent text-accent-foreground'
+                    )}
+                  >
+                    {renderOption(option)}
+                  </button>
+                </React.Fragment>
+              )
+            })}
+          </div>
+        </PopoverContent>
+      ) : null}
+    </Popover>
   )
 }

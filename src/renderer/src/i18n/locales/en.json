@@ -18805,7 +18805,8 @@
       "mcp": "MCP servers",
       "docs": "Docs",
       "files": "Files",
-      "global": "Global"
+      "global": "Global",
+      "workflows": "Workflows"
     },
     "kind": {
       "feature": "Feature",
@@ -18829,6 +18830,7 @@
     "create": "Create and start Claude",
     "kindLabel": "Type",
     "linkedTaskDetails": "Details included",
-    "removeLinkedTask": "Remove the linked task"
+    "removeLinkedTask": "Remove the linked task",
+    "repoReferencesTitle": "Repository skills and workflows (click to reference them):"
   }
 }

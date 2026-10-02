@@ -1,4 +1,4 @@
-import { BookOpen, FileCode, Plug, Sparkles } from 'lucide-react'
+import { BookOpen, FileCode, Plug, Sparkles, Workflow } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { translate } from '@/i18n/i18n'
 import type { MultiRepoReference, MultiRepoReferenceKind } from '@/lib/multi-repo-prompt-references'
@@ -7,6 +7,8 @@ export function multiRepoMentionGroupLabel(kind: MultiRepoReferenceKind): string
   switch (kind) {
     case 'skill':
       return translate('multiRepo.references.skills', 'Skills')
+    case 'workflow':
+      return translate('multiRepo.references.workflows', 'Workflows')
     case 'mcp':
       return translate('multiRepo.references.mcp', 'MCP servers')
     case 'doc':
@@ -16,7 +18,13 @@ export function multiRepoMentionGroupLabel(kind: MultiRepoReferenceKind): string
   }
 }
 
-const KIND_ICON = { skill: Sparkles, mcp: Plug, doc: BookOpen, file: FileCode } as const
+export const KIND_ICON = {
+  skill: Sparkles,
+  workflow: Workflow,
+  mcp: Plug,
+  doc: BookOpen,
+  file: FileCode
+} as const
 
 export function MultiRepoMentionOption({
   reference

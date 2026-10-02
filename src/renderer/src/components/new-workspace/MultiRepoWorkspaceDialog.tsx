@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,7 +34,8 @@ import { cn } from '@/lib/utils'
 import { slugifyForWorkspaceName } from '../../../../shared/workspace-name'
 import { useMultiRepoMentionCatalog } from './use-multi-repo-mention-catalog'
 import { MultiRepoMentionOption, multiRepoMentionGroupLabel } from './MultiRepoMentionOption'
-import { useMultiRepoPromptPathDrop } from './multi-repo-prompt-path-drop'
+import { insertTextIntoPrompt, useMultiRepoPromptPathDrop } from './multi-repo-prompt-path-drop'
+import { RepoReferenceChips, selectRepoReferenceChips } from './RepoReferenceChips'
 import {
   buildMultiRepoPromptWithLinkedTask,
   defaultMultiRepoTaskName,
@@ -88,6 +89,22 @@ export default function MultiRepoWorkspaceDialog({
   const [started, setStarted] = useState(false)
   const selectedRepos = eligibleRepos.filter((repo) => selected.has(repo.id))
   const { catalog, loading: catalogLoading } = useMultiRepoMentionCatalog(selectedRepos)
+  const repoChips = useMemo(() => selectRepoReferenceChips(catalog.references), [catalog])
+  const insertReference = (reference: MultiRepoReference): void => {
+    const textarea = promptRef.current
+    const next = insertTextIntoPrompt(
+      prompt,
+      textarea?.selectionStart ?? prompt.length,
+      textarea?.selectionEnd ?? prompt.length,
+      reference.token
+    )
+    insertedReferencesRef.current.set(reference.token, reference)
+    setPrompt(next.value)
+    requestAnimationFrame(() => {
+      textarea?.focus()
+      textarea?.setSelectionRange(next.caret, next.caret)
+    })
+  }
   const getSuggestions = useCallback(
     (query: string) => rankMultiRepoMentionSuggestions(query, catalog),
     [catalog]
@@ -275,6 +292,11 @@ export default function MultiRepoWorkspaceDialog({
               />
             </div>
             {promptDrop.notice && <p className="text-xs text-destructive">{promptDrop.notice}</p>}
+            <RepoReferenceChips
+              references={repoChips}
+              showRepoName={selectedRepos.length > 1}
+              onPick={insertReference}
+            />
             <p className="text-xs text-muted-foreground">
               {catalogLoading
                 ? translate(
@@ -283,7 +305,7 @@ export default function MultiRepoWorkspaceDialog({
                   )
                 : translate(
                     'multiRepo.referencesHint',
-                    'Type @ to reference skills, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill: or @mcp: to narrow the list.'
+                    'Type @ to reference skills, workflows, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill:, @workflow: or @mcp: to narrow the list.'
                   )}
             </p>
           </div>

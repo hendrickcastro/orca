@@ -32,12 +32,35 @@ const catalog: MultiRepoMentionCatalog = {
 
 describe('rankMultiRepoMentionSuggestions', () => {
   it('lists skills, MCP servers and docs, but no files, for a bare @', () => {
+    // Why repository skills first: global ones from every agent home would otherwise fill the group.
     expect(rankMultiRepoMentionSuggestions('', catalog).map((entry) => entry.token)).toEqual([
-      '@skill:tdd',
       '@skill:back/api-contract',
+      '@skill:tdd',
       '@mcp:back/sql',
       '@front/docs/api.md'
     ])
+  })
+
+  it('lists repository workflows and narrows to them with workflow:', () => {
+    const withWorkflow = {
+      ...catalog,
+      references: [
+        ...catalog.references,
+        {
+          kind: 'workflow' as const,
+          scope: { kind: 'repo' as const, repoId: 'back', repoName: 'back' },
+          name: 'bugfix-asana',
+          token: '@workflow:back/bugfix-asana',
+          path: '.claude/workflows/bugfix-asana.js'
+        }
+      ]
+    }
+    expect(rankMultiRepoMentionSuggestions('workflow:', withWorkflow).map((e) => e.token)).toEqual([
+      '@workflow:back/bugfix-asana'
+    ])
+    expect(rankMultiRepoMentionSuggestions('', withWorkflow).map((e) => e.token)).toContain(
+      '@workflow:back/bugfix-asana'
+    )
   })
 
   it('narrows to one kind with a skill: or mcp: prefix', () => {
