@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Textarea } from '@/components/ui/textarea'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
@@ -99,6 +99,8 @@ export function MentionSuggestionTextarea<T>({
     }
   }, [activeIndex, listboxId, showSuggestions])
 
+  const pointerInListRef = useRef(false)
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (showSuggestions) {
       if (event.key === 'ArrowDown') {
@@ -149,7 +151,12 @@ export function MentionSuggestionTextarea<T>({
                 syncMentionQuery(event.currentTarget)
               }
             }}
-            onBlur={() => setMentionQuery(null)}
+            onBlur={() => {
+              // Why: pressing the list's scrollbar blurs the textarea; that must not close the list.
+              if (!pointerInListRef.current) {
+                setMentionQuery(null)
+              }
+            }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={rows}
@@ -160,6 +167,21 @@ export function MentionSuggestionTextarea<T>({
       {showSuggestions ? (
         <PopoverContent
           side="top"
+          // Why: the composer dialog's scroll lock swallows wheel events in portaled content.
+          wheelScroll
+          onPointerDownCapture={() => {
+            pointerInListRef.current = true
+            // Why window: a scrollbar drag can end outside the list.
+            window.addEventListener(
+              'pointerup',
+              () => {
+                pointerInListRef.current = false
+                // Keeps arrow keys working after the list was scrolled with the mouse.
+                textareaRef.current?.focus()
+              },
+              { once: true }
+            )
+          }}
           align="start"
           sideOffset={6}
           onOpenAutoFocus={(event) => event.preventDefault()}
