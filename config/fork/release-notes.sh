@@ -29,11 +29,22 @@ section() {
   if [[ -n "$lines" ]]; then
     echo "### $title"
     while IFS=$'\t' read -r subject sha; do
-      echo "- ${subject} ([${sha}](https://github.com/${REPO}/commit/${sha}))"
+      echo "- **${subject}** ([${sha}](https://github.com/${REPO}/commit/${sha}))"
+      # Why the body: subjects are terse; the body explains what the change does and how to use it.
+      git show -s --format=%b "$sha" | grep -viE '^(co-authored-by|signed-off-by):' \
+        | sed -e '/^[[:space:]]*$/d' -e 's/^/  /' || true
     done <<<"$lines"
     echo
   fi
 }
+
+# Why a guide file: commit messages say what changed; this explains how to use it. It is printed
+# only when it changed since the previous release, so each guide appears once.
+GUIDE="config/fork/release-guide.md"
+if [[ -f "$GUIDE" ]] && ! git diff --quiet "$base" "$HEAD_SHA" -- "$GUIDE" 2>/dev/null; then
+  git show "$HEAD_SHA:$GUIDE"
+  echo
+fi
 
 echo "## Novedades de esta versión"
 echo
