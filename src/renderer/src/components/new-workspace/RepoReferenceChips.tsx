@@ -1,7 +1,11 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type { MultiRepoReference } from '@/lib/multi-repo-prompt-references'
 import { KIND_ICON } from './MultiRepoMentionOption'
+
+/** Chips shown before "Show more"; repositories with dozens of migration steps would fill the dialog. */
+export const REPO_REFERENCE_CHIP_PAGE = 20
 
 /** Repository-owned skills and workflows only: global ones are reachable through `@`. */
 export function selectRepoReferenceChips(
@@ -27,9 +31,12 @@ export function RepoReferenceChips({
   showRepoName: boolean
   onPick: (reference: MultiRepoReference) => void
 }): React.JSX.Element | null {
+  const [visibleCount, setVisibleCount] = useState(REPO_REFERENCE_CHIP_PAGE)
   if (references.length === 0) {
     return null
   }
+  const visible = references.slice(0, visibleCount)
+  const hidden = references.length - visible.length
   return (
     <div className="space-y-1.5">
       <p className="text-xs text-muted-foreground">
@@ -38,8 +45,8 @@ export function RepoReferenceChips({
           'Repository skills and workflows (click to reference them):'
         )}
       </p>
-      <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto scrollbar-sleek">
-        {references.map((reference) => {
+      <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto scrollbar-sleek">
+        {visible.map((reference) => {
           const Icon = KIND_ICON[reference.kind]
           const repoName = reference.scope.kind === 'repo' ? reference.scope.repoName : null
           return (
@@ -58,6 +65,24 @@ export function RepoReferenceChips({
             </Button>
           )
         })}
+        {hidden > 0 ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setVisibleCount((count) => count + REPO_REFERENCE_CHIP_PAGE)}
+          >
+            {translate(
+              'multiRepo.repoReferencesShowMoreLeft',
+              'Show {{value0}} more ({{value1}} left)',
+              {
+                value0: Math.min(hidden, REPO_REFERENCE_CHIP_PAGE),
+                value1: hidden
+              }
+            )}
+          </Button>
+        ) : null}
       </div>
     </div>
   )

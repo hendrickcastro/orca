@@ -18835,6 +18835,7 @@
     "linkedTaskDetails": "Details included",
     "removeLinkedTask": "Remove the linked task",
     "repoReferencesTitle": "Repository skills and workflows (click to reference them):",
-    "referencesHintWorkflows": "Type @ to reference skills, workflows, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill:, @workflow: or @mcp: to narrow the list."
+    "referencesHintWorkflows": "Type @ to reference skills, workflows, MCP servers, docs or files, or drag files and folders from the explorer to add their paths. Use @skill:, @workflow: or @mcp: to narrow the list.",
+    "repoReferencesShowMoreLeft": "Show {{value0}} more ({{value1}} left)"
   }
 }
