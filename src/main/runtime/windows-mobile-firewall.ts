@@ -7,9 +7,12 @@ import type {
 } from '../../shared/windows-mobile-firewall'
 import { quotePowerShellLiteral } from '../../shared/powershell-native-argument'
 import { hasSufficientWindowsFirewallRemoteScope } from './windows-firewall-remote-scope'
+import { PRODUCT_NAME, PRODUCT_WINDOWS_EXECUTABLE_NAME } from '../../shared/product-identity'
 
-const FIREWALL_RULE_NAME = 'Orca.MobilePairing'
-const FIREWALL_RULE_DISPLAY_NAME = 'Orca Mobile Pairing'
+// Why product-scoped: repair deletes the rule by name, so a name shared with upstream Orca would
+// make each app's repair silently remove the other's allow rule.
+const FIREWALL_RULE_NAME = `${PRODUCT_WINDOWS_EXECUTABLE_NAME}.MobilePairing`
+const FIREWALL_RULE_DISPLAY_NAME = `${PRODUCT_NAME} Mobile Pairing`
 const POWERSHELL_TIMEOUT_MS = 10_000
 const ELEVATION_TIMEOUT_MS = 5 * 60_000
 
