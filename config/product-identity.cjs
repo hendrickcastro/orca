@@ -10,5 +10,6 @@ module.exports = {
   PRODUCT_DEFAULT_WS_PORT: 6778,
   PRODUCT_RELEASE_OWNER: 'hendrickcastro',
   PRODUCT_RELEASE_REPO: 'hendrickcastro/orca',
-  PRODUCT_PINS_USER_DATA: true
+  PRODUCT_PINS_USER_DATA: true,
+  PRODUCT_MAC_UPDATES_FROM_DMG: true
 }

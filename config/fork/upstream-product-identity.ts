@@ -10,3 +10,4 @@ export const PRODUCT_DEFAULT_WS_PORT = 6768
 export const PRODUCT_RELEASE_OWNER = 'stablyai'
 export const PRODUCT_RELEASE_REPO = `${PRODUCT_RELEASE_OWNER}/orca`
 export const PRODUCT_PINS_USER_DATA = false
+export const PRODUCT_MAC_UPDATES_FROM_DMG = false

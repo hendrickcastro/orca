@@ -15,3 +15,5 @@ export const PRODUCT_RELEASE_OWNER = 'hendrickcastro'
 export const PRODUCT_RELEASE_REPO = `${PRODUCT_RELEASE_OWNER}/orca`
 /** The fork pins userData to PRODUCT_PACKAGE_NAME; upstream relies on Electron's default. */
 export const PRODUCT_PINS_USER_DATA = true
+/** The fork's macOS build is ad-hoc signed, so Squirrel.Mac can't install it; updates come from the release DMG. */
+export const PRODUCT_MAC_UPDATES_FROM_DMG = true
