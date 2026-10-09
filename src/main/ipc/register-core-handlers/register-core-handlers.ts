@@ -17,6 +17,7 @@ import { registerJiraHandlers } from '../jira'
 import { registerBitbucketHandlers } from '../bitbucket'
 import { registerAzureDevOpsHandlers } from '../azure-devops'
 import { registerAsanaHandlers } from '../asana'
+import { registerSubagentResultHandlers } from '../subagent-results'
 import { registerFeedbackHandlers } from '../feedback'
 import { registerCrashReportingHandlers } from '../crash-reporting'
 import { registerExportHandlers } from '../export'
@@ -169,6 +170,7 @@ export function registerCoreHandlers(
   registerBitbucketHandlers()
   registerAzureDevOpsHandlers()
   registerAsanaHandlers()
+  registerSubagentResultHandlers()
   registerFeedbackHandlers()
   if (crashReports) {
     registerCrashReportingHandlers(crashReports)

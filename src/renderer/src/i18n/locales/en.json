@@ -19813,5 +19813,42 @@
     "browser": "Browser",
     "editor": "Editor",
     "terminal": "Terminal"
+  },
+  "subagentsPanel": {
+    "document": {
+      "fallbackTitle": "Subagent result",
+      "agent": "Agent",
+      "parentTask": "Launched by",
+      "status": "Status",
+      "finished": "Finished",
+      "inProgress": "In progress",
+      "result": "Result",
+      "noResult": "No final answer yet.",
+      "prompt": "Assignment",
+      "failed": "Failed"
+    },
+    "openFailed": "Couldn't open this subagent's result.",
+    "title": "Subagents",
+    "row": {
+      "working": "Working…",
+      "noPreview": "No answer text yet"
+    },
+    "group": {
+      "loadError": "Couldn't load this session's subagents.",
+      "toggle": "Show or hide subagents",
+      "openTerminal": "Go to its terminal",
+      "terminalGone": "That terminal is no longer open."
+    },
+    "refresh": "Refresh subagents",
+    "noWorkspace": "No workspace selected",
+    "noWorkspaceCopy": "Select a workspace to see the subagents its agents launched.",
+    "remoteTitle": "Not available for SSH workspaces",
+    "remoteCopy": "Subagent transcripts are read from this computer, so SSH workspaces are not covered yet.",
+    "loading": "Loading subagents…",
+    "loadError": "Couldn't load this workspace's sessions",
+    "loadErrorCopy": "Use Refresh to try again.",
+    "emptyTitle": "No subagents yet",
+    "emptyCopy": "When a Claude agent in this workspace delegates work to subagents, each one appears here under the session that launched it. Select one to open its result.",
+    "subtitle": "Grouped by the session that launched them"
   }
 }

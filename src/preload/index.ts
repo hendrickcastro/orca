@@ -27,6 +27,7 @@ import { glApiBridge } from './api/gl-bridge'
 import { bitbucketApi } from './api/bitbucket-bridge'
 import { azureDevOpsApi } from './api/azure-devops-bridge'
 import { asanaApi } from './api/asana-bridge'
+import { subagentResultsApi } from './api/subagent-results-bridge'
 import { linearApi } from './api/linear-bridge'
 import { jiraApi } from './api/jira-bridge'
 import { starNagApi } from './api/star-nag-bridge'
@@ -126,6 +127,7 @@ const api = {
   bitbucket: bitbucketApi,
   azureDevOps: azureDevOpsApi,
   asana: asanaApi,
+  subagentResults: subagentResultsApi,
   linear: linearApi,
   jira: jiraApi,
   starNag: starNagApi,

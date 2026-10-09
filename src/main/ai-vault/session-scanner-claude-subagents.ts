@@ -292,7 +292,7 @@ function taskNotificationBlockText(block: unknown): string {
 
 // Claude writes an `agent-<id>.meta.json` sidecar for every subagent transcript,
 // carrying the Task tool's spawn `description` and its resolved `agentType`.
-async function readSubagentMeta(transcriptPath: string): Promise<ClaudeSubagentMeta> {
+export async function readSubagentMeta(transcriptPath: string): Promise<ClaudeSubagentMeta> {
   const metaPath = `${transcriptPath.slice(0, -extname(transcriptPath).length)}.meta.json`
   try {
     const raw = await wslGatedReadFile(metaPath, 'utf-8', SUBAGENT_FS_PRIORITY)

@@ -19551,5 +19551,42 @@
   },
   "projectField": {
     "updateFailed": "No se pudo actualizar el campo del proyecto"
+  },
+  "subagentsPanel": {
+    "document": {
+      "fallbackTitle": "Resultado del subagente",
+      "agent": "Agente",
+      "parentTask": "Lanzado por",
+      "status": "Estado",
+      "finished": "Terminado",
+      "failed": "Falló",
+      "inProgress": "En curso",
+      "result": "Resultado",
+      "noResult": "Todavía no hay respuesta final.",
+      "prompt": "Encargo"
+    },
+    "openFailed": "No se pudo abrir el resultado de este subagente.",
+    "title": "Subagentes",
+    "row": {
+      "working": "Trabajando…",
+      "noPreview": "Todavía sin texto de respuesta"
+    },
+    "group": {
+      "loadError": "No se pudieron cargar los subagentes de esta sesión.",
+      "toggle": "Mostrar u ocultar subagentes",
+      "openTerminal": "Ir a su terminal",
+      "terminalGone": "Esa terminal ya no está abierta."
+    },
+    "refresh": "Actualizar subagentes",
+    "noWorkspace": "Ningún workspace seleccionado",
+    "noWorkspaceCopy": "Selecciona un workspace para ver los subagentes que lanzaron sus agentes.",
+    "remoteTitle": "No disponible en workspaces SSH",
+    "remoteCopy": "Los transcripts de subagentes se leen desde este equipo, así que los workspaces SSH aún no están cubiertos.",
+    "loading": "Cargando subagentes…",
+    "loadError": "No se pudieron cargar las sesiones de este workspace",
+    "loadErrorCopy": "Usa Actualizar para intentarlo de nuevo.",
+    "emptyTitle": "Todavía no hay subagentes",
+    "emptyCopy": "Cuando un agente de Claude de este workspace delegue trabajo en subagentes, cada uno aparecerá aquí bajo la sesión que lo lanzó. Selecciona uno para abrir su resultado.",
+    "subtitle": "Agrupados por la sesión que los lanzó"
   }
 }
