@@ -1,3 +1,5 @@
+import type { SubagentActivityItem } from '../../shared/subagent-results-types'
+
 export type SubagentTranscriptResult = {
   prompt: string | null
   result: string | null
@@ -5,7 +7,24 @@ export type SubagentTranscriptResult = {
   /** The last turn ended on an API error (e.g. a rate limit), not on an answer. */
   failed: boolean
   finishedAt: string | null
+  /** Most recent tool calls and texts, oldest first, so a running subagent can be followed. */
+  activity: SubagentActivityItem[]
 }
+
+export const SUBAGENT_ACTIVITY_MAX_ITEMS = 20
+const ACTIVITY_TEXT_MAX_LENGTH = 160
+// Tool arguments that best say what a call does, in preference order.
+const TOOL_DETAIL_KEYS = [
+  'description',
+  'command',
+  'pattern',
+  'file_path',
+  'path',
+  'query',
+  'url',
+  'prompt',
+  'subject'
+]
 
 // Claude's subagents may close by calling this tool; its `message` is the answer they return.
 const HANDBACK_TOOL_NAME = 'SubagentHandback'
@@ -57,6 +76,44 @@ function handbackMessage(content: unknown): string | null {
   return null
 }
 
+function oneLine(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim()
+  return flat.length > ACTIVITY_TEXT_MAX_LENGTH
+    ? `${flat.slice(0, ACTIVITY_TEXT_MAX_LENGTH - 1)}…`
+    : flat
+}
+
+function activityOf(content: unknown, at: string | null, rowId: string): SubagentActivityItem[] {
+  if (!Array.isArray(content)) {
+    return typeof content === 'string' && content.trim()
+      ? [{ id: `${rowId}:0`, kind: 'text', label: oneLine(content), at }]
+      : []
+  }
+  const items: SubagentActivityItem[] = []
+  content.forEach((block: unknown, index) => {
+    const id = `${rowId}:${index}`
+    const type = field(block, 'type')
+    const text = field(block, 'text')
+    const name = field(block, 'name')
+    if (type === 'text' && typeof text === 'string' && text.trim()) {
+      items.push({ id, kind: 'text', label: oneLine(text), at })
+    } else if (type === 'tool_use' && typeof name === 'string') {
+      const input = field(block, 'input')
+      const detail = TOOL_DETAIL_KEYS.map((key) => field(input, key)).find(
+        (value): value is string => typeof value === 'string' && value.trim().length > 0
+      )
+      items.push({
+        id,
+        kind: 'tool',
+        label: name,
+        ...(detail ? { detail: oneLine(detail) } : {}),
+        at
+      })
+    }
+  })
+  return items
+}
+
 /** Reads a Claude subagent transcript: the task it was given and the text of its last turn.
  *  Claude writes one row per content block, so the last turn is every assistant row after the
  *  final user row (tool results arrive as user rows). */
@@ -68,13 +125,14 @@ export function readSubagentTranscriptResult(jsonl: string): SubagentTranscriptR
   let userAfterAssistant = false
   let failed = false
   let handback: { message: string; at: string | null } | null = null
+  const activity: SubagentActivityItem[] = []
   const startTurn = (): void => {
     turnTexts = []
     lastStopReason = null
     failed = false
     userAfterAssistant = true
   }
-  for (const line of jsonl.split('\n')) {
+  for (const [lineIndex, line] of jsonl.split('\n').entries()) {
     if (!line.trim()) {
       continue
     }
@@ -103,6 +161,19 @@ export function readSubagentTranscriptResult(jsonl: string): SubagentTranscriptR
       continue
     }
     const content = field(message, 'content')
+    if (field(row, 'isApiErrorMessage') !== true) {
+      const uuid = field(row, 'uuid')
+      activity.push(
+        ...activityOf(
+          content,
+          typeof timestamp === 'string' ? timestamp : null,
+          typeof uuid === 'string' ? uuid : `line-${lineIndex}`
+        )
+      )
+      if (activity.length > SUBAGENT_ACTIVITY_MAX_ITEMS) {
+        activity.splice(0, activity.length - SUBAGENT_ACTIVITY_MAX_ITEMS)
+      }
+    }
     const handbackText = handbackMessage(content)
     if (handbackText !== null) {
       handback = { message: handbackText, at: typeof timestamp === 'string' ? timestamp : null }
@@ -122,7 +193,8 @@ export function readSubagentTranscriptResult(jsonl: string): SubagentTranscriptR
       result: handback.message,
       finished: true,
       failed: false,
-      finishedAt: handback.at
+      finishedAt: handback.at,
+      activity
     }
   }
   const finished = !failed && lastStopReason === 'end_turn' && !userAfterAssistant
@@ -131,6 +203,7 @@ export function readSubagentTranscriptResult(jsonl: string): SubagentTranscriptR
     result: turnTexts.length > 0 ? turnTexts.join('\n\n') : null,
     finished,
     failed,
-    finishedAt: finished ? lastAssistantAt : null
+    finishedAt: finished ? lastAssistantAt : null,
+    activity
   }
 }

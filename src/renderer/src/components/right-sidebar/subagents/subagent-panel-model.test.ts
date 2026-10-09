@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSubagentResultMarkdown } from './subagent-result-document'
+import { buildSubagentResultMarkdown, withSubagentActivity } from './subagent-result-document'
 import {
   orderSessionsByLiveWork,
   orderSubagentRows,
@@ -17,7 +17,8 @@ const labels = {
   inProgress: 'In progress',
   result: 'Result',
   noResult: 'No final answer yet.',
-  prompt: 'Assignment'
+  prompt: 'Assignment',
+  recentActivity: 'Recent activity'
 }
 
 describe('subagentRowDotState', () => {
@@ -70,7 +71,8 @@ describe('buildSubagentResultMarkdown', () => {
         failed: false,
         finishedAt: '2026-10-09T11:00:00.000Z',
         description: 'Investigate parser',
-        agentType: 'Explore'
+        agentType: 'Explore',
+        activity: []
       },
       parentTitle: 'Fix login',
       labels
@@ -96,7 +98,8 @@ describe('buildSubagentResultMarkdown', () => {
         failed: false,
         finishedAt: null,
         description: null,
-        agentType: null
+        agentType: null,
+        activity: []
       },
       parentTitle: null,
       labels
@@ -140,5 +143,21 @@ describe('live work ordering', () => {
       'old',
       'done'
     ])
+  })
+})
+
+describe('withSubagentActivity', () => {
+  it('treats a detail from a main process without activity tracking as having none', () => {
+    const legacy = JSON.parse(
+      '{"prompt":"Task","result":"Done","finished":true,"failed":false,"finishedAt":null,"description":null,"agentType":null}'
+    )
+    expect(withSubagentActivity(legacy).activity).toEqual([])
+    expect(
+      buildSubagentResultMarkdown({
+        detail: withSubagentActivity(legacy),
+        parentTitle: null,
+        labels
+      })
+    ).toContain('Done')
   })
 })

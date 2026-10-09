@@ -105,6 +105,7 @@ export default function SubagentsPanel(): React.JSX.Element {
               key={session.id}
               session={session}
               rows={rowsBySession.get(session.id) ?? LOADING_SESSION_SUBAGENTS}
+              refreshKey={refreshKey}
               open={!collapsed.has(session.id)}
               onOpenChange={(open) =>
                 setCollapsed((previous) => {

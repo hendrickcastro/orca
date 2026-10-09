@@ -85,6 +85,8 @@ test('lists a session’s subagents with answer previews and opens a result tab'
   await expect(orcaPage.getByText('Migrate the billing module', { exact: true })).toBeVisible({
     timeout: 30_000
   })
+  // The group names the parent agent and the project / workspace it runs in.
+  await expect(orcaPage.getByText(/^Claude · /)).toBeVisible()
   const finished = orcaPage.getByRole('button', { name: /Map chargeCard callers/ })
   await expect(finished).toContainText('Found 3 callers of chargeCard in invoices.ts.')
   await expect(finished).toContainText('Explore')
@@ -143,8 +145,17 @@ test('lists a session’s subagents with answer previews and opens a result tab'
       ].map((row) => ({ isSidechain: true, agentId: 'a2', sessionId, ...row }))
     )
   )
-  await orcaPage.getByRole('button', { name: /Draft migration plan/ }).click()
-  await expect(orcaPage.getByText('Plan: migrate in three phases.')).toBeVisible({
+  // A working row expands in place into what it was asked and what it has done so far.
+  const working = orcaPage.getByRole('button', { name: /Draft migration plan/ })
+  await working.click()
+  await expect(working).toHaveAttribute('aria-expanded', 'true')
+  await expect(orcaPage.getByText('Recent activity', { exact: true })).toBeVisible({
+    timeout: 30_000
+  })
+  await expect(orcaPage.getByText('Plan: migrate in three phases.').first()).toBeVisible()
+  await screenshot('subagent-live-activity.png')
+  await orcaPage.getByRole('button', { name: 'Open in a tab', exact: true }).click()
+  await expect(orcaPage.getByRole('heading', { name: 'Draft migration plan' })).toBeVisible({
     timeout: 30_000
   })
 

@@ -19563,19 +19563,22 @@
       "inProgress": "En curso",
       "result": "Resultado",
       "noResult": "Todavía no hay respuesta final.",
-      "prompt": "Encargo"
+      "prompt": "Encargo",
+      "recentActivity": "Actividad reciente"
     },
     "openFailed": "No se pudo abrir el resultado de este subagente.",
     "title": "Subagentes",
     "row": {
-      "working": "Trabajando…",
+      "working": "Trabajando… púlsalo para seguirlo",
       "noPreview": "Todavía sin texto de respuesta"
     },
     "group": {
       "loadError": "No se pudieron cargar los subagentes de esta sesión.",
       "toggle": "Mostrar u ocultar subagentes",
       "openTerminal": "Ir a su terminal",
-      "terminalGone": "Esa terminal ya no está abierta."
+      "terminalGone": "Esa terminal ya no está abierta.",
+      "launchedIn": "Claude · {{location}}",
+      "launchedByClaude": "Claude"
     },
     "refresh": "Actualizar subagentes",
     "noWorkspace": "Ningún workspace seleccionado",
@@ -19587,6 +19590,14 @@
     "loadErrorCopy": "Usa Actualizar para intentarlo de nuevo.",
     "emptyTitle": "Todavía no hay subagentes",
     "emptyCopy": "Cuando un agente de Claude de este workspace delegue trabajo en subagentes, cada uno aparecerá aquí bajo la sesión que lo lanzó. Selecciona uno para abrir su resultado.",
-    "subtitle": "Agrupados por la sesión que los lanzó"
+    "subtitle": "Agrupados por la sesión que los lanzó",
+    "live": {
+      "loading": "Leyendo su actividad…",
+      "loadError": "No se pudo leer la actividad de este subagente.",
+      "assignment": "Encargo",
+      "recentActivity": "Actividad reciente",
+      "noActivity": "Todavía no hay actividad registrada.",
+      "openTab": "Abrir en una pestaña"
+    }
   }
 }

@@ -4,6 +4,7 @@ import { translate } from '@/i18n/i18n'
 import type { AiVaultSession } from '../../../../../shared/ai-vault-types'
 import {
   buildSubagentResultMarkdown,
+  withSubagentActivity,
   type SubagentResultDocumentLabels
 } from './subagent-result-document'
 
@@ -18,7 +19,8 @@ function documentLabels(): SubagentResultDocumentLabels {
     inProgress: translate('subagentsPanel.document.inProgress', 'In progress'),
     result: translate('subagentsPanel.document.result', 'Result'),
     noResult: translate('subagentsPanel.document.noResult', 'No final answer yet.'),
-    prompt: translate('subagentsPanel.document.prompt', 'Assignment')
+    prompt: translate('subagentsPanel.document.prompt', 'Assignment'),
+    recentActivity: translate('subagentsPanel.document.recentActivity', 'Recent activity')
   }
 }
 
@@ -43,7 +45,7 @@ export async function openSubagentResult(
     }
     const markdown = buildSubagentResultMarkdown({
       detail: {
-        ...read.detail,
+        ...withSubagentActivity(read.detail),
         description: read.detail.description ?? subagent.title,
         finishedAt: read.detail.finishedAt
           ? new Date(read.detail.finishedAt).toLocaleString()

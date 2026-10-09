@@ -31,7 +31,7 @@ describe('readSubagentTranscriptResult', () => {
       row({ type: 'attachment' })
     ].join('\n')
 
-    expect(readSubagentTranscriptResult(jsonl)).toEqual({
+    expect(readSubagentTranscriptResult(jsonl)).toMatchObject({
       prompt: 'Investigate the bug',
       result: 'Root cause found.\n\nFix: guard null.',
       finished: true,
@@ -48,7 +48,7 @@ describe('readSubagentTranscriptResult', () => {
       user([{ type: 'tool_result', tool_use_id: 't1', content: 'file' }])
     ].join('\n')
 
-    expect(readSubagentTranscriptResult(jsonl)).toEqual({
+    expect(readSubagentTranscriptResult(jsonl)).toMatchObject({
       prompt: 'Task',
       result: null,
       finished: false,
@@ -97,7 +97,7 @@ describe('readSubagentTranscriptResult', () => {
       user([{ type: 'tool_result', tool_use_id: 'h1', content: 'ok' }])
     ].join('\n')
 
-    expect(readSubagentTranscriptResult(jsonl)).toEqual({
+    expect(readSubagentTranscriptResult(jsonl)).toMatchObject({
       prompt: 'Map the callers',
       result: 'Three callers found.',
       finished: true,
@@ -153,5 +153,38 @@ describe('readSubagentTranscriptResult', () => {
       result: 'Second answer.',
       finished: true
     })
+  })
+
+  it('lists recent tool calls and texts so a running subagent can be followed', () => {
+    const jsonl = [
+      user('Task'),
+      assistant(
+        [{ type: 'tool_use', id: 't1', name: 'Grep', input: { pattern: 'chargeCard' } }],
+        'tool_use',
+        '2026-10-09T10:01:00.000Z'
+      ),
+      user([{ type: 'tool_result', tool_use_id: 't1', content: 'match' }]),
+      assistant(
+        [{ type: 'text', text: 'Reading   the\nresults' }],
+        null,
+        '2026-10-09T10:02:00.000Z'
+      )
+    ].join('\n')
+
+    expect(readSubagentTranscriptResult(jsonl).activity).toEqual([
+      {
+        id: 'line-1:0',
+        kind: 'tool',
+        label: 'Grep',
+        detail: 'chargeCard',
+        at: '2026-10-09T10:01:00.000Z'
+      },
+      {
+        id: 'line-3:0',
+        kind: 'text',
+        label: 'Reading the results',
+        at: '2026-10-09T10:02:00.000Z'
+      }
+    ])
   })
 })

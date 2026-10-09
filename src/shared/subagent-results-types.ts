@@ -33,6 +33,17 @@ export type SubagentResultSummariesResult = {
   summaries: SubagentResultSummary[]
 }
 
+export type SubagentActivityItem = {
+  /** Stable across reads: the transcript row id plus the block's position in it. */
+  id: string
+  kind: 'tool' | 'text'
+  /** Tool name, or the start of a text block. */
+  label: string
+  /** One-line summary of the tool's main argument. */
+  detail?: string
+  at: string | null
+}
+
 export type SubagentResultDetail = {
   /** The task the parent agent handed to the subagent. */
   prompt: string | null
@@ -43,6 +54,8 @@ export type SubagentResultDetail = {
   finishedAt: string | null
   description: string | null
   agentType: string | null
+  /** Most recent tool calls and texts, oldest first. */
+  activity: SubagentActivityItem[]
 }
 
 export type SubagentResultReadResult =
