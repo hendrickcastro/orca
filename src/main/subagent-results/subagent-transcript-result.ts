@@ -1,4 +1,5 @@
 import type { SubagentActivityItem } from '../../shared/subagent-results-types'
+import { asRecord } from '../ai-vault/session-scanner-record-value'
 
 export type SubagentTranscriptResult = {
   prompt: string | null
@@ -30,7 +31,7 @@ const TOOL_DETAIL_KEYS = [
 const HANDBACK_TOOL_NAME = 'SubagentHandback'
 
 function field(value: unknown, key: string): unknown {
-  return typeof value === 'object' && value !== null ? Reflect.get(value, key) : undefined
+  return asRecord(value)?.[key]
 }
 
 function parseRow(line: string): unknown {

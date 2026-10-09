@@ -2,6 +2,7 @@ import path from 'node:path'
 import { PRODUCT_PACKAGE_NAME, PRODUCT_RELEASE_REPO } from '../../shared/product-identity'
 import { normalizeTagToVersion } from '../../shared/release-channel'
 import { isValidVersion } from '../updater-fallback'
+import { asRecord } from '../ai-vault/session-scanner-record-value'
 
 export type ForkMacDmgRelease = {
   version: string
@@ -17,10 +18,7 @@ export function getForkMacDmgName(arch: string): string {
 }
 
 function readString(value: unknown, key: string): string | null {
-  if (typeof value !== 'object' || value === null || !(key in value)) {
-    return null
-  }
-  const field: unknown = Reflect.get(value, key)
+  const field = asRecord(value)?.[key]
   return typeof field === 'string' ? field : null
 }
 
@@ -36,8 +34,7 @@ export function parseForkMacDmgRelease(payload: unknown, arch: string): ForkMacD
     return null
   }
   const dmgName = getForkMacDmgName(arch)
-  const assets: unknown =
-    typeof payload === 'object' && payload !== null ? Reflect.get(payload, 'assets') : null
+  const assets = asRecord(payload)?.assets
   const asset = Array.isArray(assets)
     ? assets.find((entry) => readString(entry, 'name') === dmgName)
     : undefined

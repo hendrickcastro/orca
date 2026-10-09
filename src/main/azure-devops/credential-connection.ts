@@ -4,6 +4,7 @@ import type {
   AzureDevOpsConnectionStatus
 } from '../../shared/azure-devops-credentials'
 import { cancelUnreadResponseBody } from '../lib/unread-response-body'
+import { asRecord } from '../ai-vault/session-scanner-record-value'
 import {
   azureDevOpsApiVersionForOrigin,
   isAzureDevOpsPreviewVersionRejection,
@@ -61,11 +62,12 @@ export function normalizeAzureDevOpsOrganizationUrl(value: string): string | nul
 }
 
 function displayName(user: unknown): string | null {
-  if (!user || typeof user !== 'object') {
+  const record = asRecord(user)
+  if (!record) {
     return null
   }
   for (const key of ['providerDisplayName', 'customDisplayName']) {
-    const value: unknown = key in user ? Reflect.get(user, key) : null
+    const value = record[key]
     if (typeof value === 'string' && value) {
       return value
     }

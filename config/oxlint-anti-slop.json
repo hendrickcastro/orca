@@ -65,6 +65,13 @@
         "anti-slop/no-module-mocking": "off"
       }
     },
+    // Fork test setup: keeps upstream suites asserting upstream identity; product code never imports it.
+    {
+      "files": ["**/vitest-upstream-identity.ts"],
+      "rules": {
+        "anti-slop/no-module-mocking": "off"
+      }
+    },
     // Test-only builtin adapters publish Node-compatible behavior and instrument OS metrics.
     {
       "files": ["**/vitest-bun-node-builtins.ts", "**/hang-watchdog-process-metrics.test.mjs"],
