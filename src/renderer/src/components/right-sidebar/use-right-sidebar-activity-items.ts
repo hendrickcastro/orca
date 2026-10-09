@@ -16,6 +16,7 @@ import { useShortcutLabel } from '@/hooks/useShortcutLabel'
 import { translate } from '@/i18n/i18n'
 import { AgentSessionHistoryIcon } from './agent-session-history-icon'
 import type { ActivityBarItem } from './activity-bar-buttons'
+import { subagentsActivityItem } from './subagents/subagents-activity-item'
 
 export type RightSidebarActivityItems = {
   visibleItems: ActivityBarItem[]
@@ -73,6 +74,7 @@ export function useRightSidebarActivityItems({
         title: translate('auto.components.right.sidebar.index.aiVaultSessionHistory', 'Agents'),
         shortcut: ''
       },
+      subagentsActivityItem(),
       {
         id: 'workspaces',
         icon: Workflow,

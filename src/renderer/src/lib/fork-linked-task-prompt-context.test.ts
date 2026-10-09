@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildAgentPromptWithContext } from './new-workspace'
+import { buildAgentPromptWithContext } from './agent-prompt-with-linked-context'
 import { getLinkedWorkItemPromptContext } from './linked-work-item-context'
 
 describe('fork: a fetched Asana task in the agent prompt', () => {

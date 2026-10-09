@@ -1,5 +1,5 @@
 import React from 'react'
-import { CalendarClock, CircleDot, SquareTerminal, StickyNote } from 'lucide-react'
+import { CalendarClock, CircleDot, Link2, SquareTerminal, StickyNote } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LinearIcon } from '@/components/icons/LinearIcon'
 import {
@@ -13,12 +13,14 @@ import type {
   WorktreeCardMetaBadgesRootProps
 } from './worktree-card-meta-types'
 import { translate } from '@/i18n/i18n'
+import { WorktreeReferenceStack } from './WorktreeReferenceStack'
 
 function hasComment(comment: string | null): boolean {
   return (comment ?? '').trim().length > 0
 }
 
 export function hasWorktreeCardDetails({
+  linkedItemCount = 0,
   issue,
   linearIssue,
   jiraIssue,
@@ -28,6 +30,7 @@ export function hasWorktreeCardDetails({
   cliProvenance
 }: WorktreeCardMetaBadgesProps): boolean {
   return Boolean(
+    linkedItemCount > 0 ||
     issue ||
     linearIssue ||
     jiraIssue ||
@@ -43,6 +46,9 @@ export const WorktreeCardMetaBadges = React.forwardRef<
   WorktreeCardMetaBadgesRootProps
 >(function WorktreeCardMetaBadges(
   {
+    linkedItemCount = 0,
+    referenceItems,
+    referenceDetails,
     issue,
     linearIssue,
     jiraIssue,
@@ -57,6 +63,7 @@ export const WorktreeCardMetaBadges = React.forwardRef<
 ): React.JSX.Element | null {
   if (
     !hasWorktreeCardDetails({
+      linkedItemCount,
       issue,
       linearIssue,
       jiraIssue,
@@ -68,6 +75,14 @@ export const WorktreeCardMetaBadges = React.forwardRef<
   ) {
     return null
   }
+
+  const reviewItems = referenceItems?.filter((item) => item.type !== 'issue') ?? []
+  const linearItems = referenceItems?.filter((item) => item.provider === 'linear') ?? []
+  const jiraItems = referenceItems?.filter((item) => item.provider === 'jira') ?? []
+  const issueItems =
+    referenceItems?.filter(
+      (item) => item.type === 'issue' && item.provider !== 'linear' && item.provider !== 'jira'
+    ) ?? []
 
   return (
     // Why: Radix HoverCardTrigger uses `asChild`, so this group must forward
@@ -81,6 +96,20 @@ export const WorktreeCardMetaBadges = React.forwardRef<
         'Workspace metadata'
       )}
     >
+      {linkedItemCount > 0 &&
+      !referenceItems?.length &&
+      !issue &&
+      !linearIssue &&
+      !jiraIssue &&
+      !review ? (
+        <MetaIconBadge
+          label={translate('workspace.links.show', 'Show {{count}} linked reviews and tasks', {
+            count: linkedItemCount
+          })}
+        >
+          <Link2 />
+        </MetaIconBadge>
+      ) : null}
       {hasComment(comment) && (
         <MetaIconBadge
           label={translate(
@@ -111,43 +140,61 @@ export const WorktreeCardMetaBadges = React.forwardRef<
           <SquareTerminal className="text-muted-foreground" />
         </MetaIconBadge>
       )}
-      {issue && (
-        <MetaIconBadge
-          label={translate(
-            'auto.components.sidebar.WorktreeCardMeta.3f2649eeb8',
-            'Linked issue #{{value0}}',
-            { value0: issue.number }
-          )}
-        >
-          <CircleDot className="text-muted-foreground" />
-        </MetaIconBadge>
+      {issueItems.length ? (
+        <WorktreeReferenceStack items={issueItems} details={referenceDetails} />
+      ) : (
+        issue && (
+          <MetaIconBadge
+            label={translate(
+              'auto.components.sidebar.WorktreeCardMeta.3f2649eeb8',
+              'Linked issue #{{value0}}',
+              { value0: issue.number }
+            )}
+          >
+            <CircleDot className="text-muted-foreground" />
+          </MetaIconBadge>
+        )
       )}
-      {linearIssue && (
-        <MetaIconBadge
-          label={translate(
-            'auto.components.sidebar.WorktreeCardMeta.b105fd3057',
-            'Linked Linear {{value0}}',
-            { value0: linearIssue.identifier }
-          )}
-        >
-          <LinearIcon className="text-muted-foreground" />
-        </MetaIconBadge>
+      {jiraItems.length ? (
+        <WorktreeReferenceStack items={jiraItems} details={referenceDetails} />
+      ) : (
+        jiraIssue && (
+          <MetaIconBadge
+            label={
+              linkedTaskBadgeLabel(jiraIssue) ??
+              translate(
+                'auto.components.sidebar.WorktreeCardMeta.linkedJira',
+                'Linked Jira {{value0}}',
+                { value0: jiraIssue.identifier }
+              )
+            }
+          >
+            <WorktreeCardLinkedTaskIcon issue={jiraIssue} className="text-muted-foreground" />
+          </MetaIconBadge>
+        )
       )}
-      {jiraIssue && (
-        <MetaIconBadge
-          label={
-            linkedTaskBadgeLabel(jiraIssue) ??
-            translate(
-              'auto.components.sidebar.WorktreeCardMeta.linkedJira',
-              'Linked Jira {{value0}}',
-              { value0: jiraIssue.identifier }
-            )
-          }
+      {linearItems.length || reviewItems.length ? (
+        <span
+          className="inline-flex shrink-0 items-center gap-1.5"
+          data-workspace-reference-groups=""
         >
-          <WorktreeCardLinkedTaskIcon issue={jiraIssue} className="text-muted-foreground" />
-        </MetaIconBadge>
+          <WorktreeReferenceStack items={linearItems} details={referenceDetails} />
+          <WorktreeReferenceStack items={reviewItems} details={referenceDetails} />
+        </span>
+      ) : (
+        linearIssue && (
+          <MetaIconBadge
+            label={translate(
+              'auto.components.sidebar.WorktreeCardMeta.b105fd3057',
+              'Linked Linear {{value0}}',
+              { value0: linearIssue.identifier }
+            )}
+          >
+            <LinearIcon className="text-muted-foreground" />
+          </MetaIconBadge>
+        )
       )}
-      {review && (
+      {!reviewItems.length && review && (
         <MetaIconBadge
           label={translate(
             'auto.components.sidebar.WorktreeCardMeta.3ea2702e62',
