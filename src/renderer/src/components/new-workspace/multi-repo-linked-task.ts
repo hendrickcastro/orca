@@ -1,5 +1,5 @@
 import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
-import { buildAgentPromptWithContext } from '@/lib/new-workspace'
+import { buildAgentPromptWithContext } from '@/lib/agent-prompt-with-linked-context'
 import { getLinkedWorkItemPromptContext } from '@/lib/linked-work-item-context'
 
 /** Values the single-repository composer hands over when the user switches to several repositories. */

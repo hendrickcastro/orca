@@ -140,6 +140,7 @@ import { formatWorktreeIncludeCopyWarning } from './worktree-include-copy-budget
 import { resolveWorktreeIncludePaths } from '../git/worktree-include-file'
 import { resolveWorktreeSharedDirectories } from '../git/worktree-shared-directories'
 import { normalizeSparseDirectories } from './sparse-checkout-directories'
+import { attributedSparsePresetId } from './sparse-preset-attribution'
 import { joinWorktreeRelativePath } from '../runtime/runtime-relative-paths'
 import type { IFilesystemProvider } from '../providers/types'
 import {
@@ -173,7 +174,7 @@ import {
 import { createRetiredNameLookup } from '../../shared/worktree/retired-name-registry'
 import { toLocalBaseRefRefreshResult } from '../../shared/worktree/local-base-branch-fast-forward'
 import { isSshRequestOutcomeUnverifiable } from '../ssh/ssh-channel-multiplexer'
-import { findPendingWorktreeRemovalConflict } from '../worktree-background-removal'
+import { findPendingWorktreeRemovalConflict } from '../worktree-removal-table'
 
 const SSH_WORKTREE_CREATE_FETCH_FRESHNESS_MS = 30_000
 const SSH_WORKTREE_CREATE_FETCH_CACHE_MAX = 512
@@ -534,10 +535,6 @@ function getSshWorktreeCreateBaseFetchKey(repo: Repo, base: RemoteTrackingBase):
   return `${repo.connectionId ?? 'ssh'}::${repo.path}::base:${base.remote}:${base.branch}`
 }
 
-function getSshWorktreeCreateRemoteFetchKey(repo: Repo, remote: string): string {
-  return `${repo.connectionId ?? 'ssh'}::${repo.path}::remote:${remote}`
-}
-
 function getSshWorktreeCreateRemoteQueueKey(repo: Repo, remote: string): string {
   return `${repo.connectionId ?? 'ssh'}::${repo.path}::queue:${remote}`
 }
@@ -630,13 +627,17 @@ async function refreshRemoteTrackingBaseForWorktreeCreate(
 async function fetchRemoteForWorktreeCreate(
   provider: SshGitProvider,
   repo: Repo,
-  remote: string
-): Promise<void> {
-  return getOrStartSshWorktreeCreateFetch(
-    getSshWorktreeCreateRemoteFetchKey(repo, remote),
-    getSshWorktreeCreateRemoteQueueKey(repo, remote),
-    () => provider.exec(['fetch', remote], repo.path).then(() => undefined)
-  )
+  baseBranch: string
+): Promise<RemoteTrackingBase> {
+  const branch = normalizeLocalBranchName(baseBranch)
+  const base = {
+    remote: 'origin',
+    branch,
+    ref: `refs/remotes/origin/${branch}`,
+    base: `origin/${branch}`
+  }
+  await refreshRemoteTrackingBaseForWorktreeCreate(provider, repo, base)
+  return base
 }
 
 export function __resetSshWorktreeCreateFetchCacheForTests(): void {
@@ -1516,6 +1517,9 @@ async function resolveRemoteTrackingBaseSsh(
   repoPath: string,
   baseBranch: string
 ): Promise<RemoteTrackingBase | null> {
+  if (baseBranch.startsWith('refs/') && !baseBranch.startsWith('refs/remotes/')) {
+    return null
+  }
   let remotes: string[]
   try {
     const { stdout } = await provider.exec(['remote'], repoPath)
@@ -1630,7 +1634,7 @@ export async function prefetchRemoteWorktreeCreateBase(
   }
 
   // Why: mirrors createRemoteWorktree's legacy local-base fallback so prefetch and create share one process-local SSH fetch cache.
-  await fetchRemoteForWorktreeCreate(provider, repo, 'origin')
+  await fetchRemoteForWorktreeCreate(provider, repo, basePlan.baseBranch)
 }
 
 /** Never rejects: the create may already have succeeded when this settles. */
@@ -1887,24 +1891,12 @@ export async function createRemoteWorktree(
   if (args.sparseCheckout && sparseDirectories.length === 0) {
     throw new Error('Sparse checkout requires at least one repo-relative directory.')
   }
-  let sparsePresetId: string | undefined
-  if (args.sparseCheckout?.presetId) {
-    const preset = store
-      .getSparsePresets(repo.id)
-      .find((entry) => entry.id === args.sparseCheckout?.presetId)
-    if (preset?.repoId === repo.id) {
-      try {
-        const presetDirectories = normalizeSparseDirectories(preset.directories)
-        const presetSet = new Set(presetDirectories)
-        const directoriesMatch =
-          presetDirectories.length === sparseDirectories.length &&
-          sparseDirectories.every((entry) => presetSet.has(entry))
-        sparsePresetId = directoriesMatch ? preset.id : undefined
-      } catch {
-        // Why: corrupt preset data should not block creation or falsely label the new worktree.
-      }
-    }
-  }
+  const sparsePresetId = attributedSparsePresetId(
+    () => store.getSparsePresets(repo.id),
+    repo.id,
+    args.sparseCheckout?.presetId,
+    sparseDirectories
+  )
 
   // Why: addWorktree/setup probes run inside the new path; older relays need that root registered before accepting git/fs ops there.
   await registerRequiredSshWorktreeCreateRoots(repo.connectionId!, [remotePath])
@@ -1921,9 +1913,13 @@ export async function createRemoteWorktree(
       }
     }
   } else if (!(await hasRemoteWorktreeBaseRef(provider, repo.path, baseBranch))) {
-    // Why: non-remote-tracking bases keep the legacy best-effort fetch; verified PR/MR SHA bases already have the object, so a broad fetch is wasted.
+    // Why: fetch only the missing named base; verified PR/MR SHA bases already have the object.
     try {
-      await fetchRemoteForWorktreeCreate(provider, repo, 'origin')
+      const fetchedBase = await fetchRemoteForWorktreeCreate(provider, repo, baseBranch)
+      if (await hasCommitRefSsh(provider, repo.path, fetchedBase.ref)) {
+        baseBranch = fetchedBase.base
+        remoteTrackingBase = fetchedBase
+      }
     } catch {
       /* best-effort */
     }
@@ -2112,6 +2108,7 @@ export async function createRemoteWorktree(
       : {}),
     ...(args.linkedGiteaPR !== undefined ? { linkedGiteaPR: args.linkedGiteaPR } : {}),
     ...(args.linkedWorkItem !== undefined ? { linkedWorkItem: args.linkedWorkItem } : {}),
+    ...(args.linkedItems !== undefined ? { linkedItems: args.linkedItems } : {}),
     ...(args.linkedTaskSourceContext !== undefined
       ? { linkedTaskSourceContext: args.linkedTaskSourceContext }
       : {}),
@@ -2372,25 +2369,12 @@ async function performLocalWorktreeCreate(
   if (args.sparseCheckout && sparseDirectories.length === 0) {
     throw new Error('Sparse checkout requires at least one repo-relative directory.')
   }
-  let sparsePresetId: string | undefined
-  if (args.sparseCheckout?.presetId) {
-    const preset = store
-      .getSparsePresets(repo.id)
-      .find((entry) => entry.id === args.sparseCheckout?.presetId)
-    if (preset?.repoId === repo.id) {
-      try {
-        const presetDirectories = normalizeSparseDirectories(preset.directories)
-        // Why: Set-based compare so directory order doesn't affect attribution — matches renderer's sparseDirectoriesMatch.
-        const presetSet = new Set(presetDirectories)
-        const directoriesMatch =
-          presetDirectories.length === sparseDirectories.length &&
-          sparseDirectories.every((entry) => presetSet.has(entry))
-        sparsePresetId = directoriesMatch ? preset.id : undefined
-      } catch {
-        // Why: corrupt preset data should not block creation or falsely label the new worktree.
-      }
-    }
-  }
+  const sparsePresetId = attributedSparsePresetId(
+    () => store.getSparsePresets(repo.id),
+    repo.id,
+    args.sparseCheckout?.presetId,
+    sparseDirectories
+  )
 
   let effectiveRequestedName = requestedName
   let effectiveSanitizedName = sanitizedName
@@ -2818,6 +2802,7 @@ async function performLocalWorktreeCreate(
       : {}),
     ...(args.linkedGiteaPR !== undefined ? { linkedGiteaPR: args.linkedGiteaPR } : {}),
     ...(args.linkedWorkItem !== undefined ? { linkedWorkItem: args.linkedWorkItem } : {}),
+    ...(args.linkedItems !== undefined ? { linkedItems: args.linkedItems } : {}),
     ...(args.linkedTaskSourceContext !== undefined
       ? { linkedTaskSourceContext: args.linkedTaskSourceContext }
       : {}),

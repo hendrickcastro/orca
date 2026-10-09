@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Textarea } from '@/components/ui/textarea'
+import { ImeTextarea } from '@/lib/ime-text-field'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 
 export type MentionQuery = {
@@ -60,7 +61,7 @@ export function MentionSuggestionTextarea<T>({
     [getSuggestions, mentionQuery]
   )
   const showSuggestions = mentionQuery !== null && suggestions.length > 0
-  const TextareaElement = appearance === 'field' ? Textarea : 'textarea'
+  const TextareaElement = appearance === 'field' ? Textarea : ImeTextarea
 
   const syncMentionQuery = useCallback(
     (textarea: HTMLTextAreaElement): void => {

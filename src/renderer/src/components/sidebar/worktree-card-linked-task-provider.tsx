@@ -70,3 +70,20 @@ export function linkedTaskBadgeLabel(issue: WorktreeCardJiraIssueDisplay): strin
       return null
   }
 }
+
+/** Detail-row copy for the Jira slot, with upstream's Jira wording as the fallback. */
+export function linkedTaskDetailCopy(issue: WorktreeCardJiraIssueDisplay): {
+  label: string
+  viewLabel: string
+} {
+  return {
+    label:
+      linkedTaskDetailLabel(issue) ??
+      translate('auto.components.sidebar.WorktreeCardMeta.jiraIssue', 'Jira {{value0}}', {
+        value0: issue.identifier
+      }),
+    viewLabel:
+      linkedTaskViewLabel(issue) ??
+      translate('auto.components.sidebar.WorktreeCardMeta.viewOnJira', 'View on Jira')
+  }
+}
