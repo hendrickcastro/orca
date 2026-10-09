@@ -141,6 +141,25 @@ describe('readSubagentTranscriptResult', () => {
     })
   })
 
+  it('starts a new turn when another agent messages the subagent after its answer', () => {
+    const jsonl = [
+      user('Task'),
+      assistant([{ type: 'text', text: 'Long answer.' }], 'end_turn'),
+      row({
+        type: 'user',
+        isMeta: true,
+        origin: { kind: 'coordinator' },
+        message: { role: 'user', content: 'Thanks, one more thing' }
+      }),
+      assistant([{ type: 'text', text: 'Short follow-up.' }], 'end_turn')
+    ].join('\n')
+
+    expect(readSubagentTranscriptResult(jsonl)).toMatchObject({
+      result: 'Short follow-up.',
+      finished: true
+    })
+  })
+
   it('starts a new turn at a queued message', () => {
     const jsonl = [
       user('Task'),
