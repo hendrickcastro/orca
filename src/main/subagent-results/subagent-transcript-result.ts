@@ -145,8 +145,9 @@ export function readSubagentTranscriptResult(jsonl: string): SubagentTranscriptR
         const texts = textOf(field(message, 'content'))
         prompt = texts.length > 0 ? texts.join('\n\n') : null
       }
-      // Why: injected reminders are not the conversation; they must not end the answer's turn.
-      if (field(row, 'isMeta') !== true) {
+      // Why: injected reminders are not the conversation, but a meta message with an `origin`
+      // (coordinator, another agent, a task notice) is one the subagent answers in a new turn.
+      if (field(row, 'isMeta') !== true || field(row, 'origin') !== undefined) {
         startTurn()
       }
       continue
