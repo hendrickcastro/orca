@@ -243,6 +243,10 @@ vi.mock('../claude-mcp-servers', () => ({
   registerClaudeMcpServerHandlers: vi.fn()
 }))
 
+vi.mock('../subagent-results', () => ({
+  registerSubagentResultHandlers: vi.fn()
+}))
+
 vi.mock('../skills', () => ({
   registerSkillsHandlers: registerSkillsHandlersMock
 }))
