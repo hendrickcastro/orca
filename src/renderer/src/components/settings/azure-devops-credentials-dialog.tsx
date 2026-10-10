@@ -147,7 +147,10 @@ export function AzureDevOpsCredentialsDialog({
               <Input
                 id={organizationId}
                 autoFocus
-                placeholder="https://dev.azure.com/my-organization"
+                placeholder={translate(
+                  'settings.azureDevOps.dialog.organizationPlaceholder',
+                  'https://dev.azure.com/my-organization'
+                )}
                 value={organizationUrl}
                 onChange={(event) => {
                   setOrganizationUrl(event.target.value)
@@ -163,7 +166,10 @@ export function AzureDevOpsCredentialsDialog({
               <Input
                 id={usernameId}
                 autoComplete="username"
-                placeholder="you@example.com"
+                placeholder={translate(
+                  'settings.azureDevOps.dialog.usernamePlaceholder',
+                  'you@example.com'
+                )}
                 value={username}
                 onChange={(event) => {
                   setUsername(event.target.value)
