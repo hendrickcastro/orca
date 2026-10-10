@@ -212,6 +212,12 @@ function isErrorVariant(value: unknown): boolean {
   )
 }
 
+// Why: system/init lists the session's MCP servers and plugins; one that failed to start is that
+// component's status, not a failure of this frame, so it must not paint init as an error row.
+function isInventoryProviderFrame(provider: string, kind: string): boolean {
+  return provider === 'claude' && kind === 'message:system:init'
+}
+
 function hasProviderError(payload: unknown): boolean {
   const pending = [payload]
   const seen = new WeakSet<object>()
@@ -326,7 +332,7 @@ export function classifyProviderFrame(
   // Payload failure inspection outranks the name-shape heuristic below: an
   // unknown frame that reports an error must reach the user even when its
   // method name happens to look like a stream delta.
-  if (hasProviderError(payload)) {
+  if (!isInventoryProviderFrame(provider, kind) && hasProviderError(payload)) {
     return 'error-surface'
   }
   if (isDeltaProviderFrameKind(kind)) {
