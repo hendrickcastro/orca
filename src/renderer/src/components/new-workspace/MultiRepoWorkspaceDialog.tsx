@@ -251,7 +251,7 @@ export default function MultiRepoWorkspaceDialog({
                   setBranch(suggestedBranch(kind, event.target.value))
                 }
               }}
-              placeholder="Patient search"
+              placeholder={translate('multiRepo.namePlaceholder', 'Patient search')}
               autoFocus
             />
           </div>
@@ -266,7 +266,7 @@ export default function MultiRepoWorkspaceDialog({
                 setBranch(event.target.value)
                 setBranchEdited(event.target.value.trim() !== '')
               }}
-              placeholder={`${MULTI_REPO_BRANCH_PREFIX[kind]}patient-search`}
+              placeholder={`${MULTI_REPO_BRANCH_PREFIX[kind]}${translate('multiRepo.branchPlaceholder', 'patient-search')}`}
             />
             <p className="text-xs text-muted-foreground">
               {translate(

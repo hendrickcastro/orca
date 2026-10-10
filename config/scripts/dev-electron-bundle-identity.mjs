@@ -7,13 +7,15 @@
 // bundles share one cdhash and one Keychain ACL entry. Patching a key is fine; varying it is not.
 // Per-branch Dock names come from the .app directory name, which is not part of the signature.
 
+import { PRODUCT_NAME } from '../../src/shared/product-identity.ts'
+
 export const DEV_BUNDLE_ID = 'com.stablyai.orca.dev'
 export const DEV_HELPER_BUNDLE_ID = `${DEV_BUNDLE_ID}.helper`
 // Why a constant display name rather than none: leaving the stock value makes every dev
 // notification and System Settings > Notifications row read "Electron", indistinguishable from any
 // other Electron app. A fixed name keeps that legible without reintroducing per-branch drift.
-// Keep in step with the dev appName in src/main/startup/dev-instance-identity.ts (fork product name).
-export const DEV_BUNDLE_DISPLAY_NAME = 'Orca knwr Dev'
+// Same source as the dev appName in src/main/startup/dev-instance-identity.ts, so the two never drift.
+export const DEV_BUNDLE_DISPLAY_NAME = `${PRODUCT_NAME} Dev`
 
 /** Info.plist patches for the app bundle. Values must not vary per branch — see above. */
 export function getDevBundlePlistPatches() {

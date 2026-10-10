@@ -1,7 +1,10 @@
+import { useShallow } from 'zustand/react/shallow'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
 import type { WorktreeStatus } from '@/lib/worktree-status'
 import { useWorktreeActivityStatus } from './use-worktree-activity-status'
-import { resolveCoordinatedWorktreeStatus, useWorktreeCoordinator } from './worktree-coordinator'
+import { selectWorktreeActivityStatus } from './worktree-activity-status-selector'
+import { resolveCoordinatedWorktreeStatus, selectWorktreeCoordinator } from './worktree-coordinator'
 
 /** The worktree's status, borrowed from its coordinator's agent when it has none of its own. */
 export function useCoordinatedWorktreeActivityStatus(worktreeId: string): {
@@ -9,12 +12,16 @@ export function useCoordinatedWorktreeActivityStatus(worktreeId: string): {
   coordinatorName: string | null
 } {
   const ownStatus = useWorktreeActivityStatus(worktreeId)
-  const coordinator = useWorktreeCoordinator(worktreeId)
-  // Why: hooks cannot be conditional; an unknown key resolves to 'inactive' and is ignored.
-  const coordinatorStatus = useWorktreeActivityStatus(coordinator?.key ?? '')
+  // Why: one subscription per card; every sidebar card mounts this and zustand visits each listener.
+  const coordinator = useAppStore(
+    useShallow((s) => {
+      const found = selectWorktreeCoordinator(s, worktreeId)
+      return found ? { name: found.name, status: selectWorktreeActivityStatus(s, found.key) } : null
+    })
+  )
   const { status, fromCoordinator } = resolveCoordinatedWorktreeStatus(
     ownStatus,
-    coordinator ? coordinatorStatus : null
+    coordinator?.status ?? null
   )
   return { status, coordinatorName: fromCoordinator && coordinator ? coordinator.name : null }
 }
