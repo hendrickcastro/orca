@@ -8,8 +8,8 @@ import { getConnectionId } from '@/lib/connection-context'
 import { isWindowVisible } from '@/lib/window-visibility-interval'
 import { getAttachedWorktreesForFolderWorkspace } from './folder-workspace-attached-worktrees'
 import { getFileExplorerOperationOwner } from './file-explorer-operation-owner'
-import { getRightSidebarWorktreeRuntimeSettings } from './file-explorer-runtime-owner'
 import { refreshGitStatusForWorktree } from './git-status-refresh'
+import { getWorktreeGitOwnerTarget } from './worktree-git-owner-target'
 
 export type FolderWorkspaceExplorerMember = { worktree: Worktree; repo: Repo | null }
 
@@ -124,8 +124,12 @@ function useMemberGitStatusRefresh(members: readonly FolderWorkspaceExplorerMemb
         return
       }
       for (const { worktree } of members) {
+        const target = getWorktreeGitOwnerTarget(worktree.id)
+        if (!target) {
+          continue
+        }
         void refreshGitStatusForWorktree({
-          settings: getRightSidebarWorktreeRuntimeSettings(worktree.id),
+          target,
           worktreeId: worktree.id,
           worktreePath: worktree.path,
           connectionId: getConnectionId(worktree.id) ?? undefined,

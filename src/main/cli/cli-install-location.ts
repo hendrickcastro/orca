@@ -13,6 +13,7 @@ import {
   resolveAppImageExtractedRoot,
   type AppImageExtractionOptions
 } from './appimage-extracted-root'
+import { resolveGenerationStableLauncherPath } from './appimage-generation-stable-launcher'
 import { getBundledLauncherPath, LINUX_CLI_COMMAND_NAME } from './bundled-cli-launcher-path'
 import { DEFAULT_MAC_COMMAND_PATH, DEV_COMMAND_NAME } from './cli-install-constants'
 import { ensureDevLauncher } from './cli-dev-launcher'
@@ -59,6 +60,7 @@ export abstract class CliInstallLocation {
   protected readonly hasUnverifiedAppImageRuntime: boolean
   protected readonly appImageCacheRootPath: string
   protected readonly appImageExtractRunner?: (appImagePath: string, cwd: string) => Promise<void>
+  protected readonly appImageDeadlineAt?: number
 
   protected get commandName(): string {
     if (!this.isPackaged && !this.commandPathOverride) {
@@ -119,6 +121,7 @@ export abstract class CliInstallLocation {
     this.appImageCacheRootPath =
       options.appImageCacheRootPath ?? getAppImageCacheRootPath(this.homePath)
     this.appImageExtractRunner = options.appImageExtractRunner
+    this.appImageDeadlineAt = options.appImageDeadlineAt
   }
 
   protected resolveInstallSpec(): InstallSpec | null {
@@ -258,6 +261,11 @@ export abstract class CliInstallLocation {
     }
 
     if (this.isPackaged) {
+      const stableLauncher =
+        this.platform === 'linux' ? resolveGenerationStableLauncherPath(this.resourcesPath) : null
+      if (stableLauncher) {
+        return stableLauncher
+      }
       const bundledPath = getBundledLauncherPath(this.platform, this.resourcesPath)
       return bundledPath && existsSync(bundledPath) ? bundledPath : null
     }
@@ -276,7 +284,8 @@ export abstract class CliInstallLocation {
       ? {
           appImagePath: this.appImagePath,
           cacheRootPath: this.appImageCacheRootPath,
-          runExtract: this.appImageExtractRunner
+          runExtract: this.appImageExtractRunner,
+          deadlineAt: this.appImageDeadlineAt
         }
       : null
   }
