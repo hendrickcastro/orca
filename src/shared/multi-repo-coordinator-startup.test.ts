@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildMultiRepoCoordinatorStartup } from './multi-repo-coordinator-startup'
 import { tokenizeStartupCommand, type AgentStartupShell } from './tui-agent-startup-shell'
-import { runProcess } from './child-process/run-process'
+import { runProcess } from '@orca/process-host'
 
 describe('multi-repository Claude launch arguments', () => {
   it.each<AgentStartupShell>(['powershell', 'cmd', 'posix'])(

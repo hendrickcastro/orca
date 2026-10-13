@@ -4,6 +4,7 @@ import type { ClaudeMcpServerEntry } from '../../../../shared/claude-user-mcp-se
 import { QUICK_OPEN_LISTING_MAX_RESULTS } from '../../../../shared/quick-open-listing-limits'
 import { loadMcpConfigInspections } from '@/components/settings/mcp-config-inspection'
 import { joinPath } from '@/lib/path'
+import { LOCAL_RUNTIME_TARGET } from '@/hooks/installed-agent-skill-discovery'
 import {
   buildMultiRepoReferenceToken,
   type MultiRepoReference,
@@ -76,7 +77,15 @@ async function loadRepoPart(repo: Repo): Promise<RepoCatalogPart> {
   const [skills, docs, mcpFiles, files, workflows] = await Promise.all([
     settle(() => window.api.skills.discover({ cwd: repo.path }), null),
     settle(() => window.api.fs.listMarkdownDocuments({ rootPath: repo.path }), []),
-    settle(() => loadMcpConfigInspections(repo.path, undefined), []),
+    settle(
+      () =>
+        loadMcpConfigInspections(repo.path, {
+          target: LOCAL_RUNTIME_TARGET,
+          worktreeId: null,
+          worktreePath: repo.path
+        }),
+      []
+    ),
     settle(
       () =>
         window.api.fs.listFiles({
