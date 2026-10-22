@@ -92,6 +92,8 @@ export type FolderWorkspaceRow = {
   projectGroup: ProjectGroup
   depth: number
   groupDepth: number
+  /** Set when the row renders outside its lane (the Pinned section). */
+  sectionKey?: string
 }
 
 /** Minimal shape buildRows needs for an in-flight create. Deliberately not the

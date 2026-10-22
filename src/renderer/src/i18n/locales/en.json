@@ -19953,6 +19953,62 @@
     "editor": "Editor",
     "terminal": "Terminal"
   },
+  "pinnedAgentsPanel": {
+    "dropHint": "Drop to follow its agents here",
+    "title": "Pinned",
+    "subtitle": "Agents of your pinned workspaces, from any project",
+    "choose": "Choose pinned workspaces",
+    "chooseShort": "Choose",
+    "pickerTitle": "Pinned in the sidebar",
+    "pickerEmpty": "Pin a workspace or a multi-repository task from the sidebar and it will be listed here.",
+    "noPinnedTitle": "Nothing here yet",
+    "noPinnedCopy": "Drag a workspace or a multi-repository task from the sidebar and drop it on this panel. Its agents will show here, whichever project you are in.",
+    "emptyTitle": "Nothing selected",
+    "emptyCopy": "Drop a card from the sidebar here, or use Choose to pick pinned workspaces.",
+    "card": {
+      "open": "Go to this workspace",
+      "remove": "Remove from this panel",
+      "toggle": "Show or hide its agents",
+      "drag": "Drag to reorder",
+      "live": "Live terminal",
+      "liveUnavailable": "No live terminal to show",
+      "memberOf": "{{value0}} · task {{value1}}",
+      "task": "Multi-repository task",
+      "noAgents": "No agents here right now",
+      "agentCount": "{{value0}} agent(s)"
+    },
+    "workbench": {
+      "title": "Pinned agents",
+      "subtitle": "Live terminals of the agents in the workspaces you dropped here, from any project",
+      "close": "Back to the workspace",
+      "open": "Show in the centre",
+      "openWorkspace": "Open its workspace",
+      "focusAgent": "Go to this agent",
+      "noLiveAgents": "No agent is running here right now. Start one in this workspace and it will appear in this pane.",
+      "empty": "Drag a workspace or a multi-repository task from the Pinned section of the sidebar and drop it here. Each of its agents gets its own live terminal.",
+      "expandPane": "Expand this pane",
+      "restorePane": "Back to the grid",
+      "layout": {
+        "title": "Layout",
+        "columns": "Columns",
+        "columnsAuto": "Automatic",
+        "columnsOne": "1 column",
+        "columnsTwo": "2 columns",
+        "columnsThree": "3 columns",
+        "columnsFour": "4 columns",
+        "rows": "Pane height",
+        "rowsCompact": "Compact",
+        "rowsNormal": "Normal",
+        "rowsTall": "Tall",
+        "shapes": "Arrangements",
+        "oneTopTwoBottom": "One on top, two below",
+        "twoTopOneBottom": "Two on top, one below",
+        "oneLeftTwoRight": "One on the left, two on the right",
+        "twoLeftOneRight": "Two on the left, one on the right"
+      },
+      "zoomHint": "Cmd/Ctrl and + or - zoom only this pane while its terminal has focus"
+    }
+  },
   "subagentsPanel": {
     "document": {
       "fallbackTitle": "Subagent result",

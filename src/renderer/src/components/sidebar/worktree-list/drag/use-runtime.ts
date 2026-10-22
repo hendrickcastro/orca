@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import type React from 'react'
 import type { WorkspaceStatus } from '../../../../../../shared/worktree/types'
 import { clearWorkspaceKanbanSidebarDropTargetVisual } from '../../workspace-kanban-sidebar-drop'
+import { clearPinnedAgentsPanelDropVisual } from '@/components/right-sidebar/pinned-agents/pinned-agents-panel-drop'
 import { setSidebarPointerDragDocumentStyles } from '../../worktree-sidebar-pointer-drag-dom'
 import type {
   WorktreeSidebarDragPoint,
@@ -71,6 +72,7 @@ export function useWorktreeDragRuntime(args: {
     setDragOverStatus(null)
     setPinDragOver(false)
     clearWorkspaceKanbanSidebarDropTargetVisual()
+    clearPinnedAgentsPanelDropVisual()
     onWorkspaceBoardDragPreviewCancel()
   }, [cancelWorktreePointerAutoscroll, onWorkspaceBoardDragPreviewCancel])
 

@@ -274,6 +274,12 @@ export type GlobalSettings = GlobalSettingsBase & {
   showMobileButton?: boolean
   /** Pinned workspaces show in one sidebar location by default; opt in to also show them in their natural groups. */
   showPinnedWorktreesInGroups?: boolean
+  /** The pinned workspaces the right-sidebar Pinned panel follows, in its order; absent means all of them. */
+  pinnedAgentsPanelWorkspaceIds?: string[]
+  /** Centre Pinned agents grid: a PinnedAgentsWorkbenchArrangement id; absent lets panes flow. */
+  pinnedAgentsWorkbenchArrangement?: string
+  /** Centre Pinned agents grid: 'compact' | 'normal' | 'tall' pane height. */
+  pinnedAgentsWorkbenchRowHeight?: string
   /** How Ctrl+Tab picks the next visible tab; optional (older profiles), readers default to MRU. */
   ctrlTabOrderMode?: CtrlTabOrderMode
   /** Orca-first keeps app shortcuts from TUIs; terminal-first is opt-in to let shell/TUI bindings win. */

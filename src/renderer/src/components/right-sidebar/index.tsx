@@ -27,6 +27,8 @@ import { RightSidebarTopActivityBar } from './right-sidebar-top-activity-bar'
 import { useRightSidebarActivityItems } from './use-right-sidebar-activity-items'
 import { useRightSidebarTabRouting } from './use-right-sidebar-tab-routing'
 import { useWindowWidth } from './use-window-width'
+import { usePinnedAgentsNativeDropProps } from './pinned-agents/pinned-agents-native-drag'
+import { PinnedAgentsDropOverlay } from './pinned-agents/PinnedAgentsDropOverlay'
 
 const ACTIVITY_BAR_SIDE_WIDTH = 40
 
@@ -77,6 +79,7 @@ function RightSidebarInner(): React.JSX.Element {
     setWidth: setRightSidebarWidth
   })
   const topActivityStripRef = useMeasuredWidth(setTopActivityStripWidth)
+  const pinnedAgentsDropProps = usePinnedAgentsNativeDropProps()
 
   const panelContent = rightSidebarOpen ? (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden scrollbar-sleek-parent">
@@ -151,10 +154,11 @@ function RightSidebarInner(): React.JSX.Element {
     >
       {/* Panel content area */}
       <div
-        className="flex flex-col flex-1 min-w-0 bg-sidebar overflow-hidden"
+        className="relative flex flex-col flex-1 min-w-0 bg-sidebar overflow-hidden"
         style={{
           borderLeft: rightSidebarOpen ? '1px solid var(--sidebar-border)' : 'none'
         }}
+        {...(rightSidebarOpen ? pinnedAgentsDropProps : {})}
       >
         {activityBarPosition === 'top' ? (
           <RightSidebarTopActivityBar
@@ -187,6 +191,7 @@ function RightSidebarInner(): React.JSX.Element {
         )}
 
         {panelContent}
+        <PinnedAgentsDropOverlay />
 
         {/* Resize handle on LEFT side */}
         <div

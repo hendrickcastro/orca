@@ -14,6 +14,7 @@ import type {
 } from './drop-commit-context'
 import type { WorktreeSidebarStatusDropTarget } from '../../worktree-sidebar-drop-preview'
 import { NO_WORKTREE_SIDEBAR_DROP_TARGET, type WorktreePointerDrag } from './row-state'
+import { commitPinnedAgentsPanelPointerDrop } from '@/components/right-sidebar/pinned-agents/pinned-agents-panel-drop'
 
 type PointerDropCommitArgs = {
   event: PointerEvent
@@ -53,6 +54,10 @@ function commitStatusOrPinDrop(
 export function commitWorktreePointerDrop(args: PointerDropCommitArgs): void {
   const { event, drag, ctx } = args
   if (!ctx.refreshWorktreeDragSession()) {
+    ctx.clearWorktreeDrag()
+    return
+  }
+  if (commitPinnedAgentsPanelPointerDrop(event, drag, ctx.onPinWorktrees)) {
     ctx.clearWorktreeDrag()
     return
   }

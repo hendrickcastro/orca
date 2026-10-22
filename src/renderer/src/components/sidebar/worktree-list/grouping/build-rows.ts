@@ -2,7 +2,10 @@ import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { ProjectOrderBy } from '../../../../../../shared/ui-chrome-types'
-import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
+import type {
+  WorkspaceLineage,
+  WorktreeLineage
+} from '../../../../../../shared/worktree/lineage-types'
 import type { WorkspaceStatusDefinition, Worktree } from '../../../../../../shared/worktree/types'
 import { cloneDefaultWorkspaceStatuses } from '../../../../../../shared/workspace-statuses'
 import type { AppState } from '../../../../store/types'
@@ -24,6 +27,7 @@ import type { ProjectGroupingModel } from './project-grouping'
 import { appendProjectGroupSections } from './project-group-sections'
 import { getPinnedSectionWorktrees } from '../../pinned-section-worktrees'
 import { emitPinnedGroup } from './pinned-group-rows'
+import { splitPinnedFolderWorkspaces } from './pinned-folder-workspaces'
 import {
   appendWorktreeRows,
   buildFolderWorkspaceRow,
@@ -70,13 +74,17 @@ export function buildRows(
   folderWorkspaces: readonly FolderWorkspace[] = [],
   hostLabelById?: ReadonlyMap<string, string>,
   defaultHostId: ExecutionHostId = LOCAL_EXECUTION_HOST_ID,
-  pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy = getPinnedWorktreeDisplayPolicy(settings)
+  pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy = getPinnedWorktreeDisplayPolicy(settings),
+  workspaceLineageByChildKey: Readonly<Record<string, WorkspaceLineage>> = {}
 ): Row[] {
   const result: Row[] = []
   const projectIndex = buildProjectGroupingIndex(projectGrouping)
   // Membership is decided once, above the groupBy switch: every mode renders the
   // same set of folder workspaces and only chooses where they land (#15362).
-  const renderableFolderWorkspaces = getRenderableFolderWorkspaces(folderWorkspaces, projectGroups)
+  const allRenderableFolderWorkspaces = getRenderableFolderWorkspaces(
+    folderWorkspaces,
+    projectGroups
+  )
   const cyclicLineageIds = nestLineage
     ? getCyclicProjectedWorktreeLineageIds(lineageById, worktreeMap)
     : new Set<string>()
@@ -97,10 +105,20 @@ export function buildRows(
     }
   }
 
-  const pinnedSectionWorktrees = nestLineage
-    ? getPinnedSectionWorktrees(worktrees, lineageById, worktreeMap)
-    : worktrees.filter((worktree) => worktree.isPinned)
-  const pinnedSectionIds = new Set(pinnedSectionWorktrees.map(getWorktreeHostIdentity))
+  // Why: a pinned folder workspace (a multi-repository task) and its member worktrees leave
+  // their lanes for the Pinned section like a pinned worktree and its lineage children.
+  const pinnedFolders = splitPinnedFolderWorkspaces({
+    folderWorkspaces: allRenderableFolderWorkspaces,
+    worktrees,
+    pinnedSectionWorktrees: nestLineage
+      ? getPinnedSectionWorktrees(worktrees, lineageById, worktreeMap)
+      : worktrees.filter((worktree) => worktree.isPinned),
+    workspaceLineageByChildKey,
+    policy: pinnedDisplayPolicy
+  })
+  const renderableFolderWorkspaces = pinnedFolders.natural
+  const pinnedSectionWorktrees = pinnedFolders.pinnedWorktrees
+  const pinnedSectionIds = pinnedFolders.pinnedSectionIdentities
   const naturalWorktrees =
     pinnedDisplayPolicy === 'duplicate-in-groups'
       ? worktrees
@@ -149,7 +167,8 @@ export function buildRows(
     nestLineage,
     cyclicLineageIds,
     noticeHostContextLabelByRepoId,
-    mixedWorktreeHostContextLabels
+    mixedWorktreeHostContextLabels,
+    pinnedFolders.pinned
   )
   if (groupBy === 'none') {
     // Why folder workspaces gate this too: an account with only folder

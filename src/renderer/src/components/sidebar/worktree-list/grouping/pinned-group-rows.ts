@@ -1,11 +1,16 @@
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
-import { getWorktreeExecutionHostId } from '../../../../../../shared/execution-host'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { PINNED_GROUP_KEY, PINNED_GROUP_META } from './group-keys'
-import { appendWorktreeRows, buildImportedWorktreesCardRow } from './row-builders'
+import {
+  appendWorktreeRows,
+  buildFolderWorkspaceRow,
+  buildImportedWorktreesCardRow
+} from './row-builders'
+import { getLaneHostWorktreeCounts, getLaneHostWorktreeIds } from './host-labels'
 import type { NoticeHostContext } from './host-labels'
+import type { PinnedFolderWorkspaceSection } from './pinned-folder-workspaces'
 import type { ImportedWorktreesCardCandidate, Row } from './row-types'
 
 /**
@@ -28,21 +33,18 @@ export function emitPinnedGroup(
   nestLineage: boolean,
   cyclicLineageIds: ReadonlySet<string>,
   noticeHostContextLabelByRepoId?: ReadonlyMap<string, NoticeHostContext>,
-  hostContextLabelByWorktreeIdentity?: ReadonlyMap<string, string>
+  hostContextLabelByWorktreeIdentity?: ReadonlyMap<string, string>,
+  pinnedFolderWorkspaces: readonly PinnedFolderWorkspaceSection[] = []
 ): void {
-  if (pinnedSectionWorktrees.length === 0) {
+  if (pinnedSectionWorktrees.length === 0 && pinnedFolderWorkspaces.length === 0) {
     return
   }
-  const hostWorktreeCounts = new Map<ExecutionHostId, number>()
-  const hostWorktreeIds = new Map<ExecutionHostId, string[]>()
+  const pinnedFolderMembers = pinnedFolderWorkspaces.flatMap((section) => section.members)
+  const sectionWorktrees = [...pinnedFolderMembers, ...pinnedSectionWorktrees]
+  const pinnedFolderPairs = pinnedFolderWorkspaces.map((section) => section.pair)
   const pinnedRepoOrder: string[] = []
   const seenPinnedRepoIds = new Set<string>()
-  for (const worktree of pinnedSectionWorktrees) {
-    const hostId = getWorktreeExecutionHostId(worktree, repoMap.get(worktree.repoId), defaultHostId)
-    hostWorktreeCounts.set(hostId, (hostWorktreeCounts.get(hostId) ?? 0) + 1)
-    const hostIds = hostWorktreeIds.get(hostId) ?? []
-    hostIds.push(worktree.id)
-    hostWorktreeIds.set(hostId, hostIds)
+  for (const worktree of sectionWorktrees) {
     if (!seenPinnedRepoIds.has(worktree.repoId)) {
       pinnedRepoOrder.push(worktree.repoId)
       seenPinnedRepoIds.add(worktree.repoId)
@@ -53,12 +55,22 @@ export function emitPinnedGroup(
     type: 'header',
     key: PINNED_GROUP_KEY,
     label: PINNED_GROUP_META.label,
-    count: pinnedSectionWorktrees.length,
+    count: sectionWorktrees.length + pinnedFolderPairs.length,
     tone: PINNED_GROUP_META.tone,
     icon: PINNED_GROUP_META.icon,
-    hostWorktreeCounts,
-    hostWorktreeIds,
-    worktreeIds: pinnedSectionWorktrees.map((worktree) => worktree.id)
+    hostWorktreeCounts: getLaneHostWorktreeCounts(
+      sectionWorktrees,
+      pinnedFolderPairs,
+      repoMap,
+      defaultHostId
+    ),
+    hostWorktreeIds: getLaneHostWorktreeIds(
+      sectionWorktrees,
+      pinnedFolderPairs,
+      repoMap,
+      defaultHostId
+    ),
+    worktreeIds: sectionWorktrees.map((worktree) => worktree.id)
   })
   if (collapsedGroups.has(PINNED_GROUP_KEY)) {
     for (const repoId of pinnedRepoOrder) {
@@ -77,6 +89,18 @@ export function emitPinnedGroup(
   }
 
   const firstItemIndex = result.length
+  // Why first: a task reads as the coordinator of the member rows indented beneath it.
+  for (const section of pinnedFolderWorkspaces) {
+    result.push({ ...buildFolderWorkspaceRow(section.pair, 0), sectionKey: PINNED_GROUP_KEY })
+    appendWorktreeRows(result, section.members, repoMap, lineageById, worktreeMap, {
+      nestLineage,
+      collapsedGroups,
+      groupDepth: 1,
+      sectionKey: PINNED_GROUP_KEY,
+      hostContextLabelByWorktreeIdentity,
+      cyclicLineageIds
+    })
+  }
   appendWorktreeRows(result, pinnedSectionWorktrees, repoMap, lineageById, worktreeMap, {
     nestLineage,
     collapsedGroups,

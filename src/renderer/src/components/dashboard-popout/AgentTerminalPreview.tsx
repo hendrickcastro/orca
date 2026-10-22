@@ -32,6 +32,7 @@ import { installTerminalNativeCopyGutterTrim } from '@/components/terminal-pane/
 import { isWindowsUserAgent } from '@/components/terminal-pane/pane-helpers'
 import type { TerminalPreviewDataPayload } from '../../../../shared/terminal-preview'
 import { terminalPreviewApiFor } from './terminal-preview-api'
+import * as previewHost from './agent-terminal-preview-host'
 
 const PREVIEW_SCROLLBACK_ROWS = 24
 // Preview snapshots bound history; pane scrollback would only cost memory.
@@ -56,16 +57,22 @@ function clamp(value: number, min: number, max: number): number {
 export function AgentTerminalPreview({
   ptyId,
   terminalInput = null,
+  host = previewHost.DEFAULTS,
   className
 }: {
   ptyId: string
   /** Host-input facts relayed with the card; null routes bytes by client OS. */
   terminalInput?: DashboardCardTerminalInput | null
+  /** Embedding, focus and font-size wishes of the surface showing this preview. */
+  host?: previewHost.Host
   className?: string
 }): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const terminalRef = useRef<Terminal | null>(null)
-  const settings = useAppStore((state) => state.settings)
+  const { settings, hostRef } = previewHost.useHost(
+    host,
+    useAppStore((s) => s.settings)
+  )
   const systemPrefersDark = useSystemPrefersDark()
   const macOptionAsAlt = useEffectiveMacOptionAsAlt(settings?.terminalMacOptionAsAlt)
   // Why: keys and appearance must read live values without remounting the
@@ -141,10 +148,7 @@ export function AgentTerminalPreview({
     const boxResizeObserver =
       typeof ResizeObserver === 'undefined'
         ? null
-        : new ResizeObserver(() => {
-            boxFit.schedule()
-            gridClaim.schedule()
-          })
+        : new ResizeObserver(() => previewHost.observeResize(hostRef, boxFit, gridClaim))
     if (container.parentElement) {
       boxResizeObserver?.observe(container.parentElement)
     }
@@ -317,9 +321,7 @@ export function AgentTerminalPreview({
         // Queue behind every replay write so replacement never clears a half-parsed frame.
         writeReplayed('', requestRefresh)
       }
-      boxFit.schedule()
-      gridClaim.schedule()
-      terminal.focus()
+      previewHost.settleReplay(hostRef, { boxFit, gridClaim }, terminal)
     }
 
     const releaseTerminal = (): void => {
@@ -396,6 +398,7 @@ export function AgentTerminalPreview({
 
     return () => {
       disposed = true
+      previewHost.rememberFocus(hostRef, container)
       boxFit.dispose()
       if (retryTimer) {
         clearTimeout(retryTimer)
@@ -416,7 +419,8 @@ export function AgentTerminalPreview({
     settings?.terminalFontWeight,
     settings?.terminalFontWeightBold,
     settings?.terminalLineHeight,
-    settings?.terminalLigatures
+    settings?.terminalLigatures,
+    hostRef
   ])
 
   // Why: appearance settings must land on the open terminal, and the OS input

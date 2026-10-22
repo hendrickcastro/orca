@@ -7,6 +7,10 @@ import {
   updateWorkspaceKanbanSidebarDropTargetVisual
 } from '../../workspace-kanban-sidebar-drop'
 import { updateSidebarDragPreviewPosition } from '../../worktree-sidebar-pointer-drag-dom'
+import {
+  shouldSkipWorkspaceBoardDragPreview,
+  trackPinnedAgentsPanelPointerDrag
+} from '@/components/right-sidebar/pinned-agents/pinned-agents-panel-drop'
 import { getPointerDropStatusTarget, shouldPreferSidebarStatusDropTarget } from './status-target'
 import type { WorktreeDropCommitContext } from './drop-commit-context'
 import {
@@ -102,10 +106,17 @@ export function flushWorktreePointerDragFrame(args: WorktreePointerDragFrameArgs
   if (
     !drag.workspaceBoardDragPreviewRequested &&
     !args.workspaceBoardOpen &&
-    !hasWorkspaceKanbanSidebarDropBoard()
+    !hasWorkspaceKanbanSidebarDropBoard() &&
+    !shouldSkipWorkspaceBoardDragPreview(drag)
   ) {
     drag.workspaceBoardDragPreviewRequested = true
     args.onWorkspaceBoardDragPreviewStart()
+  }
+  if (trackPinnedAgentsPanelPointerDrag(drag)) {
+    drag.reorderIntent = null
+    drag.latestStatusDropTarget = null
+    clearInsertionLine(args)
+    return
   }
   const boardTarget = updateWorkspaceKanbanSidebarDropTargetVisual({
     x: drag.currentX,

@@ -19520,6 +19520,62 @@
   "projectField": {
     "updateFailed": "No se pudo actualizar el campo del proyecto"
   },
+  "pinnedAgentsPanel": {
+    "dropHint": "Suelta aquí para seguir sus agentes",
+    "title": "Fijados",
+    "subtitle": "Agentes de tus workspaces fijados, de cualquier proyecto",
+    "choose": "Elegir workspaces fijados",
+    "chooseShort": "Elegir",
+    "pickerTitle": "Fijados en la barra lateral",
+    "pickerEmpty": "Fija un workspace o una tarea multirrepositorio desde la barra lateral y aparecerá aquí.",
+    "noPinnedTitle": "Todavía no hay nada aquí",
+    "noPinnedCopy": "Arrastra un workspace o una tarea multirrepositorio desde la barra lateral y suéltalo en este panel. Sus agentes se verán aquí, estés en el proyecto que estés.",
+    "emptyTitle": "Nada seleccionado",
+    "emptyCopy": "Suelta aquí una tarjeta de la barra lateral, o usa Elegir para escoger workspaces fijados.",
+    "card": {
+      "open": "Ir a este workspace",
+      "remove": "Quitar de este panel",
+      "toggle": "Mostrar u ocultar sus agentes",
+      "drag": "Arrastra para reordenar",
+      "live": "Terminal en vivo",
+      "liveUnavailable": "No hay ninguna terminal en vivo que mostrar",
+      "memberOf": "{{value0}} · tarea {{value1}}",
+      "task": "Tarea multirrepositorio",
+      "noAgents": "Ahora mismo no hay agentes aquí",
+      "agentCount": "{{value0}} agente(s)"
+    },
+    "workbench": {
+      "title": "Agentes fijados",
+      "subtitle": "Terminales en vivo de los agentes de los workspaces que has soltado aquí, de cualquier proyecto",
+      "close": "Volver al workspace",
+      "open": "Mostrar en el centro",
+      "openWorkspace": "Abrir su workspace",
+      "focusAgent": "Ir a este agente",
+      "noLiveAgents": "Ahora mismo no hay ningún agente corriendo aquí. Lanza uno en este workspace y aparecerá en este panel.",
+      "empty": "Arrastra un workspace o una tarea multirrepositorio desde la sección Fijados de la barra lateral y suéltalo aquí. Cada uno de sus agentes tendrá su propia terminal en vivo.",
+      "expandPane": "Ampliar este panel",
+      "restorePane": "Volver a la cuadrícula",
+      "layout": {
+        "title": "Distribución",
+        "columns": "Columnas",
+        "columnsAuto": "Automática",
+        "columnsOne": "1 columna",
+        "columnsTwo": "2 columnas",
+        "columnsThree": "3 columnas",
+        "columnsFour": "4 columnas",
+        "rows": "Altura de los paneles",
+        "rowsCompact": "Compacta",
+        "rowsNormal": "Normal",
+        "rowsTall": "Alta",
+        "shapes": "Formas",
+        "oneTopTwoBottom": "Una arriba, dos abajo",
+        "twoTopOneBottom": "Dos arriba, una abajo",
+        "oneLeftTwoRight": "Una a la izquierda, dos a la derecha",
+        "twoLeftOneRight": "Dos a la izquierda, una a la derecha"
+      },
+      "zoomHint": "Cmd/Ctrl y + o - amplían solo este panel mientras su terminal tiene el foco"
+    }
+  },
   "subagentsPanel": {
     "document": {
       "fallbackTitle": "Resultado del subagente",

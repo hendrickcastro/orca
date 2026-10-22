@@ -42,6 +42,7 @@ export const STATIC_RIGHT_SIDEBAR_TABS = [
   'search',
   'vault',
   'subagents',
+  'pinned-agents',
   'workspaces',
   'pr-checks',
   'source-control',
@@ -118,7 +119,8 @@ export const TopLevelViewSchema = z.enum([
   'space',
   'skills',
   'artifacts',
-  'mobile'
+  'mobile',
+  'pinned-agents'
 ])
 
 export const UiUpdateFields = z

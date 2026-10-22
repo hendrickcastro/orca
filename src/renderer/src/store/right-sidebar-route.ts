@@ -43,6 +43,7 @@ export function normalizeRightSidebarRoute(
     tab === 'explorer' ||
     tab === 'vault' ||
     tab === 'subagents' ||
+    tab === 'pinned-agents' ||
     tab === 'workspaces' ||
     tab === 'pr-checks' ||
     tab === 'source-control' ||

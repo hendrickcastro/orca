@@ -123,6 +123,7 @@ export type UiViewHistory =
   | 'skills'
   | 'artifacts'
   | 'mobile'
+  | 'pinned-agents'
 
 export type UISliceCore = {
   sidebarOpen: boolean

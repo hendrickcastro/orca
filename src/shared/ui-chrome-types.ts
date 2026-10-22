@@ -94,6 +94,7 @@ export type RightSidebarTab =
   | 'search'
   | 'vault'
   | 'subagents'
+  | 'pinned-agents'
   | 'workspaces'
   | 'pr-checks'
   | 'source-control'
@@ -125,3 +126,4 @@ export type TopLevelView =
   | 'skills'
   | 'artifacts'
   | 'mobile'
+  | 'pinned-agents'

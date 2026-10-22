@@ -29,6 +29,7 @@ import { useWorktreeAgentExpansionState } from './worktree-card-agents-expansion
 import { translate } from '@/i18n/i18n'
 import { activateStructuredAgentSessionTab } from '@/lib/structured-agent-session-tab-activation'
 import { selectAcknowledgedAgentTimes } from './worktree-card-agent-ack-inputs'
+import { usePinnedAgentsDragSourceProps } from '@/components/right-sidebar/pinned-agents/pinned-agents-native-drag'
 
 export const SUPPRESS_WORKTREE_LIST_SCROLL_ADJUSTMENT_EVENT =
   'orca-suppress-worktree-list-scroll-adjustment'
@@ -91,6 +92,7 @@ const WorktreeCardAgentsBody = React.memo(function WorktreeCardAgentsBody({
   const sendPromptToSidebarAgentTarget = useAppStore((s) => s.sendPromptToSidebarAgentTarget)
   const focusedAgentPaneKey = useFocusedAgentPaneKey(worktreeId)
   const compactAgentListRootRef = useRef<HTMLDivElement | null>(null)
+  const dragSourceProps = usePinnedAgentsDragSourceProps(worktreeId)
 
   // Why: acknowledgement writes are app-global; project only this card's rows
   // so unrelated worktree activity does not rerender every agent body.
@@ -370,6 +372,7 @@ const WorktreeCardAgentsBody = React.memo(function WorktreeCardAgentsBody({
         role={hasLineage ? 'tree' : 'group'}
         aria-label={translate('auto.components.sidebar.WorktreeCardAgents.1b0a156717', 'Agents')}
         data-compact-agent-list="true"
+        {...dragSourceProps}
       >
         {agents.length === 0 ? null : shouldUseSummaryRow ? (
           // Why: expanded compact agents stay a quiet tree; only the collapsed summary reads as a pill.
@@ -411,6 +414,7 @@ const WorktreeCardAgentsBody = React.memo(function WorktreeCardAgentsBody({
       onPointerDown={stopBubble}
       role={hasLineage ? 'tree' : 'group'}
       aria-label={translate('auto.components.sidebar.WorktreeCardAgents.1b0a156717', 'Agents')}
+      {...dragSourceProps}
     >
       {rootAgents.map((rootAgent) => renderAgentBranch(rootAgent))}
     </div>

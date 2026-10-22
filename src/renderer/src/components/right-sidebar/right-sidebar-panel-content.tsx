@@ -9,6 +9,7 @@ const ChecksPanel = lazy(() => import('./ChecksPanel'))
 const PortsPanel = lazy(() => import('./PortsPanel'))
 const AiVaultPanel = lazy(() => import('./AiVaultPanel'))
 const SubagentsPanel = lazy(() => import('./subagents/SubagentsPanel'))
+const PinnedAgentsPanel = lazy(() => import('./pinned-agents/PinnedAgentsPanel'))
 const FolderWorkspaceWorktreesPanel = lazy(() => import('./FolderWorkspaceWorktreesPanel'))
 const FolderWorkspacePrChecksPanel = lazy(() => import('./FolderWorkspacePrChecksPanel'))
 const PluginPanel = lazy(() => import('./PluginPanel'))
@@ -36,6 +37,7 @@ export function RightSidebarPanelContent({
         )}
         {effectiveTab === 'vault' && <AiVaultPanel />}
         {effectiveTab === 'subagents' && <SubagentsPanel />}
+        {effectiveTab === 'pinned-agents' && <PinnedAgentsPanel />}
         {effectiveTab === 'workspaces' && <FolderWorkspaceWorktreesPanel />}
         {effectiveTab === 'pr-checks' && (
           <FolderWorkspacePrChecksPanel

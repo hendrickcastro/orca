@@ -7,11 +7,16 @@ import { stepUIZoomLevel } from '../../../../shared/ui-zoom-level'
 import { useAppStore } from '../../store'
 import { resolveZoomTarget } from '../resolve-zoom-target'
 import { requestPdfZoom } from '@/components/editor/pdf-zoom-request'
+import { dispatchPinnedAgentsPaneZoom } from '@/components/right-sidebar/pinned-agents/pinned-agents-pane-zoom'
 
 export function registerZoomIpcBridge(unsubs: (() => void)[]): void {
   // Zoom handling for menu accelerators and keyboard fallback paths.
   unsubs.push(
     window.api.ui.onTerminalZoom((direction) => {
+      // Why: a focused pinned-agent pane zooms alone, never the whole window.
+      if (dispatchPinnedAgentsPaneZoom(direction)) {
+        return
+      }
       const store = useAppStore.getState()
       const { activeView, activeTabType, editorFontZoomLevel, setEditorFontZoomLevel, settings } =
         store

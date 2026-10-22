@@ -22,6 +22,7 @@ import { getFolderWorkspaceCardPrDisplay } from '../../folder-workspace-card-pr-
 import { FolderPathStatusIndicator } from './FolderPathStatusIndicator'
 import type { FolderWorkspaceItemRow } from '../listing/renderable-rows'
 import { getWorktreeOptionId } from './option-dom'
+import { pinnedAgentsDragSourceProps } from '@/components/right-sidebar/pinned-agents/pinned-agents-native-drag'
 
 export type FolderWorkspaceRowContext = {
   groupBy: WorktreeGroupBy
@@ -104,6 +105,7 @@ export function renderFolderWorkspaceVirtualRow(args: {
       data-worktree-id={folderWorktree.id}
       data-worktree-host-identity={folderWorktreeIdentity}
       data-worktree-row-key={folderWorktreeIdentity}
+      data-worktree-section-key={row.sectionKey}
       data-worktree-virtual-row
       data-worktree-virtual-row-key={String(vItem.key)}
       data-worktree-virtual-row-start={vItem.start}
@@ -113,6 +115,7 @@ export function renderFolderWorkspaceVirtualRow(args: {
       style={{ transform: getVirtualRowTransform(vItem.start) }}
       onClickCapture={ctx.onRowClickCapture}
       onPointerDown={(event) => ctx.onRowPointerDown(event, folderWorktree, folderWorktreeIdentity)}
+      {...pinnedAgentsDragSourceProps(folderWorktree.id)}
     >
       <div
         className="relative"
