@@ -1,10 +1,12 @@
 import type { ExecutionHostId } from '../../../../shared/execution-host'
 import type { HostSectionRow } from './host-section-rows'
 import { PINNED_GROUP_KEY } from './worktree-list/grouping/group-keys'
+import { PINNED_FAVORITES_GROUP_KEY } from './pinned-favorites/pinned-favorites'
 
 export function isHostLaneSectionKey(key: string): boolean {
   return (
     key === PINNED_GROUP_KEY ||
+    key === PINNED_FAVORITES_GROUP_KEY ||
     key === 'all' ||
     key.startsWith('pr:') ||
     key.startsWith('workspace-status:')

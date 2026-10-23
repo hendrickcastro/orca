@@ -19520,6 +19520,13 @@
   "projectField": {
     "updateFailed": "No se pudo actualizar el campo del proyecto"
   },
+  "pinnedFavorites": {
+    "section": "Favoritos",
+    "add": "Añadir a favoritos",
+    "remove": "Quitar de favoritos",
+    "showRepos": "Mostrar sus repositorios",
+    "hideRepos": "Ocultar sus repositorios"
+  },
   "pinnedAgentsPanel": {
     "dropHint": "Suelta aquí para seguir sus agentes",
     "title": "Fijados",

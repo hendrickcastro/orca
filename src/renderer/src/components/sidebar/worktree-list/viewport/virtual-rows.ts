@@ -1,6 +1,7 @@
 import { defaultRangeExtractor } from '@tanstack/react-virtual'
 import type { Range, VirtualItem } from '@tanstack/react-virtual'
 import { PINNED_GROUP_KEY, getWorktreeLineageGroupKey } from '../grouping/group-keys'
+import { PINNED_FAVORITES_GROUP_KEY } from '../../pinned-favorites/pinned-favorites'
 import { getRenderRowKey } from '../listing/render-row'
 import type { RenderRow } from '../listing/render-row'
 
@@ -52,7 +53,9 @@ export function shouldUseHeaderTopSpacing(args: {
 }): boolean {
   const previousRenderRow = args.rows[args.index - 1]
   const followsCollapsedPinnedHeader =
-    previousRenderRow?.type === 'header' && previousRenderRow.key === PINNED_GROUP_KEY
+    previousRenderRow?.type === 'header' &&
+    (previousRenderRow.key === PINNED_GROUP_KEY ||
+      previousRenderRow.key === PINNED_FAVORITES_GROUP_KEY)
   return args.index !== args.firstHeaderIndex && !followsCollapsedPinnedHeader
 }
 

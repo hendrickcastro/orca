@@ -7,6 +7,11 @@ import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { WorkspaceLineage } from '../../../../../../shared/worktree/lineage-types'
 import { folderWorkspaceKey, worktreeWorkspaceKey } from '../../../../../../shared/workspace-scope'
+import { getDefaultSettings } from '../../../../../../shared/constants'
+import {
+  getPinnedTaskOpenKey,
+  PINNED_FAVORITES_GROUP_KEY
+} from '../../pinned-favorites/pinned-favorites'
 
 const GROUP: ProjectGroup = {
   id: 'group-1',
@@ -55,6 +60,7 @@ function rowsFor(options: {
   task?: FolderWorkspace
   showPinnedInGroups?: boolean
   collapsed?: Set<string>
+  favorites?: string[]
 }): Row[] {
   const task = options.task ?? TASK
   return buildRows(
@@ -72,7 +78,9 @@ function rowsFor(options: {
       [member.id, member]
     ]),
     true,
-    undefined,
+    options.favorites
+      ? { ...getDefaultSettings('/home/test'), pinnedFavoriteWorkspaceIds: options.favorites }
+      : undefined,
     [GROUP],
     new Set(),
     new Map(),
@@ -93,9 +101,9 @@ function describeRows(rows: Row[]): string[] {
       case 'header':
         return `header:${row.key}:${row.count}`
       case 'item':
-        return `item:${row.worktree.id}:${row.sectionKey}:${row.groupDepth}`
+        return `item:${row.worktree.id}:${row.sectionKey}:${row.groupDepth}${row.titleOverride ? `:${row.titleOverride}` : ''}`
       case 'folder-workspace':
-        return `folder:${row.folderWorkspace.id}`
+        return `folder:${row.folderWorkspace.id}${row.lineageGroupKey ? `:${row.lineageChildCount}:${row.lineageCollapsed ? 'folded' : 'open'}` : ''}`
       case 'imported-worktrees-card':
       case 'new-external-worktrees-inbox':
       case 'pending-creation':
@@ -105,13 +113,63 @@ function describeRows(rows: Row[]): string[] {
 }
 
 describe('buildRows with a pinned folder workspace', () => {
-  it('lists the pinned task and its member worktrees under Pinned, out of their lanes', () => {
+  it('lists the pinned task folded under Pinned, its members out of their lanes', () => {
     expect(describeRows(rowsFor({}))).toEqual([
       `header:${PINNED_GROUP_KEY}:2`,
-      `folder:${TASK.id}`,
-      `item:${member.id}:${PINNED_GROUP_KEY}:1`,
+      `folder:${TASK.id}:1:folded`,
       `header:${ALL_GROUP_KEY}:1`,
       `item:${other.id}:${ALL_GROUP_KEY}:0`
+    ])
+  })
+
+  it('unfolds the task to its members, each titled by its repo', () => {
+    expect(describeRows(rowsFor({ collapsed: new Set([getPinnedTaskOpenKey(TASK.id)]) }))).toEqual([
+      `header:${PINNED_GROUP_KEY}:2`,
+      `folder:${TASK.id}:1:open`,
+      `item:${member.id}:${PINNED_GROUP_KEY}:1:${repo.displayName}`,
+      `header:${ALL_GROUP_KEY}:1`,
+      `item:${other.id}:${ALL_GROUP_KEY}:0`
+    ])
+  })
+
+  it('moves favourite pinned workspaces into a Favorites section above Pinned', () => {
+    const pinnedOther = { ...other, isPinned: true }
+    const rows = buildRows(
+      'none',
+      [pinnedOther, member],
+      new Map([[repo.id, repo]]),
+      null,
+      new Set(),
+      undefined,
+      undefined,
+      undefined,
+      {},
+      new Map([
+        [pinnedOther.id, pinnedOther],
+        [member.id, member]
+      ]),
+      true,
+      {
+        ...getDefaultSettings('/home/test'),
+        pinnedFavoriteWorkspaceIds: [folderWorkspaceKey(TASK.id)]
+      },
+      [GROUP],
+      new Set(),
+      new Map(),
+      new Map(),
+      [],
+      undefined,
+      [TASK],
+      undefined,
+      'local',
+      'single-location',
+      lineage
+    )
+    expect(describeRows(rows)).toEqual([
+      `header:${PINNED_FAVORITES_GROUP_KEY}:2`,
+      `folder:${TASK.id}:1:folded`,
+      `header:${PINNED_GROUP_KEY}:1`,
+      `item:${pinnedOther.id}:${PINNED_GROUP_KEY}:0`
     ])
   })
 
@@ -127,8 +185,7 @@ describe('buildRows with a pinned folder workspace', () => {
   it('also shows the task and its members in their lanes under the duplicate policy', () => {
     expect(describeRows(rowsFor({ showPinnedInGroups: true }))).toEqual([
       `header:${PINNED_GROUP_KEY}:2`,
-      `folder:${TASK.id}`,
-      `item:${member.id}:${PINNED_GROUP_KEY}:1`,
+      `folder:${TASK.id}:1:folded`,
       `header:${ALL_GROUP_KEY}:3`,
       `item:${other.id}:${ALL_GROUP_KEY}:0`,
       `item:${member.id}:${ALL_GROUP_KEY}:0`,

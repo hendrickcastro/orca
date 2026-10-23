@@ -22,6 +22,7 @@ import { addHostSectionRows } from '../../host-section-rows'
 import { orderHostSectionOptions } from '../../host-section-order'
 import { buildSidebarHostOptions } from '../../sidebar-host-options'
 import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
+import { useDefaultFoldedSidebarGroups } from '../../sidebar-default-collapse'
 
 type SectionRowsArgs = {
   groupBy: WorktreeGroupBy
@@ -264,6 +265,7 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     () => collectRenderedSidebarRowKeys(sectionRows),
     [sectionRows]
   )
+  useDefaultFoldedSidebarGroups(sectionRows)
 
   return {
     rows,

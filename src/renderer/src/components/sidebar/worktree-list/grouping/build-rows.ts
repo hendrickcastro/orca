@@ -29,6 +29,12 @@ import { getPinnedSectionWorktrees } from '../../pinned-section-worktrees'
 import { emitPinnedGroup } from './pinned-group-rows'
 import { splitPinnedFolderWorkspaces } from './pinned-folder-workspaces'
 import {
+  getPinnedFavoriteIds,
+  PINNED_FAVORITES_GROUP_KEY,
+  PINNED_FAVORITES_GROUP_META,
+  splitPinnedFavorites
+} from '../../pinned-favorites/pinned-favorites'
+import {
   appendWorktreeRows,
   buildFolderWorkspaceRow,
   buildPendingCreationRow
@@ -153,23 +159,41 @@ export function buildRows(
     settings,
     projectGrouping
   })
-  emitPinnedGroup(
+  // Why: favourite pinned workspaces get their own section above Pinned.
+  const pinnedSplit = splitPinnedFavorites(
+    getPinnedFavoriteIds(settings),
     pinnedSectionWorktrees,
-    repoMap,
-    defaultHostId,
-    collapsedGroups,
-    renderedNaturalAnchorRepoIds,
-    importedWorktreesByRepo,
-    groupBy !== 'repo',
-    result,
-    lineageById,
-    worktreeMap,
-    nestLineage,
-    cyclicLineageIds,
-    noticeHostContextLabelByRepoId,
-    mixedWorktreeHostContextLabels,
     pinnedFolders.pinned
   )
+  const emitPinnedSection = (
+    part: (typeof pinnedSplit)['rest'],
+    header?: Parameters<typeof emitPinnedGroup>[15],
+    allowImportedFallback = groupBy !== 'repo'
+  ): void =>
+    emitPinnedGroup(
+      part.worktrees,
+      repoMap,
+      defaultHostId,
+      collapsedGroups,
+      renderedNaturalAnchorRepoIds,
+      importedWorktreesByRepo,
+      allowImportedFallback,
+      result,
+      lineageById,
+      worktreeMap,
+      nestLineage,
+      cyclicLineageIds,
+      noticeHostContextLabelByRepoId,
+      mixedWorktreeHostContextLabels,
+      part.tasks,
+      header
+    )
+  emitPinnedSection(
+    pinnedSplit.favorites,
+    { key: PINNED_FAVORITES_GROUP_KEY, ...PINNED_FAVORITES_GROUP_META },
+    false
+  )
+  emitPinnedSection(pinnedSplit.rest)
   if (groupBy === 'none') {
     // Why folder workspaces gate this too: an account with only folder
     // workspaces rendered nothing at all in flat mode before (#15362).

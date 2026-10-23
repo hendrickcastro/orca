@@ -24,6 +24,8 @@ export type WorktreeCardProps = {
   selectedWorktrees?: readonly Worktree[]
   hideRepoBadge?: boolean
   hostContextLabel?: string
+  /** Replaces the computed title; a pinned task's member shows its repo name. */
+  titleOverride?: string
   inPinnedSection?: boolean
   activationRowKey?: string
   renameRowKey?: string

@@ -155,6 +155,7 @@ export function buildWorktreeVirtualRowContext(args: BuildArgs): WorktreeVirtual
       onSelectionGesture: props.onSelectionGesture,
       onContextMenuSelect: props.onContextMenuSelect,
       onImmediateActivate: primaryActive.handleImmediateWorktreeRowActivate,
+      getLineageToggleHandler: args.getLineageToggleHandler,
       onRowClickCapture: args.onRowClickCapture,
       onRowPointerDown: args.onRowPointerDown
     }

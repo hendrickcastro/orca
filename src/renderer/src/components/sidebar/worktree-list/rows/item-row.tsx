@@ -115,7 +115,8 @@ function getWorktreeItemRowGeometry(
           groupDepth: itemRow.groupDepth
         })
   return {
-    surfaceInset,
+    // Why: a section indent moves the whole card; nested lineage rows inherit their parent's.
+    surfaceInset: surfaceInset + (nested ? 0 : (itemRow.sectionIndent ?? 0)),
     cardContentIndent: nestedLineageGeometry
       ? nestedLineageGeometry.cardContentIndent
       : Math.max(0, paddingLeft - surfaceInset),
@@ -215,6 +216,7 @@ export function renderWorktreeItemRow(
         hideRepoBadge={ctx.groupBy === 'repo'}
         // Why: pinned worktrees mix repos in one section, so only it needs the leading repo identity chip.
         hostContextLabel={itemRow.hostContextLabel}
+        titleOverride={itemRow.titleOverride}
         inPinnedSection={itemRow.sectionKey === PINNED_GROUP_KEY}
         renameRowKey={itemRow.rowKey}
         lineageChildCount={itemRow.lineageChildCount}

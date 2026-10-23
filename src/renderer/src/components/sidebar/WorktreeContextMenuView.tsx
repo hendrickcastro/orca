@@ -36,6 +36,7 @@ import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import type { WorktreeContextMenuModel } from './use-worktree-context-menu-model'
 import { WorktreeStatusMenuItems } from './WorktreeStatusMenuItems'
 import { WorktreeContextMenuOverlays } from './WorktreeContextMenuOverlays'
+import { PinnedFavoriteMenuItem } from './pinned-favorites/PinnedFavoriteMenuItem'
 import {
   WORKTREE_CONTEXT_MENU_SCOPE_ATTR,
   getWorktreeParentPickerLabel,
@@ -196,6 +197,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
                   ? translate('auto.components.sidebar.WorktreeContextMenu.697d0f6e1b', 'Unpin')
                   : translate('auto.components.sidebar.WorktreeContextMenu.3baa7d6507', 'Pin')}
               </DropdownMenuItem>
+              <PinnedFavoriteMenuItem worktree={worktree} disabled={isDeleting} />
               <DropdownMenuItem onSelect={handleToggleRead} disabled={isDeleting}>
                 {worktree.isUnread ? (
                   <BellOff className="size-3.5" />

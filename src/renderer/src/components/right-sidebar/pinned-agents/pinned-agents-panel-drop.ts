@@ -1,5 +1,6 @@
 import { useAppStore } from '@/store'
 import { PINNED_GROUP_KEY } from '@/components/sidebar/worktree-list/grouping/group-keys'
+import { PINNED_FAVORITES_GROUP_KEY } from '@/components/sidebar/pinned-favorites/pinned-favorites'
 import {
   expandPinnedAgentsPanelDropIds,
   resolvePinnedAgentsPanelItems
@@ -48,7 +49,9 @@ export function markPinnedAgentsPanelDropTarget(target: HTMLElement): void {
 
 /** Only cards dragged out of the sidebar's Pinned section can land on the panel. */
 export function isPinnedSectionDrag(drag: { sourceGroupKey: string }): boolean {
-  return drag.sourceGroupKey === PINNED_GROUP_KEY
+  return (
+    drag.sourceGroupKey === PINNED_GROUP_KEY || drag.sourceGroupKey === PINNED_FAVORITES_GROUP_KEY
+  )
 }
 
 /**

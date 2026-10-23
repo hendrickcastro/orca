@@ -19953,6 +19953,13 @@
     "editor": "Editor",
     "terminal": "Terminal"
   },
+  "pinnedFavorites": {
+    "section": "Favorites",
+    "add": "Add to favorites",
+    "remove": "Remove from favorites",
+    "showRepos": "Show its repositories",
+    "hideRepos": "Hide its repositories"
+  },
   "pinnedAgentsPanel": {
     "dropHint": "Drop to follow its agents here",
     "title": "Pinned",

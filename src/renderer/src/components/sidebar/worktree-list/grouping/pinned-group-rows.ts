@@ -3,15 +3,12 @@ import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { PINNED_GROUP_KEY, PINNED_GROUP_META } from './group-keys'
-import {
-  appendWorktreeRows,
-  buildFolderWorkspaceRow,
-  buildImportedWorktreesCardRow
-} from './row-builders'
+import { appendWorktreeRows, buildImportedWorktreesCardRow } from './row-builders'
+import { appendPinnedTaskRows, indentPinnedSectionRows } from './pinned-task-rows'
 import { getLaneHostWorktreeCounts, getLaneHostWorktreeIds } from './host-labels'
 import type { NoticeHostContext } from './host-labels'
 import type { PinnedFolderWorkspaceSection } from './pinned-folder-workspaces'
-import type { ImportedWorktreesCardCandidate, Row } from './row-types'
+import type { GroupHeaderRow, ImportedWorktreesCardCandidate, Row } from './row-types'
 
 /**
  * The Pinned section's rows.
@@ -34,7 +31,14 @@ export function emitPinnedGroup(
   cyclicLineageIds: ReadonlySet<string>,
   noticeHostContextLabelByRepoId?: ReadonlyMap<string, NoticeHostContext>,
   hostContextLabelByWorktreeIdentity?: ReadonlyMap<string, string>,
-  pinnedFolderWorkspaces: readonly PinnedFolderWorkspaceSection[] = []
+  pinnedFolderWorkspaces: readonly PinnedFolderWorkspaceSection[] = [],
+  // Why a header override: Favorites reuses this emitter; its rows stay pinned rows.
+  header: { key: string; label: string; tone: string; icon: GroupHeaderRow['icon'] } = {
+    key: PINNED_GROUP_KEY,
+    label: PINNED_GROUP_META.label,
+    tone: PINNED_GROUP_META.tone,
+    icon: PINNED_GROUP_META.icon
+  }
 ): void {
   if (pinnedSectionWorktrees.length === 0 && pinnedFolderWorkspaces.length === 0) {
     return
@@ -53,11 +57,11 @@ export function emitPinnedGroup(
 
   result.push({
     type: 'header',
-    key: PINNED_GROUP_KEY,
-    label: PINNED_GROUP_META.label,
+    key: header.key,
+    label: header.label,
     count: sectionWorktrees.length + pinnedFolderPairs.length,
-    tone: PINNED_GROUP_META.tone,
-    icon: PINNED_GROUP_META.icon,
+    tone: header.tone,
+    icon: header.icon,
     hostWorktreeCounts: getLaneHostWorktreeCounts(
       sectionWorktrees,
       pinnedFolderPairs,
@@ -72,7 +76,7 @@ export function emitPinnedGroup(
     ),
     worktreeIds: sectionWorktrees.map((worktree) => worktree.id)
   })
-  if (collapsedGroups.has(PINNED_GROUP_KEY)) {
+  if (collapsedGroups.has(header.key)) {
     for (const repoId of pinnedRepoOrder) {
       const candidate = importedWorktreesByRepo.get(repoId)
       if (allowImportedFallback && candidate && !renderedNaturalAnchorRepoIds.has(repoId)) {
@@ -90,17 +94,12 @@ export function emitPinnedGroup(
 
   const firstItemIndex = result.length
   // Why first: a task reads as the coordinator of the member rows indented beneath it.
-  for (const section of pinnedFolderWorkspaces) {
-    result.push({ ...buildFolderWorkspaceRow(section.pair, 0), sectionKey: PINNED_GROUP_KEY })
-    appendWorktreeRows(result, section.members, repoMap, lineageById, worktreeMap, {
-      nestLineage,
-      collapsedGroups,
-      groupDepth: 1,
-      sectionKey: PINNED_GROUP_KEY,
-      hostContextLabelByWorktreeIdentity,
-      cyclicLineageIds
-    })
-  }
+  appendPinnedTaskRows(result, pinnedFolderWorkspaces, repoMap, lineageById, worktreeMap, {
+    nestLineage,
+    collapsedGroups,
+    hostContextLabelByWorktreeIdentity,
+    cyclicLineageIds
+  })
   appendWorktreeRows(result, pinnedSectionWorktrees, repoMap, lineageById, worktreeMap, {
     nestLineage,
     collapsedGroups,
@@ -109,6 +108,7 @@ export function emitPinnedGroup(
     hostContextLabelByWorktreeIdentity,
     cyclicLineageIds
   })
+  indentPinnedSectionRows(result, firstItemIndex)
   if (!allowImportedFallback) {
     return
   }

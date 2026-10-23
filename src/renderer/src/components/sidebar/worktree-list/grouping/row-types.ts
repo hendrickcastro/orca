@@ -45,6 +45,10 @@ export type WorktreeRow = {
   lineageGroupKey?: string
   lineageCollapsed?: boolean
   hostContextLabel?: string
+  /** Replaces the card title, e.g. a pinned task's member shows its repo, not the task name. */
+  titleOverride?: string
+  /** Extra left offset (px) that seats a section's rows under its header, e.g. Pinned. */
+  sectionIndent?: number
 }
 
 export type ImportedWorktreesCardCandidate = {
@@ -94,6 +98,12 @@ export type FolderWorkspaceRow = {
   groupDepth: number
   /** Set when the row renders outside its lane (the Pinned section). */
   sectionKey?: string
+  /** A pinned task's disclosure for its member repos. */
+  lineageChildCount?: number
+  lineageCollapsed?: boolean
+  lineageGroupKey?: string
+  /** Extra left offset (px) that seats a section's rows under its header, e.g. Pinned. */
+  sectionIndent?: number
 }
 
 /** Minimal shape buildRows needs for an in-flight create. Deliberately not the

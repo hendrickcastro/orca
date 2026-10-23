@@ -22,6 +22,8 @@ import { getFolderWorkspaceCardPrDisplay } from '../../folder-workspace-card-pr-
 import { FolderPathStatusIndicator } from './FolderPathStatusIndicator'
 import type { FolderWorkspaceItemRow } from '../listing/renderable-rows'
 import { getWorktreeOptionId } from './option-dom'
+import type { LineageToggleHandler } from '../../worktree-lineage-toggle-handler-cache'
+import { PinnedTaskDisclosure } from '../../pinned-favorites/PinnedTaskDisclosure'
 import { pinnedAgentsDragSourceProps } from '@/components/right-sidebar/pinned-agents/pinned-agents-native-drag'
 
 export type FolderWorkspaceRowContext = {
@@ -48,6 +50,7 @@ export type FolderWorkspaceRowContext = {
     worktree: Worktree
   ) => readonly Worktree[]
   onImmediateActivate: (worktreeId: string, rowKey: string | undefined) => void
+  getLineageToggleHandler: (groupKey: string) => LineageToggleHandler
   onRowClickCapture: (event: React.MouseEvent<HTMLDivElement>) => void
   onRowPointerDown: (
     event: React.PointerEvent<HTMLDivElement>,
@@ -87,7 +90,7 @@ export function renderFolderWorkspaceVirtualRow(args: {
     prCache: ctx.prCache,
     settings: ctx.settings
   })
-  const { surfaceInset, cardContentIndent } = getFolderWorkspaceRowGeometry({
+  const { surfaceInset: baseSurfaceInset, cardContentIndent } = getFolderWorkspaceRowGeometry({
     experimentalNewWorktreeCardStyle: ctx.newCardStyle,
     isFolderBackedWorkspaceChild:
       ctx.groupBy === 'repo' && row.projectGroup.createdFrom === 'folder-scan',
@@ -95,6 +98,7 @@ export function renderFolderWorkspaceVirtualRow(args: {
     groupDepth: row.groupDepth,
     lineageDepth: row.depth
   })
+  const surfaceInset = baseSurfaceInset + (row.sectionIndent ?? 0)
   return (
     <div
       key={vItem.key}
@@ -135,6 +139,13 @@ export function renderFolderWorkspaceVirtualRow(args: {
           onContextMenuSelect={ctx.onContextMenuSelect}
           statusPrDisplay={folderPrDisplay}
         />
+        {row.lineageGroupKey && row.lineageChildCount ? (
+          <PinnedTaskDisclosure
+            left={surfaceInset + 5}
+            open={!row.lineageCollapsed}
+            onToggle={ctx.getLineageToggleHandler(row.lineageGroupKey)}
+          />
+        ) : null}
         <div className="pointer-events-auto absolute right-3 top-1.5">
           <FolderPathStatusIndicator status={pathStatus} />
         </div>
