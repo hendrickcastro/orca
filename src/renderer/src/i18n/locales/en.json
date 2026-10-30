@@ -2569,6 +2569,8 @@
         "asanaPickProject": "Choose a project to see its tasks.",
         "asanaNoTasks": "No tasks here.",
         "asanaStartWorkspace": "Start workspace from {{value0}}",
+        "startMultiRepoWorkspace": "Start multi-repository workspace",
+        "startMultiRepoWorkspaceFrom": "Start multi-repository workspace from {{value0}}",
         "asanaOpenInBrowser": "Open in Asana",
         "azureWorkItems": "Work items",
         "azurePullRequests": "Pull requests",

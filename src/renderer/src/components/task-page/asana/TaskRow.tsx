@@ -7,7 +7,11 @@ import { translate } from '@/i18n/i18n'
 import { useState } from 'react'
 import type { AsanaTask } from '../../../../../shared/asana-types'
 import { formatAsanaDueDate, getAsanaTaskState } from './asana-task-presentation'
-import { openComposerForAsanaTask } from './asana-workspace-launch'
+import {
+  openComposerForAsanaTask,
+  openMultiRepoWorkspaceForAsanaTask
+} from './asana-workspace-launch'
+import { StartMultiRepoWorkspaceButton } from '../StartMultiRepoWorkspaceButton'
 
 function openInBrowser(task: AsanaTask): void {
   void window.api.shell.openUrl(task.url)
@@ -40,7 +44,7 @@ export function AsanaTaskRow({ task }: { task: AsanaTask }): React.JSX.Element {
           openInBrowser(task)
         }
       }}
-      className="grid w-full cursor-pointer grid-cols-[24px_minmax(0,3fr)_90px_140px_minmax(0,1fr)_90px_50px] items-center gap-3 px-3 py-2 text-left hover:bg-muted/50"
+      className="grid w-full cursor-pointer grid-cols-[24px_minmax(0,3fr)_90px_140px_minmax(0,1fr)_90px_72px] items-center gap-3 px-3 py-2 text-left hover:bg-muted/50"
     >
       <span title={label} aria-label={label} className="flex items-center">
         {state === 'done' ? (
@@ -100,6 +104,10 @@ export function AsanaTaskRow({ task }: { task: AsanaTask }): React.JSX.Element {
             {translate('auto.components.TaskPage.9497f2787c', 'Start workspace')}
           </TooltipContent>
         </Tooltip>
+        <StartMultiRepoWorkspaceButton
+          taskLabel={task.name}
+          onStart={() => openMultiRepoWorkspaceForAsanaTask(task)}
+        />
         <button
           type="button"
           onClick={(event) => {

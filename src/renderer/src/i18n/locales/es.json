@@ -2036,6 +2036,8 @@
         "6d56559467": "Conecta tu cuenta Linear",
         "eee68073b2": "Abrir en Jira",
         "9497f2787c": "Iniciar espacio de trabajo",
+        "startMultiRepoWorkspace": "Iniciar espacio de trabajo multi-repo",
+        "startMultiRepoWorkspaceFrom": "Iniciar espacio de trabajo multi-repo desde {{value0}}",
         "eba87f2edb": "No se encontraron issues de Jira",
         "63b2abd3aa": "Issues de Jira",
         "e7115334aa": "Ocultar Jira",

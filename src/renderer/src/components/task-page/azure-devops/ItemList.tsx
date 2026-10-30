@@ -6,7 +6,11 @@ import { ArrowRight, ExternalLink } from 'lucide-react'
 import type { AzureDevOpsTaskItem } from '../../../../../shared/azure-devops-tasks'
 import { useAzureDevOpsTaskItems } from './use-azure-devops-task-items'
 import { useAzureDevOpsTaskView } from './azure-devops-task-view-store'
-import { openComposerForAzureDevOpsItem } from './azure-devops-workspace-launch'
+import {
+  openComposerForAzureDevOpsItem,
+  openMultiRepoWorkspaceForAzureDevOpsItem
+} from './azure-devops-workspace-launch'
+import { StartMultiRepoWorkspaceButton } from '../StartMultiRepoWorkspaceButton'
 
 function emptyMessage(view: 'work-items' | 'pull-requests', hasAzureRepos: boolean): string {
   if (!hasAzureRepos) {
@@ -41,7 +45,7 @@ export function TaskPageAzureDevOpsItemList({
   const showRepo = azureRepos.length > 1
   return (
     <div className="flex min-h-0 max-h-full flex-col overflow-hidden rounded-md rounded-t-none border border-t-0 border-border/50 bg-muted/50 shadow-sm">
-      <div className="flex-none grid grid-cols-[80px_minmax(0,3fr)_150px_140px_100px_50px] gap-3 border-b border-border/50 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+      <div className="flex-none grid grid-cols-[80px_minmax(0,3fr)_150px_140px_100px_72px] gap-3 border-b border-border/50 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
         <span>{translate('auto.components.TaskPage.eb10c32872', 'ID')}</span>
         <span>{translate('auto.components.TaskPage.16cba35bee', 'Title')}</span>
         <span>{translate('auto.components.TaskPage.00b7ffb952', 'Type / State')}</span>
@@ -68,7 +72,7 @@ export function TaskPageAzureDevOpsItemList({
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
-                className="grid w-full gap-3 px-3 py-2 grid-cols-[80px_minmax(0,3fr)_150px_140px_100px_50px]"
+                className="grid w-full gap-3 px-3 py-2 grid-cols-[80px_minmax(0,3fr)_150px_140px_100px_72px]"
               >
                 <div className="h-4 w-14 animate-pulse rounded bg-muted/70" />
                 <div className="h-4 w-3/5 animate-pulse rounded bg-muted/70" />
@@ -102,7 +106,7 @@ export function TaskPageAzureDevOpsItemList({
                   openInBrowser(item)
                 }
               }}
-              className="grid w-full cursor-pointer gap-3 px-3 py-2 text-left hover:bg-muted/50 grid-cols-[80px_minmax(0,3fr)_150px_140px_100px_50px]"
+              className="grid w-full cursor-pointer gap-3 px-3 py-2 text-left hover:bg-muted/50 grid-cols-[80px_minmax(0,3fr)_150px_140px_100px_72px]"
             >
               <span className="font-mono text-xs text-muted-foreground">
                 {item.kind === 'pull-request' ? '!' : '#'}
@@ -148,6 +152,10 @@ export function TaskPageAzureDevOpsItemList({
                     {translate('auto.components.TaskPage.9497f2787c', 'Start workspace')}
                   </TooltipContent>
                 </Tooltip>
+                <StartMultiRepoWorkspaceButton
+                  taskLabel={`${item.kind === 'pull-request' ? '!' : '#'}${item.id}`}
+                  onStart={() => openMultiRepoWorkspaceForAzureDevOpsItem(item)}
+                />
                 <button
                   type="button"
                   onClick={(event) => {
