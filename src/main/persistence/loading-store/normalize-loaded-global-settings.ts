@@ -147,6 +147,12 @@ export function normalizeLoadedGlobalSettings(
     visibleTaskProviders: taskProviderSettings.visibleTaskProviders,
     visibleTaskProvidersDefaultedForJira: true,
     visibleTaskProvidersDefaultedForForkProviders: true,
+    // Why: older profiles stored the upstream `false` default; flip once, then respect later opt-outs.
+    showPinnedWorktreesInGroups:
+      parsed.settings?.showPinnedWorktreesInGroupsDefaultedOnForFork === true
+        ? parsed.settings.showPinnedWorktreesInGroups !== false
+        : true,
+    showPinnedWorktreesInGroupsDefaultedOnForFork: true,
     terminalShortcutPolicy: normalizeTerminalShortcutPolicy(
       parsed.settings?.terminalShortcutPolicy
     ),

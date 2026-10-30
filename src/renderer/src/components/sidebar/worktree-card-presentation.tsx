@@ -119,6 +119,11 @@ export function buildWorktreeCardPresentation(card: WorktreeCardController) {
   const showHeaderActions = showTitleRowPrimary || showDeleteQuickAction
   // Why: normalize the title once so title/branch de-dupe and identity-only hover eligibility stay in sync.
   const trimmedVisibleCardTitle = visibleCardTitle.trim()
+  // Why: Pinned mixes projects and many share a generic icon; name the project unless the title already does.
+  const pinnedRepoName =
+    showPinnedRepoIcon && repo && repo.displayName !== trimmedVisibleCardTitle
+      ? repo.displayName
+      : null
   const showBranchIdentityHover = newCardStyle
     ? Boolean(identityDisplay) &&
       !cardProps.includes('branch') &&
@@ -243,6 +248,7 @@ export function buildWorktreeCardPresentation(card: WorktreeCardController) {
 
   return {
     showPinnedRepoIcon,
+    pinnedRepoName,
     showInlineRepoBadge,
     showRepoBadgeInMetaRow,
     showHostContextBadge,

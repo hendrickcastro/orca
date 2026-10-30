@@ -80,6 +80,7 @@ export function WorktreeCardHeader({
   } = card
   const {
     showPinnedRepoIcon,
+    pinnedRepoName,
     showInlineRepoBadge,
     showHeaderActions,
     showTitleRowPrimary,
@@ -183,6 +184,12 @@ export function WorktreeCardHeader({
           }
           onBeginEditingConsumed={affiliateListMode ? undefined : () => setRenamingWorktreeId(null)}
         />
+
+        {pinnedRepoName && !titleRenaming ? (
+          <span className="min-w-0 shrink-[2] truncate text-xs text-muted-foreground">
+            {pinnedRepoName}
+          </span>
+        ) : null}
 
         {typeof worktree.firstAgentMessageRenameError === 'string' &&
         worktree.firstAgentMessageRenameError.length > 0 &&

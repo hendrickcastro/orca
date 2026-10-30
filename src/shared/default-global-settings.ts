@@ -158,7 +158,7 @@ export function buildDefaultSettings(args: {
     showArtifactsButton: false,
     showSkillsButton: false,
     showMobileButton: true,
-    showPinnedWorktreesInGroups: false,
+    showPinnedWorktreesInGroups: true,
     ctrlTabOrderMode: 'mru',
     // Why: Orca-first keeps core shortcuts working from a focused terminal; TUI-ownership users opt in.
     terminalShortcutPolicy: 'orca-first',
@@ -211,6 +211,7 @@ export function buildDefaultSettings(args: {
     visibleTaskProviders: [...TASK_PROVIDERS],
     visibleTaskProvidersDefaultedForJira: true,
     visibleTaskProvidersDefaultedForForkProviders: true,
+    showPinnedWorktreesInGroupsDefaultedOnForFork: true,
     defaultRepoSelection: null,
     defaultLinearTeamSelection: null,
     opencodeSessionCookie: '',

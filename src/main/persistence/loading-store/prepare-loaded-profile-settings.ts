@@ -135,7 +135,11 @@ export function prepareLoadedProfileSettings(
   if (migratePrimarySelectionPlatformDefault || stampPrimarySelectionTerminalDefaults) {
     markNeedsSave()
   }
-  if (!visibleTaskProvidersDefaultedForJira || !visibleTaskProvidersDefaultedForForkProviders) {
+  if (
+    !visibleTaskProvidersDefaultedForJira ||
+    !visibleTaskProvidersDefaultedForForkProviders ||
+    parsed.settings?.showPinnedWorktreesInGroupsDefaultedOnForFork !== true
+  ) {
     markNeedsSave()
   }
   const claudeAgentTeamsDefaultDisabledMigrated =
