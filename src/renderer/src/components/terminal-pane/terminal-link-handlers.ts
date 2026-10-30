@@ -13,6 +13,11 @@ import {
   shouldOpenTerminalFileWithSystemDefault
 } from './terminal-file-open-routing'
 import { fileLinkTargetExists, resolveFileLinkTarget } from './terminal-file-link-target'
+import { findWorkspaceFileForTerminal } from '@/components/file-link-preview/workspace-file-name-lookup'
+import {
+  hideTerminalFileLinkPreviewSoon,
+  showTerminalFileLinkPreviewSoon
+} from '@/components/file-link-preview/terminal-file-link-preview-state'
 import {
   buildHardWrappedPathLogicalLineCandidates,
   buildWrappedLogicalLine,
@@ -116,25 +121,43 @@ export function createFilePathLinkProvider(
             async (parsed): Promise<ProvidedFileLink | null> => {
               const runtimeEnvironmentId =
                 deps.getRuntimeEnvironmentIdForPane?.(paneId) ?? deps.runtimeEnvironmentId ?? null
-              const target = resolveFileLinkTarget(parsed, {
+              const linkHost = {
                 cwd: deps.getPaneLinkCwd?.(paneId) ?? startupCwd,
                 homePath: deps.terminalHomePath,
                 worktreeId,
                 worktreePath,
                 runtimeEnvironmentId,
                 wslDistro: deps.wslDistro
-              })
+              }
               const range = rangeForParsedFileLink(logicalLine, parsed.startIndex, parsed.endIndex)
-              if (!target || !range) {
+              if (!range) {
                 return null
               }
               const terminalHandle = deps.getRuntimeTerminalHandleForPane?.(paneId) ?? null
+              let target = resolveFileLinkTarget(parsed, linkHost)
               if (
+                !target ||
                 !(await fileLinkTargetExists(target, pathExistsCache, pathExists, terminalHandle))
               ) {
-                return null
+                // Why: agents print files by name or by a path from some subfolder; find the one meant.
+                const found = worktreeId
+                  ? await findWorkspaceFileForTerminal(
+                      { worktreeId, worktreePath, runtimeEnvironmentId },
+                      parsed.pathText
+                    )
+                  : null
+                target = found
+                  ? resolveFileLinkTarget(
+                      { ...parsed, pathText: found },
+                      { ...linkHost, cwd: worktreePath }
+                    )
+                  : null
+                if (!target) {
+                  return null
+                }
               }
-              const { absolutePath: mappedPath, fileContext } = target
+              const resolvedTarget = target
+              const { absolutePath: mappedPath, fileContext } = resolvedTarget
 
               return {
                 logicalLine,
@@ -145,8 +168,8 @@ export function createFilePathLinkProvider(
                     if (
                       handleTerminalFileLink(
                         mappedPath,
-                        target.line,
-                        target.column,
+                        resolvedTarget.line,
+                        resolvedTarget.column,
                         event,
                         {
                           worktreeId,
@@ -161,7 +184,7 @@ export function createFilePathLinkProvider(
                       pane.terminal.clearSelection?.()
                     }
                   },
-                  hover: () => {
+                  hover: (event) => {
                     // Why: only local paths can offer the Shift+modifier system
                     // default escape hatch; remote paths may not exist locally.
                     const canOpenWithSystemDefault =
@@ -169,7 +192,7 @@ export function createFilePathLinkProvider(
                     const showActions = deps.getLinkActionContext
                       ? deps.getLinkActionContext(paneId) !== null
                       : true
-                    const hint = target.isKnownWorktreeRoot
+                    const hint = resolvedTarget.isKnownWorktreeRoot
                       ? getTerminalWorktreePathOpenHint(canOpenWithSystemDefault, showActions)
                       : canOpenWithSystemDefault
                         ? isHtmlFilePath(mappedPath)
@@ -180,9 +203,20 @@ export function createFilePathLinkProvider(
                         : getTerminalOrcaFileOpenHint(showActions)
                     linkTooltip.textContent = `${mappedPath} (${hint})`
                     linkTooltip.style.display = ''
+                    if (!resolvedTarget.isKnownWorktreeRoot && !/[\\/]$/.test(mappedPath)) {
+                      showTerminalFileLinkPreviewSoon({
+                        absolutePath: mappedPath,
+                        line: resolvedTarget.line,
+                        fileContext,
+                        rootPath: worktreePath,
+                        anchorX: event.clientX,
+                        anchorY: event.clientY
+                      })
+                    }
                   },
                   leave: () => {
                     linkTooltip.style.display = 'none'
+                    hideTerminalFileLinkPreviewSoon()
                   }
                 }
               }

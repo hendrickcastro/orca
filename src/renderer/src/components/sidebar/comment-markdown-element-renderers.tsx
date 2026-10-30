@@ -1,6 +1,10 @@
 import React from 'react'
 import type { Components } from 'react-markdown'
-import { NATIVE_CHAT_FILE_HREF_PREFIX } from '../../../../shared/native-chat-href-routing'
+import {
+  NATIVE_CHAT_FILE_HREF_PREFIX,
+  routeNativeChatHref
+} from '../../../../shared/native-chat-href-routing'
+import { CommentMarkdownFileLinkWrapperContext } from './comment-markdown-file-link-wrapper'
 import {
   CommentMarkdownDocumentCode,
   CommentMarkdownDocumentPre
@@ -247,6 +251,33 @@ export function createCompactCommentMarkdownComponents(
   }
 }
 
+function DocumentAnchor({
+  href,
+  onLinkClick,
+  children
+}: {
+  href: string | undefined
+  onLinkClick: CommentMarkdownLinkClickHandler | undefined
+  children: React.ReactNode
+}): React.ReactNode {
+  const wrapFileLink = React.useContext(CommentMarkdownFileLinkWrapperContext)
+  const link = (
+    <a
+      href={href || undefined}
+      target="_blank"
+      rel="noreferrer"
+      className="break-all text-primary underline underline-offset-2 hover:text-primary/80"
+      onClick={(e) => handleMarkdownAnchorClick(e, href, onLinkClick)}
+      onAuxClick={(e) => handleMarkdownAnchorAuxClick(e, href, onLinkClick)}
+    >
+      {children}
+    </a>
+  )
+  return wrapFileLink && href && routeNativeChatHref(href).kind === 'file'
+    ? wrapFileLink(link, href)
+    : link
+}
+
 export function createDocumentCommentMarkdownComponents(
   onLinkClick?: CommentMarkdownLinkClickHandler,
   renderCodeBlock?: DocumentCodeBlockRenderer
@@ -259,16 +290,9 @@ export function createDocumentCommentMarkdownComponents(
         // GitHub.com upgrades them to media embeds in its own renderer.
         <GitHubUserAttachmentVideo href={href}>{children}</GitHubUserAttachmentVideo>
       ) : (
-        <a
-          href={href || undefined}
-          target="_blank"
-          rel="noreferrer"
-          className="break-all text-primary underline underline-offset-2 hover:text-primary/80"
-          onClick={(e) => handleMarkdownAnchorClick(e, href, onLinkClick)}
-          onAuxClick={(e) => handleMarkdownAnchorAuxClick(e, href, onLinkClick)}
-        >
+        <DocumentAnchor href={href} onLinkClick={onLinkClick}>
           {children}
-        </a>
+        </DocumentAnchor>
       ),
     code: CommentMarkdownDocumentCode,
     pre: ({ node, children }) => (

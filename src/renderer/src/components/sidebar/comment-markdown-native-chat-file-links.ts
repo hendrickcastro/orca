@@ -21,6 +21,9 @@ const ROOTED_PATH_PREFIX_PATTERN = /^(?:~[\\/]|\.{1,2}[\\/]|[\\/]|[A-Za-z]:[\\/]
 /** Whether a detected path names a file on the chat's host; the terminal's own check. */
 export type FileLinkExists = (link: ParsedTerminalFileLink) => boolean
 
+/** Workspace-relative path of the single workspace file a bare or partial path names, else null. */
+export type WorkspaceFileFinder = (pathText: string) => string | null
+
 // Why: a link is underlined only when it names a path; a bare `name.md` resolves nowhere
 // reliable, so underlining it promises a click that cannot open anything.
 function isLinkifiableFile(link: ParsedTerminalFileLink, isProse: boolean): boolean {
@@ -97,7 +100,10 @@ function hasPartialPathBoundary(value: string, link: ParsedTerminalFileLink): bo
 }
 
 // Why: wrap the parsed location, not the display text; a `file://` URI must not reach the literal href.
-function createFileLinkNode(link: ParsedTerminalFileLink, child: MarkdownNode): MarkdownNode {
+function createFileLinkNode(
+  link: Parameters<typeof formatFileLinkLocation>[0],
+  child: MarkdownNode
+): MarkdownNode {
   return {
     type: 'link',
     url: createNativeChatFileHref(formatFileLinkLocation(link)),
@@ -251,16 +257,39 @@ function splitTextNode(value: string, exists: FileLinkExists): MarkdownNode[] {
   return children
 }
 
-function inlineCodeFileLink(node: MarkdownNode, exists: FileLinkExists): MarkdownNode | null {
+// Why: agents name files in code spans by name or by a path from some subfolder (`Card.tsx`,
+// `grouping/rows.ts:12`); the workspace listing finds the one file meant.
+function workspaceFileLink(
+  node: MarkdownNode,
+  value: string,
+  findFile: WorkspaceFileFinder
+): MarkdownNode | null {
+  const parsed = parseFileLinkLocation(value)
+  const resolved = parsed ? findFile(parsed.pathText) : null
+  return parsed && resolved ? createFileLinkNode({ ...parsed, pathText: resolved }, node) : null
+}
+
+function inlineCodeFileLink(
+  node: MarkdownNode,
+  exists: FileLinkExists,
+  findFile: WorkspaceFileFinder | undefined
+): MarkdownNode | null {
   const value = node.value?.trim()
   if (!value) {
     return null
   }
   const link = exactFileLink(value, exists)
-  return link ? createFileLinkNode(link, node) : null
+  if (link) {
+    return createFileLinkNode(link, node)
+  }
+  return findFile ? workspaceFileLink(node, value, findFile) : null
 }
 
-function transformFileLinks(node: MarkdownNode, exists: FileLinkExists): void {
+function transformFileLinks(
+  node: MarkdownNode,
+  exists: FileLinkExists,
+  findFile: WorkspaceFileFinder | undefined
+): void {
   if (node.type === 'link') {
     const route = routeNativeChatHref(node.url)
     if (route.kind === 'file') {
@@ -280,18 +309,20 @@ function transformFileLinks(node: MarkdownNode, exists: FileLinkExists): void {
       continue
     }
     if (child.type === 'inlineCode') {
-      children.push(inlineCodeFileLink(child, exists) ?? child)
+      children.push(inlineCodeFileLink(child, exists, findFile) ?? child)
       continue
     }
-    transformFileLinks(child, exists)
+    transformFileLinks(child, exists, findFile)
     children.push(child)
   }
   node.children = children
 }
 
-/** Explicit markdown links stay links; detected paths link only once `exists` confirms them. */
+/** Explicit markdown links stay links; detected paths link only once `exists` confirms them,
+ *  and a code span naming one workspace file by name links to that file. */
 export function remarkNativeChatFileLinks(
-  exists: FileLinkExists
+  exists: FileLinkExists,
+  findFile?: WorkspaceFileFinder
 ): () => (tree: MarkdownNode) => void {
-  return () => (tree) => transformFileLinks(tree, exists)
+  return () => (tree) => transformFileLinks(tree, exists, findFile)
 }

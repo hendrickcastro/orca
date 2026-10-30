@@ -18,7 +18,8 @@ import {
 } from './comment-markdown-element-renderers'
 import {
   remarkNativeChatFileLinks,
-  type FileLinkExists
+  type FileLinkExists,
+  type WorkspaceFileFinder
 } from './comment-markdown-native-chat-file-links'
 import { CommentMarkdownBlockLineContext } from './comment-markdown-code-renderers'
 import { rehypeWordFade } from './comment-markdown-word-fade'
@@ -232,6 +233,8 @@ type CommentMarkdownProps = React.ComponentPropsWithoutRef<'div'> & {
   allowFileUriLinks?: boolean
   /** Turns detected file paths into links, keeping only those this confirms exist. */
   fileLinkExists?: FileLinkExists
+  /** Links a code span that names one workspace file by name or partial path. */
+  findWorkspaceFile?: WorkspaceFileFinder
   expandImages?: boolean
   renderCodeBlock?: DocumentCodeBlockRenderer
   renderMermaid?: boolean
@@ -276,6 +279,7 @@ const CommentMarkdown = React.memo(
       onLinkClick,
       allowFileUriLinks = false,
       fileLinkExists,
+      findWorkspaceFile,
       expandImages = false,
       renderCodeBlock,
       renderMermaid = true,
@@ -311,11 +315,11 @@ const CommentMarkdown = React.memo(
     )
     const activeRemarkPlugins = React.useMemo(() => {
       const plugins = fileLinkExists
-        ? [...remarkPlugins, remarkNativeChatFileLinks(fileLinkExists)]
+        ? [...remarkPlugins, remarkNativeChatFileLinks(fileLinkExists, findWorkspaceFile)]
         : remarkPlugins
       const withExtension = extension ? [...plugins, ...extension.remarkPlugins] : plugins
       return githubRepo ? [...withExtension, remarkGitHubReferences(githubRepo)] : withExtension
-    }, [extension, fileLinkExists, githubRepo])
+    }, [extension, fileLinkExists, findWorkspaceFile, githubRepo])
     const blocks = useMarkdownBlocks(content, growing)
     const [hadWordFade, setHadWordFade] = React.useState(fadeWords)
     if (fadeWords && !hadWordFade) {

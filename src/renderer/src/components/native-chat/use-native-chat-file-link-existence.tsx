@@ -5,7 +5,19 @@ import {
   getRuntimeEnvironmentRevision,
   onRuntimeEnvironmentRevisionsChanged
 } from '@/runtime/runtime-environment-revision'
-import type { FileLinkExists } from '@/components/sidebar/comment-markdown-native-chat-file-links'
+import type {
+  FileLinkExists,
+  WorkspaceFileFinder
+} from '@/components/sidebar/comment-markdown-native-chat-file-links'
+import {
+  CommentMarkdownFileLinkWrapperContext,
+  type CommentMarkdownFileLinkWrapper
+} from '@/components/sidebar/comment-markdown-file-link-wrapper'
+import { NativeChatFileLinkHoverPreview } from './NativeChatFileLinkHoverPreview'
+import {
+  createNativeChatWorkspaceFileIndex,
+  NativeChatWorkspaceFileIndexContext
+} from './native-chat-workspace-file-index'
 import { useNativeChatFileLinkContext } from './use-native-chat-file-link-context'
 import {
   createNativeChatFileLinkExistence,
@@ -72,6 +84,7 @@ function useRecheckWhenHostReturns(
 /** For the chat view that knows its turn state: a finished turn may have changed the files. */
 export function useRecheckNativeChatFileLinksWhenTurnEnds(isWorking: boolean): void {
   const existence = useContext(NativeChatFileLinkExistenceContext)
+  const fileIndex = useContext(NativeChatWorkspaceFileIndexContext)
   const seen = useRef<{ existence: NativeChatFileLinkExistence | null; isWorking: boolean } | null>(
     null
   )
@@ -80,8 +93,9 @@ export function useRecheckNativeChatFileLinksWhenTurnEnds(isWorking: boolean): v
     seen.current = { existence, isWorking }
     if (existence && previous?.existence === existence && previous.isWorking && !isWorking) {
       existence.recheck()
+      fileIndex?.refresh()
     }
-  }, [existence, isWorking])
+  }, [existence, fileIndex, isWorking])
 }
 
 /** One per chat view: paths in its transcript are checked on the workspace's host. */
@@ -113,10 +127,49 @@ export function NativeChatFileLinkExistenceProvider({
     [connectionId, runtimeEnvironmentId, worktreeId, worktreePath]
   )
   useRecheckWhenHostReturns(existence, useFileLinkHostEpoch(connectionId, runtimeEnvironmentId))
+  const fileIndex = useMemo(
+    () =>
+      worktreeId && worktreePath
+        ? createNativeChatWorkspaceFileIndex({ worktreeId, worktreePath, runtimeEnvironmentId })
+        : null,
+    [runtimeEnvironmentId, worktreeId, worktreePath]
+  )
+  const wrapFileLink = useMemo<CommentMarkdownFileLinkWrapper | null>(
+    () =>
+      worktreeId && worktreePath
+        ? (link, href) => (
+            <NativeChatFileLinkHoverPreview
+              link={link}
+              href={href}
+              context={{ worktreeId, worktreePath, runtimeEnvironmentId }}
+            />
+          )
+        : null,
+    [runtimeEnvironmentId, worktreeId, worktreePath]
+  )
   return (
     <NativeChatFileLinkExistenceContext.Provider value={existence}>
-      {children}
+      <NativeChatWorkspaceFileIndexContext.Provider value={fileIndex}>
+        <CommentMarkdownFileLinkWrapperContext.Provider value={wrapFileLink}>
+          {children}
+        </CommentMarkdownFileLinkWrapperContext.Provider>
+      </NativeChatWorkspaceFileIndexContext.Provider>
     </NativeChatFileLinkExistenceContext.Provider>
+  )
+}
+
+/** The workspace finder for code spans; undefined until listed or when this chat cannot open files. */
+export function useNativeChatWorkspaceFileFinder(
+  enabled: boolean
+): WorkspaceFileFinder | undefined {
+  const fileIndex = useContext(NativeChatWorkspaceFileIndexContext)
+  const active = enabled ? fileIndex : null
+  return (
+    useSyncExternalStore(
+      active?.subscribe ?? subscribeToNothing,
+      active?.getFinder ?? getNoSnapshot,
+      active?.getFinder ?? getNoSnapshot
+    ) ?? undefined
   )
 }
 

@@ -18165,7 +18165,11 @@
       "fileLinks": {
         "notFound": "No se encontró el archivo: {{value0}}",
         "unverifiable": "No se pudo comprobar {{value0}}: {{value1}}",
-        "unresolved": "No se pudo resolver {{value0}} en este espacio de trabajo"
+        "unresolved": "No se pudo resolver {{value0}} en este espacio de trabajo",
+        "previewOpenHint": "Haz clic para abrir",
+        "previewModifierOpenHint": "{{value0}}+clic para abrir",
+        "previewLoading": "Cargando vista previa…",
+        "previewUnavailable": "Vista previa no disponible"
       },
       "contextUsage": {
         "label": "Contexto: {{used}} de {{window}} tokens, {{percent}} % usados",

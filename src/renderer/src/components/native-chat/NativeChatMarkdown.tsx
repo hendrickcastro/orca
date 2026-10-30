@@ -4,7 +4,10 @@ import { cn } from '@/lib/utils'
 import { withoutPendingNativeChatVisualDirectiveTail } from '../../../../shared/native-chat-visual-directive'
 import { NativeChatMarkdownRowKeyContext } from './native-chat-disclosure-store'
 import { useNativeChatVisualMarkdownExtension } from './native-chat-visual-markdown-extension'
-import { useNativeChatFileLinkExists } from './use-native-chat-file-link-existence'
+import {
+  useNativeChatFileLinkExists,
+  useNativeChatWorkspaceFileFinder
+} from './use-native-chat-file-link-existence'
 import './native-chat-markdown.css'
 
 /** Existing words stay opaque when a reply first starts growing. */
@@ -21,7 +24,10 @@ function useWordFadeArmed(fadeWords: boolean): boolean {
   return armed && fadeWords
 }
 
-type NativeChatMarkdownProps = Omit<ComponentProps<typeof CommentMarkdown>, 'fileLinkExists'> & {
+type NativeChatMarkdownProps = Omit<
+  ComponentProps<typeof CommentMarkdown>,
+  'fileLinkExists' | 'findWorkspaceFile'
+> & {
   /** Underline file paths in the text that exist in the chat's workspace. */
   linkifyFilePaths?: boolean
   visualMessageId?: string
@@ -43,6 +49,8 @@ export function NativeChatMarkdown({
   const wordFadeArmed = useWordFadeArmed(fadeWords)
   const extension = useNativeChatVisualMarkdownExtension(visualMessageId)
   const fileLinkExists = useNativeChatFileLinkExists(linkifyFilePaths, streaming)
+  // Why not while streaming: a code span still being typed would link to the wrong file.
+  const findWorkspaceFile = useNativeChatWorkspaceFileFinder(linkifyFilePaths && !streaming)
   return (
     <NativeChatMarkdownRowKeyContext.Provider value={rowKey}>
       <CommentMarkdown
@@ -52,6 +60,7 @@ export function NativeChatMarkdown({
         }
         extension={extension}
         fileLinkExists={fileLinkExists}
+        findWorkspaceFile={findWorkspaceFile}
         fadeWords={fadeWords}
         renderMermaid={!streaming}
         keepMermaidSourceWhilePending

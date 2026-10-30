@@ -32,6 +32,7 @@ import { useOnboardingAndFeatureTips } from './app-shell/use-onboarding-and-feat
 import { usePersistedUIWriter } from './app-shell/use-persisted-ui-writer'
 import { useRuntimeGraphSync } from './app-shell/use-runtime-graph-sync'
 import { useWindowVisibilityEffects } from './app-shell/use-window-visibility-effects'
+import { TerminalFileLinkPreview } from './components/file-link-preview/TerminalFileLinkPreview'
 
 function App(): React.JSX.Element {
   const layout = useAppChromeLayout()
@@ -102,6 +103,7 @@ function App(): React.JSX.Element {
           </LinkRoutingPreferenceDialogProvider>
         </ConfirmationDialogProvider>
         <Toaster closeButton toastOptions={{ className: 'font-sans text-sm' }} />
+        <TerminalFileLinkPreview />
       </TooltipProvider>
       <SkillFreshnessNudge />
       <WorktreeBaseFallbackDialog />

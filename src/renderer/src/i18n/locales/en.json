@@ -18763,7 +18763,11 @@
       "fileLinks": {
         "notFound": "File not found: {{value0}}",
         "unverifiable": "Couldn't check {{value0}}: {{value1}}",
-        "unresolved": "Couldn't resolve {{value0}} in this workspace"
+        "unresolved": "Couldn't resolve {{value0}} in this workspace",
+        "previewOpenHint": "Click to open",
+        "previewModifierOpenHint": "{{value0}}+Click to open",
+        "previewLoading": "Loading preview…",
+        "previewUnavailable": "No preview available"
       },
       "contextUsage": {
         "label": "Context {{used}} of {{window}} tokens, {{percent}}% used",
