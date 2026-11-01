@@ -8,7 +8,7 @@ Registro de cada vez que se trae `stablyai/orca` (upstream) a este fork (`hendri
 | | |
 | --- | --- |
 | Último commit de upstream integrado | `d95e2324dcd` — 2026-11-01 — fix(notifications): announce finished only when the agent is fully done (#36992) |
-| Commit de fusión en el fork | _(se rellena al cerrar la sincronización)_ |
+| Commit de fusión en el fork | `0cb8e3406f6` (rama `sync/upstream-2026-11-01`) |
 | `main` del fork antes de la fusión | `096af0bd434` |
 | Próxima sincronización: commits nuevos | `git log --oneline d95e2324dcd..upstream/main` |
 
