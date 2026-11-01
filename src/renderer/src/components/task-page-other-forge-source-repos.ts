@@ -7,7 +7,7 @@ import {
   selectTaskPageUnresolvedSourceRepos,
   type TaskPageRepoSourceState,
   type TaskPageUnresolvedSourceRepo
-} from './task-page-cache-selectors'
+} from './task-page/task-page-cache-selectors'
 
 export type TaskPageOtherForge = Exclude<ManualReviewProvider, 'github'>
 export type TaskPageOtherForgeSourceRepo = TaskPageUnresolvedSourceRepo & {

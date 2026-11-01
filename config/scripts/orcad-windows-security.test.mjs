@@ -57,13 +57,15 @@ it('fails the build off Windows when the addon was never built, and compiles it 
 
   const compile = vi.fn((compileRoot, arch) => write(arch, 0x8664))
   stageOrcadWindowsSecurity(root, output, 'win32-x64', { platform: 'win32' }, compile)
-  expect(compile).toHaveBeenCalledWith(root, 'x64')
+  expect(compile).toHaveBeenCalledWith(root, 'x64', {})
   expect(existsSync(join(output, 'windows-security.node'))).toBe(true)
 })
 
-it('stages nothing for non-Windows slots', () => {
+it('does not stage an addon when the child builder fails', () => {
   const { root, output } = fixture()
-  stageOrcadWindowsSecurity(root, output, 'linux-x64-glibc', { platform: 'linux' })
-  stageOrcadWindowsSecurity(root, output, 'darwin-arm64', { platform: 'darwin' })
+  const run = vi.fn(() => ({ code: 1 }))
+  expect(() =>
+    stageOrcadWindowsSecurity(root, output, 'win32-x64', { platform: 'win32' }, undefined, { run })
+  ).toThrow('failed with exit 1')
   expect(existsSync(join(output, 'windows-security.node'))).toBe(false)
 })

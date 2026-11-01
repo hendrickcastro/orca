@@ -6,9 +6,10 @@ import type {
 import { cancelUnreadResponseBody } from '../lib/unread-response-body'
 import { asRecord } from '../ai-vault/session-scanner-record-value'
 import {
+  AZURE_DEVOPS_MAX_REQUEST_ATTEMPTS,
   azureDevOpsApiVersionForOrigin,
-  isAzureDevOpsPreviewVersionRejection,
-  normalizeAzureDevOpsApiBaseUrl
+  normalizeAzureDevOpsApiBaseUrl,
+  recordAzureDevOpsApiVersionRejection
 } from './azure-devops-api-request'
 import {
   azureDevOpsTokenConfigured,
@@ -109,22 +110,24 @@ async function verifyOrganization(
   username: string | null,
   pat: string
 ): Promise<VerifyResult> {
-  const apiVersion = azureDevOpsApiVersionForOrigin(new URL(organizationUrl).origin)
+  const origin = new URL(organizationUrl).origin
   let response: Response
   try {
-    response = await requestConnectionData(organizationUrl, username, pat, apiVersion)
-    // connectionData is preview-only on Azure DevOps Services and on current Servers.
-    if (response.status === 400 && !apiVersion.endsWith('-preview')) {
-      const body = await response.text()
-      if (!isAzureDevOpsPreviewVersionRejection(response.status, body)) {
+    // connectionData is preview-only on Azure DevOps Services and current Servers; older Servers
+    // also need a lower version, so retry while the shared negotiation finds a better one.
+    for (let attempt = 1; ; attempt += 1) {
+      const apiVersion = azureDevOpsApiVersionForOrigin(origin)
+      response = await requestConnectionData(organizationUrl, username, pat, apiVersion)
+      if (response.status !== 400 || attempt >= AZURE_DEVOPS_MAX_REQUEST_ATTEMPTS) {
+        break
+      }
+      const requested = new URL(`${organizationUrl}/_apis/connectionData`)
+      requested.searchParams.set('api-version', apiVersion)
+      if (
+        !recordAzureDevOpsApiVersionRejection(requested, response.status, await response.text())
+      ) {
         return { ok: false, reason: 'unreachable', status: response.status }
       }
-      response = await requestConnectionData(
-        organizationUrl,
-        username,
-        pat,
-        `${apiVersion}-preview`
-      )
     }
   } catch {
     return { ok: false, reason: 'unreachable', status: null }

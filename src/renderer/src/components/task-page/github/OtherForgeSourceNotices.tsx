@@ -1,5 +1,5 @@
 import { translate } from '@/i18n/i18n'
-import type { TaskPageRepoSourceState } from '../../task-page-cache-selectors'
+import type { TaskPageRepoSourceState } from '../task-page-cache-selectors'
 import {
   selectTaskPageOtherForgeSourceRepos,
   type TaskPageOtherForge

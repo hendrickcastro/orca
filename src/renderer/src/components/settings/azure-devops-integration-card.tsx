@@ -7,6 +7,7 @@ import type {
 import { Button } from '@/components/ui/button'
 import { useMountedRef } from '@/hooks/useMountedRef'
 import { readIpcErrorMessage } from '@/lib/ipc-error'
+import { openAppHttpLink } from '@/lib/app-http-link-open'
 import { translate } from '@/i18n/i18n'
 import { IntegrationCardDetails, IntegrationCardShell } from './integration-card-shell'
 import { useIntegrationSubordinateRowClass } from './integration-card-presentation'
@@ -209,7 +210,7 @@ export function AzureDevOpsIntegrationCard(): React.JSX.Element {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.api.shell.openUrl(PAT_DOCS_URL)}
+                onClick={(event) => openAppHttpLink(PAT_DOCS_URL, { event })}
               >
                 <ExternalLink className="size-3.5 mr-1.5" />
                 {translate(

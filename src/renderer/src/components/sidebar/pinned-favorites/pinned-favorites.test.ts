@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { worktree } from '../worktree-list-groups-test-fixtures'
 import {
   getPinnedFavoriteIds,
-  splitPinnedFavorites,
-  togglePinnedFavoriteId
-} from './pinned-favorites'
+  splitPinnedFavorites
+} from '../../../../../shared/sidebar-list/pinned-favorites'
+import { togglePinnedFavoriteId } from './pinned-favorites'
 
 describe('pinned favorites', () => {
   it('reads the stored ids and toggles one in or out', () => {

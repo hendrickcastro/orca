@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
 import { activateTabAndFocusPane } from '@/lib/activate-tab-and-focus-pane'
-import { activateStructuredAgentSessionTab } from '@/lib/structured-agent-session-tab-activation'
+import { activateStructuredAgentSessionTab } from '@/lib/agent-session/structured-agent-session-tab-activation'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import type { AgentStatusEntry } from '../../../../../shared/agent-status-types'
 import type { AiVaultSession } from '../../../../../shared/ai-vault-types'

@@ -2,7 +2,7 @@
 
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { routeNativeChatHref } from '../../../../shared/native-chat-href-routing'
+import { routeNativeChatHref } from '../../../../shared/native-chat/native-chat-href-routing'
 import { createWorkspaceFileFinder } from '@/components/native-chat/native-chat-workspace-file-index'
 import CommentMarkdown from './CommentMarkdown'
 

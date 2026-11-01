@@ -4,12 +4,11 @@ import { useAppStore } from '@/store'
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
-import { getConnectionId } from '@/lib/connection-context'
 import { isWindowVisible } from '@/lib/window-visibility-interval'
 import { getAttachedWorktreesForFolderWorkspace } from './folder-workspace-attached-worktrees'
 import { getFileExplorerOperationOwner } from './file-explorer-operation-owner'
 import { refreshGitStatusForWorktree } from './git-status-refresh'
-import { getWorktreeGitOwnerTarget } from './worktree-git-owner-target'
+import { resolveWorktreeGitCopyNow } from '@/lib/worktree-git-copy'
 
 export type FolderWorkspaceExplorerMember = { worktree: Worktree; repo: Repo | null }
 
@@ -124,15 +123,16 @@ function useMemberGitStatusRefresh(members: readonly FolderWorkspaceExplorerMemb
         return
       }
       for (const { worktree } of members) {
-        const target = getWorktreeGitOwnerTarget(worktree.id)
-        if (!target) {
+        const copy = resolveWorktreeGitCopyNow(worktree.id)
+        if (!copy) {
           continue
         }
         void refreshGitStatusForWorktree({
-          target,
+          target: copy.transport,
+          ownerHostId: copy.hostId,
           worktreeId: worktree.id,
           worktreePath: worktree.path,
-          connectionId: getConnectionId(worktree.id) ?? undefined,
+          connectionId: copy.connectionId,
           pushTarget: worktree.pushTarget,
           deps: { setGitStatus, updateWorktreeGitIdentity, setUpstreamStatus, fetchUpstreamStatus },
           request: {

@@ -4,8 +4,7 @@ export function credentialDecryptionMessage(service: IntegrationCredentialServic
   return `Could not decrypt saved ${service} credential. Approve Keychain access or reconnect ${service}.`
 }
 
-// Why: decrypt errors cross IPC/RPC boundaries where only the message
-// survives serialization, so detection matches on the canonical message.
+// IPC/RPC may preserve only error messages; detect the canonical decrypt-failure text.
 export function isIntegrationCredentialDecryptionError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
   return (
@@ -14,4 +13,12 @@ export function isIntegrationCredentialDecryptionError(error: unknown): boolean 
     message.includes(credentialDecryptionMessage('Bitbucket')) ||
     message.includes(credentialDecryptionMessage('Azure DevOps'))
   )
+}
+
+export const LINEAR_AUTHENTICATION_ERROR = 'Linear authentication expired for this workspace.'
+
+export function linearIssueReadFailureMessage(error: unknown): string {
+  return isIntegrationCredentialDecryptionError(error)
+    ? credentialDecryptionMessage('Linear')
+    : 'Unable to load Linear issues. Try again.'
 }

@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import type React from 'react'
 import { useAppStore } from '@/store'
-import { PINNED_GROUP_KEY } from '@/components/sidebar/worktree-list/grouping/group-keys'
+import { PINNED_GROUP_KEY } from '../../../../../shared/sidebar-list/group-keys'
+import { dropWriteRows } from '@/components/sidebar/worktree-list/drag/dragged-worktree-copies'
 import {
   readWorkspaceDragDataIds,
   WORKSPACE_STATUS_DRAG_IDS_TYPE,
@@ -55,10 +56,6 @@ function isInsidePinnedSidebarSection(element: Element): boolean {
   )
 }
 
-export function usePinnedAgentsDragSourceProps(worktreeId: string): PinnedAgentsDragSourceProps {
-  return useMemo(() => pinnedAgentsDragSourceProps(worktreeId), [worktreeId])
-}
-
 export type PinnedAgentsNativeDropProps = {
   [PINNED_AGENTS_DROP_TARGET_ATTR]: ''
   onDragOverCapture: (event: React.DragEvent<HTMLElement>) => void
@@ -101,9 +98,11 @@ export function usePinnedAgentsNativeDropProps(): PinnedAgentsNativeDropProps {
         }
         event.preventDefault()
         event.stopPropagation()
-        const { actions, currentRowIds, expand } = pinnedAgentsPanelDropFromStore((worktreeIds) =>
-          useAppStore.getState().setWorktreesPinnedAndReveal(worktreeIds, true)
-        )
+        const { actions, currentRowIds, expand } = pinnedAgentsPanelDropFromStore((worktreeIds) => {
+          const state = useAppStore.getState()
+          const rowsFor = dropWriteRows(state, undefined)
+          state.setWorktreesPinnedAndReveal(worktreeIds.flatMap(rowsFor.status), true)
+        })
         commitPinnedAgentsPanelDrop(
           ids,
           {

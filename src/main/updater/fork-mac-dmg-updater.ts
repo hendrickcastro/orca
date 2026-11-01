@@ -1,7 +1,6 @@
 import { chmod, mkdir, open, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { app, BrowserWindow, net } from 'electron'
-import { is } from '@electron-toolkit/utils'
 import { PRODUCT_MAC_UPDATES_FROM_DMG, PRODUCT_NAME } from '../../shared/product-identity'
 import type { UpdateCheckOptions } from '../../shared/update-status-types'
 import { spawnProcess } from '@orca/process-host'
@@ -47,7 +46,7 @@ export class ForkMacDmgUpdaterSetup extends UpdaterSetup {
     if (!this.usesDmgUpdates) {
       return super.runBackgroundUpdateCheck(nudgeId)
     }
-    if (this.dmgCheckInFlight || !app.isPackaged || is.dev) {
+    if (this.dmgCheckInFlight || !app.isPackaged) {
       return false
     }
     void this.checkDmgRelease(false)
@@ -71,7 +70,7 @@ export class ForkMacDmgUpdaterSetup extends UpdaterSetup {
   }
 
   private async checkDmgRelease(userInitiated: boolean): Promise<void> {
-    if (!app.isPackaged || is.dev) {
+    if (!app.isPackaged) {
       this.sendStatus({ state: 'not-available', userInitiated: true })
       return
     }
@@ -200,7 +199,7 @@ export class ForkMacDmgUpdaterSetup extends UpdaterSetup {
     }
     const bundle = resolveReplaceableAppBundle(app.getPath('exe'))
     if (!bundle) {
-      this.mainWindowRef?.webContents.send('updater:quitAndInstallAborted')
+      this.sendToMainWindow('updater:quitAndInstallAborted')
       this.sendInstallFailureStatus({
         state: 'error',
         message: `Move ${PRODUCT_NAME} to the Applications folder and reopen it, then update again.`,
@@ -233,7 +232,7 @@ export class ForkMacDmgUpdaterSetup extends UpdaterSetup {
       app.quit()
     } catch (error) {
       this.resetQuitForUpdateState()
-      this.mainWindowRef?.webContents.send('updater:quitAndInstallAborted')
+      this.sendToMainWindow('updater:quitAndInstallAborted')
       this.sendInstallFailureStatus({
         state: 'error',
         message: this.withInstallFailureCause(

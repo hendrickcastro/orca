@@ -23,6 +23,15 @@ export function WorktreeCardLinkedTaskIcon({
   }
 }
 
+/** The detail hover's header icon, sized like upstream's Jira one. */
+export function WorktreeCardLinkedTaskDetailIcon({
+  issue
+}: {
+  issue: WorktreeCardJiraIssueDisplay
+}): React.JSX.Element {
+  return <WorktreeCardLinkedTaskIcon issue={issue} className="size-3 text-muted-foreground" />
+}
+
 export function linkedTaskDetailLabel(issue: WorktreeCardJiraIssueDisplay): string | null {
   switch (issue.provider) {
     case 'asana':

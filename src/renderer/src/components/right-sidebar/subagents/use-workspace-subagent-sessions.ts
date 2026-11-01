@@ -16,7 +16,7 @@ import {
   aiVaultSessionListArgs,
   readCachedAiVaultSessionList
 } from '../ai-vault-session-list-request'
-import { deriveAiVaultWorkspaceScopePaths } from '../ai-vault-scope-paths'
+import { deriveAiVaultWorkspaceScopePaths } from '../../../../../shared/ai-vault-scope-paths'
 import {
   isLiveWorkspaceSession,
   parseLiveAgentSessionsKey,

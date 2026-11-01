@@ -9,7 +9,7 @@ import type {
   AzureDevOpsConnectResult,
   AzureDevOpsConnectionStatus
 } from '../../shared/azure-devops-credentials'
-import { _resetPreflightCache } from './preflight'
+import { _resetPreflightCache } from '../preflight/agent-detection'
 import { listAzureDevOpsPullRequests, listAzureDevOpsWorkItems } from '../azure-devops/task-queries'
 import type {
   AzureDevOpsPullRequestFilter,

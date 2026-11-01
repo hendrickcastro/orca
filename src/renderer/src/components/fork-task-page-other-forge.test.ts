@@ -4,7 +4,7 @@ import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import {
   buildTaskPageRepoSourceState,
   selectTaskPageUnresolvedSourceRepos
-} from './task-page-cache-selectors'
+} from './task-page/task-page-cache-selectors'
 import {
   selectTaskPageOtherForgeSourceRepos,
   withoutOtherForgeSourceRepos

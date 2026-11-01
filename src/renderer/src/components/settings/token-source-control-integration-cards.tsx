@@ -4,6 +4,7 @@ import { IntegrationCardDetails, IntegrationCardShell } from './integration-card
 import { usePreflightCardStatuses } from './source-control-preflight-card-status'
 import { translate } from '@/i18n/i18n'
 import { tokenProviderStatusLabel } from './token-source-control-status'
+import { openAppHttpLink } from '@/lib/app-http-link-open'
 
 export function GiteaIntegrationCard(): React.JSX.Element {
   const { statuses, unavailable, refresh } = usePreflightCardStatuses('gitea')
@@ -92,8 +93,8 @@ export function GiteaIntegrationCard(): React.JSX.Element {
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                window.api.shell.openUrl('https://docs.gitea.com/next/development/api-usage')
+              onClick={(event) =>
+                openAppHttpLink('https://docs.gitea.com/next/development/api-usage', { event })
               }
             >
               <ExternalLink className="size-3.5 mr-1.5" />

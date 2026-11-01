@@ -21,6 +21,7 @@ type FileExplorerToolbarProps = {
   connectionId?: string | null
   runtimeEnvironmentId?: string | null
   ownerUnresolved?: boolean
+  workspaceId?: string | null
   refresh: {
     isRefreshing: boolean
     showRefreshSpinner: boolean
@@ -36,7 +37,16 @@ type FileExplorerToolbarProps = {
   onToggleDotfiles: () => void
 }
 
-/** Shares repository actions across explorer views. */
+function formatOpenInAppLabel(appName: string): string {
+  return translate(
+    'auto.components.right.sidebar.FileExplorerToolbar.openInApp',
+    'Open in {{app}}',
+    {
+      app: appName
+    }
+  )
+}
+
 export function FileExplorerToolbar({
   repoName,
   memberPicker,
@@ -44,6 +54,7 @@ export function FileExplorerToolbar({
   connectionId,
   runtimeEnvironmentId,
   ownerUnresolved,
+  workspaceId,
   refresh,
   canRefresh,
   canCollapseAll,
@@ -81,7 +92,7 @@ export function FileExplorerToolbar({
               'Collapse All'
             )}
             aria-disabled={!canCollapseAll}
-            // Why: native disabled buttons suppress Radix tooltip triggers in Chromium.
+            // Native disabled buttons suppress Radix tooltip triggers in Chromium.
             onClick={(event) => {
               if (!canCollapseAll) {
                 event.preventDefault()
@@ -187,7 +198,8 @@ export function FileExplorerToolbar({
             connectionId={connectionId}
             runtimeEnvironmentId={runtimeEnvironmentId}
             ownerUnresolved={ownerUnresolved}
-            labelPrefix="Open in "
+            workspace={workspaceId ? { workspaceId } : null}
+            formatLabel={formatOpenInAppLabel}
           />
         </DropdownMenuContent>
       </DropdownMenu>

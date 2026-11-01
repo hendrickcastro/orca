@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { buildRows } from './build-rows'
-import { ALL_GROUP_KEY, PINNED_GROUP_KEY } from './group-keys'
-import type { Row } from './row-types'
+import { ALL_GROUP_KEY, PINNED_GROUP_KEY } from '../../../../../../shared/sidebar-list/group-keys'
+import type {
+  PinnedWorktreeDisplayPolicy,
+  Row
+} from '../../../../../../shared/sidebar-list/row-types'
+import { planSidebarRows } from '../../../../../../shared/sidebar-list/sidebar-row-plan'
 import { repo, worktree } from '../../worktree-list-groups-test-fixtures'
 import type { FolderWorkspace } from '../../../../../../shared/folder-workspace-types'
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { WorkspaceLineage } from '../../../../../../shared/worktree/lineage-types'
+import type { Worktree } from '../../../../../../shared/worktree/types'
 import { folderWorkspaceKey, worktreeWorkspaceKey } from '../../../../../../shared/workspace-scope'
-import { getDefaultSettings } from '../../../../../../shared/constants'
+import { cloneDefaultWorkspaceStatuses } from '../../../../../../shared/workspace-statuses'
 import {
   getPinnedTaskOpenKey,
   PINNED_FAVORITES_GROUP_KEY
-} from '../../pinned-favorites/pinned-favorites'
+} from '../../../../../../shared/sidebar-list/pinned-favorites'
 
 const GROUP: ProjectGroup = {
   id: 'group-1',
@@ -56,43 +60,50 @@ const lineage: Record<string, WorkspaceLineage> = {
   }
 }
 
+function buildRows(options: {
+  worktrees: Worktree[]
+  task: FolderWorkspace
+  policy: PinnedWorktreeDisplayPolicy
+  collapsed?: Set<string>
+  favorites?: string[]
+}): Row[] {
+  return planSidebarRows({
+    groupBy: 'none',
+    worktrees: options.worktrees,
+    repoMap: new Map([[repo.id, repo]]),
+    prGroupOf: () => 'in-progress',
+    workspaceStatuses: cloneDefaultWorkspaceStatuses(),
+    projectOrderBy: 'manual',
+    lineageById: {},
+    worktreeMap: new Map(options.worktrees.map((entry) => [entry.id, entry])),
+    nestLineage: true,
+    projectGroups: [GROUP],
+    placeholderRepoIds: new Set(),
+    importedWorktreesByRepo: new Map(),
+    newExternalWorktreesInboxByRepo: new Map(),
+    pendingCreations: [],
+    folderWorkspaces: [options.task],
+    defaultHostId: 'local',
+    pinnedDisplayPolicy: options.policy,
+    filterRepoIds: [],
+    workspaceLineageByChildKey: lineage,
+    pinnedFavoriteIds: new Set(options.favorites)
+  }).render(options.collapsed ?? new Set())
+}
+
 function rowsFor(options: {
   task?: FolderWorkspace
   showPinnedInGroups?: boolean
   collapsed?: Set<string>
   favorites?: string[]
 }): Row[] {
-  const task = options.task ?? TASK
-  return buildRows(
-    'none',
-    [other, member],
-    new Map([[repo.id, repo]]),
-    null,
-    options.collapsed ?? new Set(),
-    undefined,
-    undefined,
-    undefined,
-    {},
-    new Map([
-      [other.id, other],
-      [member.id, member]
-    ]),
-    true,
-    options.favorites
-      ? { ...getDefaultSettings('/home/test'), pinnedFavoriteWorkspaceIds: options.favorites }
-      : undefined,
-    [GROUP],
-    new Set(),
-    new Map(),
-    new Map(),
-    [],
-    undefined,
-    [task],
-    undefined,
-    'local',
-    options.showPinnedInGroups ? 'duplicate-in-groups' : 'single-location',
-    lineage
-  )
+  return buildRows({
+    worktrees: [other, member],
+    task: options.task ?? TASK,
+    policy: options.showPinnedInGroups ? 'duplicate-in-groups' : 'single-location',
+    collapsed: options.collapsed,
+    favorites: options.favorites
+  })
 }
 
 function describeRows(rows: Row[]): string[] {
@@ -112,7 +123,7 @@ function describeRows(rows: Row[]): string[] {
   })
 }
 
-describe('buildRows with a pinned folder workspace', () => {
+describe('planSidebarRows with a pinned folder workspace', () => {
   it('lists the pinned task folded under Pinned, its members out of their lanes', () => {
     expect(describeRows(rowsFor({}))).toEqual([
       `header:${PINNED_GROUP_KEY}:2`,
@@ -134,37 +145,12 @@ describe('buildRows with a pinned folder workspace', () => {
 
   it('moves favourite pinned workspaces into a Favorites section above Pinned', () => {
     const pinnedOther = { ...other, isPinned: true }
-    const rows = buildRows(
-      'none',
-      [pinnedOther, member],
-      new Map([[repo.id, repo]]),
-      null,
-      new Set(),
-      undefined,
-      undefined,
-      undefined,
-      {},
-      new Map([
-        [pinnedOther.id, pinnedOther],
-        [member.id, member]
-      ]),
-      true,
-      {
-        ...getDefaultSettings('/home/test'),
-        pinnedFavoriteWorkspaceIds: [folderWorkspaceKey(TASK.id)]
-      },
-      [GROUP],
-      new Set(),
-      new Map(),
-      new Map(),
-      [],
-      undefined,
-      [TASK],
-      undefined,
-      'local',
-      'single-location',
-      lineage
-    )
+    const rows = buildRows({
+      worktrees: [pinnedOther, member],
+      task: TASK,
+      policy: 'single-location',
+      favorites: [folderWorkspaceKey(TASK.id)]
+    })
     expect(describeRows(rows)).toEqual([
       `header:${PINNED_FAVORITES_GROUP_KEY}:2`,
       `folder:${TASK.id}:1:folded`,

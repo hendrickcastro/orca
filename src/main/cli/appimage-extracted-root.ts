@@ -4,7 +4,6 @@ import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { runProcess } from '@orca/process-host'
 import { resolveCachedAppImagePayloadRoot } from './appimage-cache-layout'
-// Re-exported: callers in main keep importing the cache key from here.
 export {
   readAppImageSourceOfNamespace,
   resolveAppImageCacheKey
@@ -49,6 +48,8 @@ export type AppImageExtractRunner = (
 
 export type AppImageExtractionOptions = {
   appImagePath: string
+  /** Where the AppImage will run from once installed, when that is not `appImagePath` yet. */
+  installedAppImagePath?: string
   cacheRootPath?: string
   runExtract?: AppImageExtractRunner
   /** Absolute time (ms) by which every extraction attempt must have finished. */
@@ -156,13 +157,33 @@ export async function ensureAppImageExtractedRoot(
       )
       if (launcherPath === root.stableLauncherPath) {
         await rm(getAppImageActiveExtractionPath(root.rootPath), { force: true }).catch(() => {})
-        await recordAppImageSource(dirname(root.rootPath), options.appImagePath)
+        await recordAppImageSource(dirname(root.rootPath), installedPathOf(options))
         return root
       }
     }
     await cleanFailedEndpointPublication(root)
   }
   return null
+}
+
+/** Prepare daemon/update copies without publishing a CLI endpoint or pruning generations. */
+export async function stageAppImageExtractedRoot(
+  options: AppImageExtractionOptions
+): Promise<AppImageExtractedRoot | null> {
+  const root = resolveAppImageExtractedRoot(options)
+  if (!root) {
+    return null
+  }
+  if (!isAppImageExtractionComplete(root)) {
+    await extractAppImageGeneration(options, root)
+    // Staging never publishes a launcher, so it needs no publication marker.
+    await rm(getAppImageActiveExtractionPath(root.rootPath), { force: true }).catch(() => {})
+  }
+  if (!isAppImageExtractionComplete(root)) {
+    return null
+  }
+  await recordAppImageSource(dirname(root.rootPath), installedPathOf(options))
+  return root
 }
 
 async function cleanFailedEndpointPublication(root: AppImageExtractedRoot): Promise<void> {
@@ -220,7 +241,11 @@ async function recordAppImageSource(namespacePath: string, appImagePath: string)
 }
 
 export function resolveAppImageNamespacePath(options: AppImageExtractionOptions): string {
-  return join(resolveAppImageCacheRootPath(options), appImageNamespaceKey(options.appImagePath))
+  return join(resolveAppImageCacheRootPath(options), appImageNamespaceKey(installedPathOf(options)))
+}
+
+function installedPathOf(options: AppImageExtractionOptions): string {
+  return options.installedAppImagePath ?? options.appImagePath
 }
 
 /** The namespace pre-lease builds used for this AppImage path. */
@@ -285,14 +310,16 @@ async function renameRoot(sourcePath: string, destinationPath: string): Promise<
   }
 }
 
-async function runAppImageExtract(
+/** `niceProgram` runs the extraction under `nice -n 19`. */
+export async function runAppImageExtract(
   appImagePath: string,
   cwd: string,
-  timeoutMs: number
+  timeoutMs: number,
+  niceProgram?: string
 ): Promise<void> {
   const result = await runProcess({
-    program: appImagePath,
-    args: ['--appimage-extract'],
+    program: niceProgram ?? appImagePath,
+    args: niceProgram ? ['-n', '19', appImagePath, '--appimage-extract'] : ['--appimage-extract'],
     cwd,
     timeoutMs,
     maxOutputBytes: 1024 * 1024,

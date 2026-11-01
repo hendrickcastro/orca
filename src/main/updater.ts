@@ -15,7 +15,6 @@ import type { UpdaterSetupOptions } from './updater/updater-setup'
 import { ForkMacDmgUpdaterSetup } from './updater/fork-mac-dmg-updater'
 import type { PreQuitCleanupFailureMode, UpdateInstallMode } from './updater/updater-state'
 
-// Keep one service instance so all public API calls share updater state and event listeners.
 const updater = new ForkMacDmgUpdaterSetup()
 
 export type { PreQuitCleanupFailureMode, UpdateInstallMode, UpdaterSetupOptions }

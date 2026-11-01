@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { _resetAzureDevOpsPreviewApiVersionCache } from './azure-devops-api-request'
+import { _resetAzureDevOpsApiVersionCache } from './azure-devops-api-request'
 import {
   buildAzureDevOpsWorkItemWiql,
   listAzureDevOpsPullRequests,
@@ -37,7 +37,7 @@ describe('Azure DevOps task queries', () => {
   beforeEach(() => {
     process.env = { ...OLD_ENV, ORCA_AZURE_DEVOPS_TOKEN: 'pat-token' }
     delete process.env.ORCA_AZURE_DEVOPS_API_BASE_URL
-    _resetAzureDevOpsPreviewApiVersionCache()
+    _resetAzureDevOpsApiVersionCache()
   })
 
   afterEach(() => {
