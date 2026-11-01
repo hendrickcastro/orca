@@ -18,6 +18,7 @@ import { jiraConnectionStatusProbe } from '../tasks/mobile-jira-operations'
 import { useMobileJiraConnectionState } from '../tasks/use-mobile-jira-connection-state'
 import type { NewWorktreeRuntimeSettings } from './new-worktree-agent-selection'
 import { newWorkspaceUiStateRead } from './new-workspace-operations'
+import { mobileVisibleTaskProviders } from '../tasks/fork-mobile-task-providers'
 
 function readProbeMember(payload: unknown, key: string): unknown {
   return payload == null ? undefined : Object(payload)[key]
@@ -144,7 +145,9 @@ export function useNewWorkspaceRuntimeContext(
       const linearConnected =
         readProbeMember(settledValue(linearRes, taskLinearStatusRead.interpret), 'connected') ===
         true
-      const visibleProviders = normalizeVisibleTaskProviders(settingsValue?.visibleTaskProviders)
+      const visibleProviders = mobileVisibleTaskProviders(
+        normalizeVisibleTaskProviders(settingsValue?.visibleTaskProviders)
+      )
       const availableProviders = filterAvailableTaskProviders(visibleProviders, {
         gitlabInstalled: glabInstalled,
         linearConnected

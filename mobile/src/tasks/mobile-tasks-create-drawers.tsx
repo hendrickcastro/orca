@@ -26,6 +26,7 @@ import {
   TASK_SECONDARY_DRAWER_Z_INDEX
 } from './mobile-tasks-legacy-foundation'
 import { pressedStyle } from '../theme/mobile-theme'
+import { isMobileTaskProvider } from './fork-mobile-task-providers'
 
 export function renderMobileTasksCreateDrawer(model: ConnectionPresentationModel) {
   const {
@@ -58,7 +59,9 @@ export function renderMobileTasksCreateDrawer(model: ConnectionPresentationModel
     >
       <View style={styles.sheetHeader}>
         <View style={styles.sheetTitleRow}>
-          <TaskProviderLogo provider={provider} size={16} color={colors.textPrimary} />
+          {isMobileTaskProvider(provider) ? (
+            <TaskProviderLogo provider={provider} size={16} color={colors.textPrimary} />
+          ) : null}
           <Text style={styles.sheetTitle}>
             {translate('tasks.tasksCreateDrawers.newIssueTitle', 'New {{providerLabel}} Issue', {
               providerLabel

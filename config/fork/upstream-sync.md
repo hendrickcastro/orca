@@ -29,12 +29,13 @@ Registro de cada vez que se trae `stablyai/orca` (upstream) a este fork (`hendri
 3. **Resolver cada conflicto conservando todo lo de upstream y re-aplicando el cambio del fork encima.**
    Para cada archivo: `git show :1:<ruta>` (base), `:2:` (fork), `:3:` (upstream) y la intención del fork con
    `git log -p upstream/main..origin/main -- <ruta>`. Si upstream movió el código, el cambio del fork se porta a la ruta nueva.
-4. **Dependencias y comprobaciones** (en este orden):
+4. **Dependencias y comprobaciones** (en este orden; `pnpm tc` no cubre la app móvil, que va aparte):
    ```sh
    pnpm install
    pnpm tc
    pnpm test <carpetas tocadas por el fork y por los conflictos>
    pnpm run check:code-quality:changed
+   (cd mobile && pnpm install && pnpm run typecheck && node scripts/check-tests-typecheck-ratchet.mjs && node ../config/scripts/run-mobile-ci-tests.mjs)
    ```
    Comprobar la app con `ORCA_BACKGROUND_LAUNCH=1 pnpm dev` (perfil aparte con `ORCA_DEV_USER_DATA_PATH`).
 5. **Publicar.** Commit de fusión `Merge upstream stablyai/orca main (<N> commits) into the fork`, push de la rama,
@@ -57,6 +58,7 @@ Aun así hay enganches en código de upstream que conflictúan casi siempre:
 | Multi-repo y tareas | `AppRootSurfaces.tsx`, `NewWorkspaceComposerModal.tsx`, `quick-creation-execution.ts`, `task-source-context-summary.ts`, `task-page/*` | Tareas multi-repositorio, proveedores Asana y Azure DevOps |
 | Vista de agentes fijados y subagentes | `AppWorkspaceShell.tsx`, `right-sidebar/index.tsx`, `right-sidebar-panel-content.tsx`, `AgentTerminalPreview.tsx`, `zoom-ipc-bridge.ts` | Vista central «Pinned agents», pestañas del panel derecho |
 | Textos | `src/renderer/src/i18n/locales/en.json`, `es.json`, `en-runtime-required.json` | Claves propias del fork; conservar las de ambos lados |
+| App móvil | `mobile/src/tasks/*` y `mobile/src/components/use-new-workspace-runtime-context.ts` (filtro en `mobile/src/tasks/fork-mobile-task-providers.ts`) | Asana y Azure DevOps son solo de escritorio: el móvil los filtra y sus `Record<TaskProvider, …>` llevan las dos claves del fork |
 
 ## Historial
 
@@ -80,7 +82,7 @@ Aun así hay enganches en código de upstream que conflictúan casi siempre:
 
 - **Móvil**: no muestra Favoritos ni tareas multi-repo fijadas agrupadas (el feed móvil no pasa esos datos); ve el Fijados de upstream.
 - **Desinstalador de Windows**: el de upstream borra los hooks de agentes en `~/.orca/agent-hooks` si no detecta otra instalación, y esa carpeta la comparten Orca y Orca knwr. Orca los reinstala al arrancar.
-- **Tests que ya fallaban en upstream** el 2026-11-01 (9, en `src/main/native-chat/agent-session-wire/structured-agent-session-*`): no son del fork.
+- **Tests que ya fallaban en upstream** el 2026-11-01: 9 en `src/main/native-chat/agent-session-wire/structured-agent-session-*` y 2 en `mobile/src/tasks/mobile-agent-launch-architecture.test.ts`. No son del fork.
 
 ## Novedades de upstream traídas el 2026-11-01
 

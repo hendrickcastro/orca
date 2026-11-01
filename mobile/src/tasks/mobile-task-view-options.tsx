@@ -8,7 +8,9 @@ export const PROVIDER_LABELS: Record<TaskProvider, string> = {
   github: 'GitHub',
   gitlab: 'GitLab',
   linear: 'Linear',
-  jira: 'Jira'
+  jira: 'Jira',
+  'azure-devops': 'Azure DevOps',
+  asana: 'Asana'
 }
 
 export const PROVIDER_EMPTY_LABELS: Record<TaskProvider, string> = {
@@ -23,7 +25,10 @@ export const PROVIDER_EMPTY_LABELS: Record<TaskProvider, string> = {
   },
   get jira() {
     return translate('tasks.taskViewOptions.noJiraTasks', 'No Jira tasks')
-  }
+  },
+  // Fork providers never reach the phone's picker; these satisfy the shared provider type.
+  'azure-devops': 'No Azure DevOps tasks',
+  asana: 'No Asana tasks'
 }
 
 export const JIRA_FILTER_OPTIONS: PickerOption<JiraIssueFilter>[] = [
