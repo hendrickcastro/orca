@@ -57,15 +57,24 @@ else
   section "Other changes" -vE '^(feat|fix)(\(|:)'
 fi
 
+# Why a cap: GitHub rejects release bodies over 125,000 characters, and a large sync brings thousands.
+MAX_UPSTREAM_LINES=300
 if [[ -n "$upstream_commits" ]]; then
   count="$(wc -l <<<"$upstream_commits" | tr -d ' ')"
+  listed="$upstream_commits"
   echo "### Synced from stablyai/orca (${count} changes)"
   echo
+  if (( count > MAX_UPSTREAM_LINES )); then
+    upstream_before="$(git merge-base "$base" "$upstream_in_head" 2>/dev/null || true)"
+    listed="$(grep -E '^feat(\(|:)' <<<"$upstream_commits" | head -n "$MAX_UPSTREAM_LINES" || true)"
+    echo "New features are listed below; every change is in the [full comparison](https://github.com/stablyai/orca/compare/${upstream_before:0:12}...${upstream_in_head:0:12})."
+    echo
+  fi
   echo "<details><summary>Show the list</summary>"
   echo
   while IFS=$'\t' read -r subject sha; do
-    echo "- ${subject} (${sha})"
-  done <<<"$upstream_commits"
+    [[ -n "$subject" ]] && echo "- ${subject} (${sha})"
+  done <<<"$listed"
   echo
   echo "</details>"
   echo
