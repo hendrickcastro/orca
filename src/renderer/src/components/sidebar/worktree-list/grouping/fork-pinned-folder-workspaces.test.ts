@@ -94,16 +94,16 @@ function buildRows(options: {
 
 function describeRows(rows: Row[]): string[] {
   return rows.map((row) => {
-    switch (row.type) {
-      case 'header':
-        return `header:${row.key}:${row.count}`
-      case 'item':
-        return `item:${row.worktree.id}:${row.sectionKey}${row.titleOverride ? `:${row.titleOverride}` : ''}`
-      case 'folder-workspace':
-        return `folder:${row.folderWorkspace.id}:${row.sectionKey ?? 'lane'}${row.lineageCollapsed ? ':folded' : ''}`
-      default:
-        return row.type
+    if (row.type === 'header') {
+      return `header:${row.key}:${row.count}`
     }
+    if (row.type === 'item') {
+      return `item:${row.worktree.id}:${row.sectionKey}${row.titleOverride ? `:${row.titleOverride}` : ''}`
+    }
+    if (row.type === 'folder-workspace') {
+      return `folder:${row.folderWorkspace.id}:${row.sectionKey ?? 'lane'}${row.lineageCollapsed ? ':folded' : ''}`
+    }
+    return row.type
   })
 }
 
