@@ -123,7 +123,8 @@ export const TopLevelViewSchema = z.enum([
   'skills',
   'artifacts',
   'mobile',
-  'pinned-agents'
+  'pinned-agents',
+  'book'
 ])
 
 export const UiUpdateFields = z

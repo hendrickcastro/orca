@@ -163,7 +163,7 @@ export async function registerCoreHandlers(
     registerJiraHandlers()
     registerJiraIssueSummaryGenerationHandlers(store, commitMessageAgentEnv)
     registerBitbucketHandlers()
-    registerForkHandlers()
+    registerForkHandlers(store, commitMessageAgentEnv)
     registerFeedbackHandlers()
     if (crashReports) {
       registerCrashReportingHandlers(crashReports)

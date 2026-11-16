@@ -1,0 +1,221 @@
+import { useState } from 'react'
+import { createNonSecureContextUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
+import { LoaderCircle, Sparkles, Wand2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { getIntlLocale, translate } from '@/i18n/i18n'
+import { upsertBookEntry } from '../../../../shared/fork-book/book-catalog-operations'
+import { draftBookEntryText } from '../../../../shared/fork-book/book-entry-text'
+import { useBookStore } from './book-store'
+import { BOOK_ROOT_FOLDER_VALUE, flattenBookFolders } from './book-folder-options'
+
+/** Create or edit one Book entry; mounted once at the app root so the sidebar menu can open it. */
+export function BookEntryEditorDialog(): React.JSX.Element | null {
+  const editor = useBookStore((s) => s.editor)
+  const catalog = useBookStore((s) => s.catalog)
+  const updateEditor = useBookStore((s) => s.updateEditor)
+  const closeEditor = useBookStore((s) => s.closeEditor)
+  const commit = useBookStore((s) => s.commit)
+  const [generating, setGenerating] = useState(false)
+  if (!editor) {
+    return null
+  }
+  const context = editor.snapshot?.context ?? null
+  const folderOptions = flattenBookFolders(catalog)
+  const canSave = editor.title.trim().length > 0
+
+  const close = (): void => {
+    if (generating) {
+      void window.api.forkBook.cancelGenerate()
+      setGenerating(false)
+    }
+    closeEditor()
+  }
+
+  const generate = async (): Promise<void> => {
+    if (!context) {
+      return
+    }
+    setGenerating(true)
+    try {
+      const result = await window.api.forkBook.generate({
+        context,
+        includeGitLog: true,
+        language: getIntlLocale()
+      })
+      if (result.success) {
+        updateEditor({ title: result.title, description: result.description })
+      } else if (!result.canceled) {
+        toast.error(translate('forkBook.generateFailed', 'Could not generate the text.'), {
+          description: result.error
+        })
+      }
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  const save = (): void => {
+    if (!canSave) {
+      return
+    }
+    const now = Date.now()
+    const snapshot = editor.snapshot
+    const existing = editor.entryId
+      ? catalog.entries.find((entry) => entry.id === editor.entryId)
+      : undefined
+    if (existing) {
+      commit((current) =>
+        upsertBookEntry(current, {
+          ...existing,
+          title: editor.title.trim(),
+          description: editor.description.trim(),
+          folderId: editor.folderId,
+          updatedAt: now
+        })
+      )
+    } else if (snapshot) {
+      commit((current) =>
+        upsertBookEntry(current, {
+          id: createNonSecureContextUuid(),
+          ...snapshot.fields,
+          title: editor.title.trim(),
+          description: editor.description.trim(),
+          folderId: editor.folderId,
+          createdAt: now,
+          updatedAt: now
+        })
+      )
+      toast.success(translate('forkBook.saved', 'Saved to Book.'))
+    }
+    closeEditor()
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && close()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            {editor.entryId
+              ? translate('forkBook.editTitle', 'Edit Book entry')
+              : translate('forkBook.newTitle', 'Save to Book')}
+          </DialogTitle>
+          {context ? (
+            <DialogDescription>
+              {[context.workspaceName, context.repoName, context.branch]
+                .filter(Boolean)
+                .join(' · ')}
+            </DialogDescription>
+          ) : null}
+        </DialogHeader>
+        <form
+          className="space-y-3"
+          onSubmit={(event) => {
+            event.preventDefault()
+            save()
+          }}
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="fork-book-entry-title">
+              {translate('forkBook.fieldTitle', 'Title')}
+            </Label>
+            <Input
+              id="fork-book-entry-title"
+              value={editor.title}
+              onChange={(event) => updateEditor({ title: event.target.value })}
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="fork-book-entry-description">
+              {translate('forkBook.fieldDescription', 'Description')}
+            </Label>
+            <Textarea
+              id="fork-book-entry-description"
+              rows={7}
+              value={editor.description}
+              onChange={(event) => updateEditor({ description: event.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{translate('forkBook.fieldFolder', 'Folder')}</Label>
+            <Select
+              value={editor.folderId ?? BOOK_ROOT_FOLDER_VALUE}
+              onValueChange={(value) =>
+                updateEditor({ folderId: value === BOOK_ROOT_FOLDER_VALUE ? null : value })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={BOOK_ROOT_FOLDER_VALUE}>
+                  {translate('forkBook.rootFolder', 'No folder')}
+                </SelectItem>
+                {folderOptions.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    <span style={{ paddingLeft: option.depth * 12 }}>{option.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {context ? (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={generating}
+                onClick={() => updateEditor(draftBookEntryText(context))}
+              >
+                <Wand2 className="size-4" />
+                {translate('forkBook.fillFromTask', 'Fill from task')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={generating}
+                onClick={() => void generate()}
+              >
+                {generating ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+                {translate('forkBook.generateWithAi', 'Generate with AI')}
+              </Button>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={close}>
+              {translate('forkBook.cancel', 'Cancel')}
+            </Button>
+            <Button type="submit" disabled={!canSave || generating}>
+              {translate('forkBook.save', 'Save')}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}

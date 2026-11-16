@@ -128,3 +128,4 @@ export type TopLevelView =
   | 'artifacts'
   | 'mobile'
   | 'pinned-agents'
+  | 'book'

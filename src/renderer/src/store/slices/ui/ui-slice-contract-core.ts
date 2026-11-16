@@ -140,6 +140,7 @@ export type UiViewHistory =
   | 'artifacts'
   | 'mobile'
   | 'pinned-agents'
+  | 'book'
 
 export type UISliceCore = {
   sidebarOpen: boolean

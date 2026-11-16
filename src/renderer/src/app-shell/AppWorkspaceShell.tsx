@@ -31,6 +31,7 @@ const PendingNativeChatCreation = lazy(
 const TaskPage = lazy(() => import('../components/task-page/TaskPage'))
 const AutomationsPage = lazy(() => import('../components/automations/AutomationsPage'))
 const ActivityPrototypePage = lazy(() => import('../components/activity/ActivityPrototypePage'))
+const BookPage = lazy(() => import('../components/fork-book/BookPage'))
 const PinnedAgentsWorkbench = lazy(
   () => import('../components/right-sidebar/pinned-agents/PinnedAgentsWorkbench')
 )
@@ -103,6 +104,7 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       {activeView === 'automations' ? <AutomationsPage /> : null}
       {activeView === 'activity' ? <ActivityPrototypePage /> : null}
       {activeView === 'pinned-agents' ? <PinnedAgentsWorkbench /> : null}
+      {activeView === 'book' ? <BookPage /> : null}
       {activeView === 'space' ? <WorkspaceSpacePage /> : null}
       {activeView === 'mobile' ? <MobilePage /> : null}
       {activeView === 'terminal' && creationLayoutActive && activePendingCreationId ? (

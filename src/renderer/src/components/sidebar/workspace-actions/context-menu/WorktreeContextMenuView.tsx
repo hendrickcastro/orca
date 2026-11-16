@@ -21,6 +21,7 @@ import { WorktreeContextMenuOverlays } from './WorktreeContextMenuOverlays'
 import { WorktreeNotificationMuteMenuItem } from './WorktreeNotificationMuteMenuItem'
 import { WorktreeContextMenuDeleteItems } from './WorktreeContextMenuDeleteItems'
 import { PinnedFavoriteMenuItem } from '../../pinned-favorites/PinnedFavoriteMenuItem'
+import { SaveToBookMenuItem } from '../../../fork-book/SaveToBookMenuItem'
 import {
   WorktreeCopySubMenu,
   WorktreeLineageSubMenu,
@@ -191,6 +192,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
                   : t('auto.components.sidebar.WorktreeContextMenu.3baa7d6507', 'Pin')}
               </DropdownMenuItem>
               <PinnedFavoriteMenuItem worktree={worktree} disabled={isDeleting} />
+              <SaveToBookMenuItem worktree={worktree} disabled={isDeleting} />
             </>
           )}
           <WorktreeStatusMenuItems
