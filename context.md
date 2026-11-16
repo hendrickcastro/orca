@@ -19,15 +19,15 @@ La solución implementada crea worktrees para la tarea y proporciona sus rutas a
 
 ## 2. Repositorios, ramas e historial
 
-| Elemento | Referencia |
-| --- | --- |
-| Repositorio original | https://github.com/stablyai/orca |
-| Fork del usuario | https://github.com/hendrickcastro/orca |
-| Rama de desarrollo | `feat/multi-repo-feature-workspaces` |
-| Rama del fork con la feature integrada | `main` |
-| Commit inicial publicado | `d88253b0f83ece5bef58caa59196946092a3ccca` |
-| Actualización upstream integrada | `23a874a2a19b5e95f59647761836a7a11547eec7` |
-| Merge publicado e integrado en main | `9b17b47d15d0af3d85b40e89ac75f6c9b6739407` |
+| Elemento                               | Referencia                                 |
+| -------------------------------------- | ------------------------------------------ |
+| Repositorio original                   | https://github.com/stablyai/orca           |
+| Fork del usuario                       | https://github.com/hendrickcastro/orca     |
+| Rama de desarrollo                     | `feat/multi-repo-feature-workspaces`       |
+| Rama del fork con la feature integrada | `main`                                     |
+| Commit inicial publicado               | `d88253b0f83ece5bef58caa59196946092a3ccca` |
+| Actualización upstream integrada       | `23a874a2a19b5e95f59647761836a7a11547eec7` |
+| Merge publicado e integrado en main    | `9b17b47d15d0af3d85b40e89ac75f6c9b6739407` |
 
 El merge conservó la historia de la feature y la de upstream. No se hizo force push ni se sustituyeron nuestros cambios por el árbol original.
 
@@ -66,14 +66,14 @@ El botón pertenece a la barra lateral; no se añadió este flujo al diálogo ha
 
 El hallazgo clave durante la implementación fue que Orca ya dispone de grupos, folder workspaces y relaciones entre workspaces. Se reutilizan esas APIs y su representación existente en vez de crear un segundo sistema de persistencia.
 
-| Pieza | Función |
-| --- | --- |
-| ProjectGroup | Agrupación de la tarea en Orca. |
-| FolderWorkspace | Workspace del coordinador; termina apuntando al primer worktree. |
-| Worktree por repositorio | Aislamiento Git y rama de feature en cada repositorio. |
-| parentWorkspace / lineage | Vincula cada worktree con el workspace del coordinador. |
-| Notas del FolderWorkspace | Guarda el prompt y las rutas de los miembros confirmados. |
-| Claude con --add-dir | Proporciona contexto de directorios para todos los worktrees. |
+| Pieza                     | Función                                                          |
+| ------------------------- | ---------------------------------------------------------------- |
+| ProjectGroup              | Agrupación de la tarea en Orca.                                  |
+| FolderWorkspace           | Workspace del coordinador; termina apuntando al primer worktree. |
+| Worktree por repositorio  | Aislamiento Git y rama de feature en cada repositorio.           |
+| parentWorkspace / lineage | Vincula cada worktree con el workspace del coordinador.          |
+| Notas del FolderWorkspace | Guarda el prompt y las rutas de los miembros confirmados.        |
+| Claude con --add-dir      | Proporciona contexto de directorios para todos los worktrees.    |
 
 No hay una nueva entidad persistida de tipo MultiRepoWorkspace ni nuevos canales IPC. La clase de creación compone operaciones ya existentes.
 
@@ -81,14 +81,14 @@ El grupo se crea inicialmente con `parentPath` del primer repositorio. Esto no s
 
 ## 6. Archivos de implementación
 
-| Archivo | Responsabilidad |
-| --- | --- |
-| `src/renderer/src/components/sidebar/SidebarToolbar.tsx` | Botón de entrada y apertura del diálogo. |
-| `src/renderer/src/components/new-workspace/MultiRepoWorkspaceDialog.tsx` | Selección, formulario, progreso, errores y reintento. |
-| `src/renderer/src/lib/multi-repo-workspace-creation.ts` | Validación, creación secuencial, seguimiento de miembros y notas. |
-| `src/renderer/src/lib/multi-repo-coordinator-launch.ts` | Resolución del shell, actualización del store y activación del coordinador. |
-| `src/shared/multi-repo-coordinator-startup.ts` | Construcción del comando Claude y argumentos literales. |
-| `docs/reference/multi-repository-features.md` | Guía breve de uso, recuperación y alcance. |
+| Archivo                                                                  | Responsabilidad                                                             |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| `src/renderer/src/components/sidebar/SidebarToolbar.tsx`                 | Botón de entrada y apertura del diálogo.                                    |
+| `src/renderer/src/components/new-workspace/MultiRepoWorkspaceDialog.tsx` | Selección, formulario, progreso, errores y reintento.                       |
+| `src/renderer/src/lib/multi-repo-workspace-creation.ts`                  | Validación, creación secuencial, seguimiento de miembros y notas.           |
+| `src/renderer/src/lib/multi-repo-coordinator-launch.ts`                  | Resolución del shell, actualización del store y activación del coordinador. |
+| `src/shared/multi-repo-coordinator-startup.ts`                           | Construcción del comando Claude y argumentos literales.                     |
+| `docs/reference/multi-repository-features.md`                            | Guía breve de uso, recuperación y alcance.                                  |
 
 Antes de editar, leer `AGENTS.md` y, para interfaz, `docs/STYLEGUIDE.md`. Reutilizar componentes y servicios existentes. Mantener la consideración de Windows, macOS, Linux, SSH y folder workspaces sin afirmar soporte no implementado.
 
@@ -191,13 +191,13 @@ La selección local comprueba `repo.kind`, `connectionId`, el host de ejecución
 
 ## 11. Pruebas y evidencia
 
-| Archivo de pruebas | Cobertura |
-| --- | --- |
-| `src/renderer/src/lib/multi-repo-workspace-creation.test.ts` | Bases por repo, lineage, reintento, metadatos, hosts y prompt. |
-| `src/renderer/src/lib/multi-repo-workspace-real-git.test.ts` | Dos repos Git reales, aislamiento de originales y normalización del workspace. |
-| `src/shared/multi-repo-coordinator-startup.test.ts` | Argumentos PowerShell/cmd/POSIX, caracteres especiales y shell POSIX real. |
+| Archivo de pruebas                                                            | Cobertura                                                                          |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `src/renderer/src/lib/multi-repo-workspace-creation.test.ts`                  | Bases por repo, lineage, reintento, metadatos, hosts y prompt.                     |
+| `src/renderer/src/lib/multi-repo-workspace-real-git.test.ts`                  | Dos repos Git reales, aislamiento de originales y normalización del workspace.     |
+| `src/shared/multi-repo-coordinator-startup.test.ts`                           | Argumentos PowerShell/cmd/POSIX, caracteres especiales y shell POSIX real.         |
 | `src/renderer/src/components/new-workspace/MultiRepoWorkspaceDialog.test.tsx` | Validación de formulario, selección local, orden de lanzamiento y fallo/reintento. |
-| `src/renderer/src/lib/multi-repo-workspace-test-fixtures.ts` | Fixtures compartidas para las pruebas. |
+| `src/renderer/src/lib/multi-repo-workspace-test-fixtures.ts`                  | Fixtures compartidas para las pruebas.                                             |
 
 Resultados registrados:
 

@@ -3,7 +3,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/class-names'
-import { translate } from '@/i18n/i18n'
+import { translate, getIntlLocale } from '@/i18n/i18n'
 import { useState } from 'react'
 import type { AsanaTask } from '../../../../../shared/asana-types'
 import { formatAsanaDueDate, getAsanaTaskState } from './asana-task-presentation'
@@ -73,7 +73,7 @@ export function AsanaTaskRow({ task }: { task: AsanaTask }): React.JSX.Element {
         ))}
       </span>
       <span className="text-xs text-muted-foreground">
-        {task.createdAt ? new Date(task.createdAt).toLocaleDateString() : ''}
+        {task.createdAt ? new Date(task.createdAt).toLocaleDateString(getIntlLocale()) : ''}
       </span>
       <div className="flex items-center justify-end gap-1">
         <Tooltip>
