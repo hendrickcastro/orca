@@ -17,6 +17,7 @@ import {
 } from '../../../../../../shared/folder-workspaces/folder-workspace-worktree'
 import type { ProjectGroup } from '../../../../../../shared/project/groups/project-group-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
+import type { Repo } from '../../../../../../shared/repository/repo-types'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import { cloneDefaultWorkspaceStatuses } from '../../../../../../shared/workspace/status/workspace-statuses'
@@ -61,6 +62,7 @@ function buildRows(options: {
   policy?: PinnedWorktreeDisplayPolicy
   collapsed?: Set<string>
   favorites?: string[]
+  repos?: Repo[]
 }): Row[] {
   const worktrees = options.worktrees ?? [other, member]
   const task = options.task ?? TASK
@@ -68,7 +70,7 @@ function buildRows(options: {
     groupBy: 'none',
     sortBy: 'manual',
     worktrees,
-    repoMap: new Map([[repo.id, repo]]),
+    repoMap: new Map((options.repos ?? [repo]).map((entry) => [entry.id, entry])),
     prGroupOf: () => 'in-progress',
     workspaceStatuses: cloneDefaultWorkspaceStatuses(),
     projectOrderBy: 'manual',
@@ -167,5 +169,31 @@ describe('fork: a pinned multi-repository task in the sidebar', () => {
     const header = buildRows({})[0]
     expect(header.type === 'header' && header.hostWorktreeCounts?.get('local')).toBe(2)
     expect(header.type === 'header' && header.worktreeIds).toEqual([member.id])
+  })
+
+  it('lists the task first, then pinned workspaces under a label per project', () => {
+    const api: Repo = { ...repo, id: 'repo-api', displayName: 'api' }
+    const pinnedApi = { ...other, id: 'wt-api', path: '/tmp/api', repoId: api.id, isPinned: true }
+    const pinnedOrca = { ...other, id: 'wt-orca', path: '/tmp/orca-a', isPinned: true }
+    const secondOrca = { ...other, id: 'wt-orca-2', path: '/tmp/orca-b', isPinned: true }
+    const rows = buildRows({
+      worktrees: [pinnedOrca, pinnedApi, member, secondOrca],
+      repos: [repo, api]
+    })
+    // Every row is pinned here, so the section runs to the end of the list.
+    const pinned = rows.slice(1)
+    expect(
+      pinned.map((row) =>
+        row.type === 'item'
+          ? `${row.worktree.id}:${row.pinnedProjectLabel ?? ''}:${row.hidePinnedRepoChip ? 'no-chip' : 'chip'}`
+          : row.type
+      )
+    ).toEqual([
+      'folder-workspace',
+      `${member.id}::no-chip`,
+      'wt-api:api:no-chip',
+      'wt-orca:orca:no-chip',
+      'wt-orca-2::no-chip'
+    ])
   })
 })

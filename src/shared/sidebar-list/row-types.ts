@@ -74,6 +74,10 @@ export type WorktreeRow = {
   titleOverride?: string
   /** Extra left offset (px) that seats a section's rows under its header, e.g. Pinned. */
   sectionIndent?: number
+  /** Fork: names the project above the first row of a Pinned project block. */
+  pinnedProjectLabel?: string
+  /** Fork: a project label or task title already names the repo, so the card drops its chip. */
+  hidePinnedRepoChip?: true
 }
 
 export type ImportedWorktreesCardCandidate = {

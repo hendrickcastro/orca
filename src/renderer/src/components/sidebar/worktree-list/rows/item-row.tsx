@@ -9,6 +9,7 @@ import { isActiveSidebarWorkspace } from '../../../../../../shared/sidebar-list/
 import WorktreeCard from '../../workspace-card/surface/WorktreeCard'
 import type { ActiveSurfaceVariant } from '../../workspace-card/controller/worktree-card-model'
 import { PINNED_GROUP_KEY } from '../../../../../../shared/sidebar-list/sections/group-keys'
+import { PinnedProjectLabel } from '../../pinned-favorites/PinnedProjectLabel'
 import type { WorktreeGroupBy } from '../../../../../../shared/sidebar-list/row-types'
 import type { LineageToggleHandler } from '../../workspace-card/identity/worktree-lineage-toggle-handler-cache'
 import type { LineageRowFrame } from '../listing/lineage-row-projection'
@@ -105,6 +106,7 @@ export function renderWorktreeItemRow(
         paddingRight: right || undefined
       }}
     >
+      <PinnedProjectLabel row={itemRow} />
       <WorktreeCard
         worktree={itemRow.worktree}
         repo={itemRow.repo}
@@ -136,7 +138,7 @@ export function renderWorktreeItemRow(
         hostContextLabel={itemRow.hostContextLabel}
         titleOverride={itemRow.titleOverride}
         showProjectName={itemRow.showProjectName}
-        inPinnedSection={itemRow.sectionKey === PINNED_GROUP_KEY}
+        inPinnedSection={itemRow.sectionKey === PINNED_GROUP_KEY && !itemRow.hidePinnedRepoChip}
         renameRowKey={itemRow.rowKey}
         lineageChildCount={itemRow.lineageChildCount}
         lineageChildWorktreeIds={itemRow.lineageChildWorktreeIds}

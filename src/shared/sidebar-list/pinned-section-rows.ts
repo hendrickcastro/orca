@@ -51,6 +51,60 @@ function seatPinnedSectionRows(
   }
 }
 
+const PROJECT_NAME_COLLATOR = new Intl.Collator(undefined, { sensitivity: 'base' })
+
+type PinnedBlock = { rows: Row[]; projectKey: string | null; projectName: string }
+
+/** Splits a section into top-level rows with their nested members, e.g. a task and its repos. */
+function splitPinnedBlocks(rows: readonly Row[]): PinnedBlock[] {
+  const blocks: PinnedBlock[] = []
+  for (const row of rows) {
+    const isRoot = (row.type === 'item' || row.type === 'folder-workspace') && row.depth === 0
+    const current = blocks.at(-1)
+    if (isRoot || !current) {
+      const project = row.type === 'item' ? row.repo : undefined
+      blocks.push({
+        rows: [row],
+        projectKey: row.type === 'item' ? (project?.id ?? row.worktree.repoId) : null,
+        projectName: project?.displayName ?? (row.type === 'item' ? row.worktree.repoId : '')
+      })
+    } else {
+      current.rows.push(row)
+    }
+  }
+  return blocks
+}
+
+function withoutRepoChip(row: Row): Row {
+  return row.type === 'item' ? { ...row, hidePinnedRepoChip: true } : row
+}
+
+/** Pinned tasks first, then one labelled block per project, so repos read as groups, not chips. */
+export function groupPinnedRowsByProject(rows: readonly Row[]): Row[] {
+  const tasks: Row[] = []
+  const projects = new Map<string, { name: string; rows: Row[] }>()
+  for (const block of splitPinnedBlocks(rows)) {
+    if (block.projectKey === null) {
+      tasks.push(...block.rows.map(withoutRepoChip))
+      continue
+    }
+    const project = projects.get(block.projectKey) ?? { name: block.projectName, rows: [] }
+    project.rows.push(...block.rows.map(withoutRepoChip))
+    projects.set(block.projectKey, project)
+  }
+  const ordered = [...projects.values()].sort((left, right) =>
+    PROJECT_NAME_COLLATOR.compare(left.name, right.name)
+  )
+  return [
+    ...tasks,
+    ...ordered.flatMap(({ name, rows: projectRows }) =>
+      projectRows.map((row, index) =>
+        index === 0 && row.type === 'item' ? { ...row, pinnedProjectLabel: name } : row
+      )
+    )
+  ]
+}
+
 /** Fork twin of upstream's emitPinnedGroup: Favorites above Pinned, folder workspaces as folder rows. */
 export function emitPinnedSections(
   sections: readonly { key: string; group: { items: readonly Worktree[] } }[],
@@ -98,5 +152,6 @@ export function emitPinnedSections(
       folderPairByIdentity
     })
     seatPinnedSectionRows(result, firstRowIndex, folderPairByIdentity)
+    result.push(...groupPinnedRowsByProject(result.splice(firstRowIndex)))
   }
 }
