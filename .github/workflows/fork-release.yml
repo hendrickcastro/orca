@@ -148,7 +148,7 @@ jobs:
           EP_GH_IGNORE_TIME: 'true'
         run: |
           set -euo pipefail
-          node config/scripts/ensure-native-runtime.mjs --runtime=electron
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
           pnpm exec electron-builder --config config/electron-builder.config.cjs --win \
             --publish always -c.publish.releaseType=draft
 
@@ -216,7 +216,7 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: |
           set -euo pipefail
-          node config/scripts/ensure-native-runtime.mjs --runtime=electron
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
           # Why DMG only: the ZIP and latest-mac.yml feed only Squirrel.Mac, which cannot install an
           # unsigned build; install-macos.sh uses the DMG, so the rest would just take space.
           pnpm exec electron-builder --config config/electron-builder.config.cjs --mac dmg --x64 --arm64 \
