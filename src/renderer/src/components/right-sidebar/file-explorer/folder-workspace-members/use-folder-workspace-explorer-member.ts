@@ -1,0 +1,158 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { useAppStore } from '@/store'
+import { selectCrossStoreFolderChildrenById } from '@/store/slices/worktrees/metadata/cross-store-lineage-parents'
+import type { Repo } from '../../../../../../shared/repository/repo-types'
+import type { Worktree } from '../../../../../../shared/worktree/types'
+import { parseWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
+import { isWindowVisible } from '@/lib/window-activity/window-visibility-interval'
+import { getAttachedWorktreesForFolderWorkspace } from '../../folder-workspaces/folder-workspace-attached-worktrees'
+import { getFileExplorerOperationOwner } from '../navigation/file-explorer-operation-owner'
+import { refreshGitStatusForWorktree } from '../../source-control/sync/git-status-refresh'
+import { resolveWorktreeGitCopyNow } from '@/lib/workspace/ownership/worktree-git-copy'
+
+export type FolderWorkspaceExplorerMember = { worktree: Worktree; repo: Repo | null }
+
+// Why: only the active worktree is polled globally; a member browsed from its coordinator needs its own cadence.
+const MEMBER_STATUS_INTERVAL_MS = 15_000
+
+function sameOwner(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+/** One member alone keeps today's single-root explorer; the default is the member the folder already points at. */
+export function pickFolderWorkspaceExplorerMember<
+  T extends { worktree: Pick<Worktree, 'id' | 'path'> }
+>(members: readonly T[], selectedId: string | undefined, folderPath: string | null): T | null {
+  if (members.length < 2) {
+    return null
+  }
+  return (
+    members.find((member) => member.worktree.id === selectedId) ??
+    members.find((member) => member.worktree.path === folderPath) ??
+    members[0]
+  )
+}
+
+/**
+ * Lets a folder workspace's explorer browse one of its attached worktrees (e.g. the repositories of a
+ * multi-repository task). Only local coordinators and local members qualify, so every file operation
+ * keeps passing the explorer's owner check and path-routed git queries hit the chosen member.
+ */
+export function useFolderWorkspaceExplorerMember(activeWorktreeId: string | null): {
+  members: FolderWorkspaceExplorerMember[]
+  selected: FolderWorkspaceExplorerMember | null
+  select: (worktreeId: string) => void
+} {
+  const isFolder = activeWorktreeId ? parseWorkspaceKey(activeWorktreeId)?.type === 'folder' : false
+  const inputs = useAppStore(
+    useShallow((s) => ({
+      folderWorkspaces: s.folderWorkspaces,
+      workspaceLineageByChildKey: s.workspaceLineageByChildKey,
+      worktreeLineageById: s.worktreeLineageById,
+      worktreesByRepo: s.worktreesByRepo,
+      repos: s.repos
+    }))
+  )
+  const crossStoreChildrenByFolderId = useAppStore(selectCrossStoreFolderChildrenById)
+  const [selectedByWorkspace, setSelectedByWorkspace] = useState<Record<string, string>>({})
+
+  const { members, folderPath } = useMemo(() => {
+    if (!isFolder || !activeWorktreeId) {
+      return { members: [], folderPath: null }
+    }
+    const resolution = getAttachedWorktreesForFolderWorkspace({
+      activeWorkspaceKey: activeWorktreeId,
+      activeWorktreeId,
+      folderWorkspaces: inputs.folderWorkspaces,
+      workspaceLineageByChildKey: inputs.workspaceLineageByChildKey,
+      worktreeLineageById: inputs.worktreeLineageById,
+      worktreesByRepo: inputs.worktreesByRepo,
+      crossStoreChildrenByFolderId
+    })
+    const coordinatorOwner = getFileExplorerOperationOwner(activeWorktreeId)
+    // Why: runtime RPCs route by workspace id, not path, so only local coordinators can browse another root.
+    if (coordinatorOwner.kind !== 'local') {
+      return { members: [], folderPath: null }
+    }
+    const repoById = new Map(inputs.repos.map((repo) => [repo.id, repo]))
+    return {
+      folderPath: resolution.folderWorkspace?.folderPath ?? null,
+      members: resolution.childWorktrees
+        .filter((worktree) =>
+          sameOwner(getFileExplorerOperationOwner(worktree.id), coordinatorOwner)
+        )
+        .map((worktree) => ({ worktree, repo: repoById.get(worktree.repoId) ?? null }))
+        .sort((left, right) =>
+          (left.repo?.displayName ?? left.worktree.path).localeCompare(
+            right.repo?.displayName ?? right.worktree.path
+          )
+        )
+    }
+  }, [activeWorktreeId, crossStoreChildrenByFolderId, inputs, isFolder])
+
+  const selectedId = activeWorktreeId ? selectedByWorkspace[activeWorktreeId] : undefined
+  const selected = pickFolderWorkspaceExplorerMember(members, selectedId, folderPath)
+
+  const select = useCallback(
+    (worktreeId: string) => {
+      if (activeWorktreeId) {
+        setSelectedByWorkspace((current) => ({ ...current, [activeWorktreeId]: worktreeId }))
+      }
+    },
+    [activeWorktreeId]
+  )
+
+  useMemberGitStatusRefresh(members)
+  return { members, selected, select }
+}
+
+function useMemberGitStatusRefresh(members: readonly FolderWorkspaceExplorerMember[]): void {
+  const setGitStatus = useAppStore((s) => s.setGitStatus)
+  const updateWorktreeGitIdentity = useAppStore((s) => s.updateWorktreeGitIdentity)
+  const setUpstreamStatus = useAppStore((s) => s.setUpstreamStatus)
+  const fetchUpstreamStatus = useAppStore((s) => s.fetchUpstreamStatus)
+  const memberKey = members
+    .map((member) => `${member.worktree.id}\0${member.worktree.path}`)
+    .join('\n')
+
+  useEffect(() => {
+    if (members.length < 2) {
+      return
+    }
+    const controller = new AbortController()
+    const refresh = (): void => {
+      if (!isWindowVisible()) {
+        return
+      }
+      for (const { worktree } of members) {
+        const copy = resolveWorktreeGitCopyNow(worktree.id)
+        if (!copy) {
+          continue
+        }
+        void refreshGitStatusForWorktree({
+          target: copy.transport,
+          ownerHostId: copy.hostId,
+          worktreeId: worktree.id,
+          worktreePath: worktree.path,
+          connectionId: copy.connectionId,
+          pushTarget: worktree.pushTarget,
+          deps: { setGitStatus, updateWorktreeGitIdentity, setUpstreamStatus, fetchUpstreamStatus },
+          request: {
+            admissionTier: 'background',
+            reuseLineStats: true,
+            signal: controller.signal,
+            shouldApply: () => !controller.signal.aborted
+          }
+        }).catch(() => {})
+      }
+    }
+    refresh()
+    const timer = setInterval(refresh, MEMBER_STATUS_INTERVAL_MS)
+    return () => {
+      controller.abort()
+      clearInterval(timer)
+    }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- memberKey is the member identity signal; the array changes every render.
+  }, [memberKey, fetchUpstreamStatus, setGitStatus, setUpstreamStatus, updateWorktreeGitIdentity])
+}

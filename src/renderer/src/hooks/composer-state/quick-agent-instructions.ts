@@ -1,4 +1,4 @@
-import { resolveQuickCreateLinkedWorkItemPrompt } from '@/lib/linked-work-item-context'
+import { resolveQuickCreateLinkedWorkItemPrompt } from '@/lib/work-items/linked-work-item-context'
 
 type LinkedWorkItemArg = Parameters<typeof resolveQuickCreateLinkedWorkItemPrompt>[0]
 

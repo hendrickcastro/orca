@@ -1,6 +1,9 @@
 import type { AppState } from '@/store/types'
-import type { ExecutionHostId } from '../../../../../shared/execution-host'
-import { folderWorkspaceKey, worktreeWorkspaceKey } from '../../../../../shared/workspace-scope'
+import type { ExecutionHostId } from '../../../../../shared/execution-host/execution-host'
+import {
+  folderWorkspaceKey,
+  worktreeWorkspaceKey
+} from '../../../../../shared/workspace/identity/workspace-scope'
 
 export type PinnedWorkspaceEntry = {
   /** Worktree id, or the `folder:<id>` key of a folder workspace. */

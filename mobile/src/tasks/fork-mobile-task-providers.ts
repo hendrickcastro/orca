@@ -1,5 +1,5 @@
-import type { TaskProvider } from '../../../src/shared/task-providers'
-import type { TaskProviderLogoKind } from '../components/TaskProviderLogo'
+import type { TaskProvider } from '../../../src/shared/work-items/task-providers'
+import type { TaskProviderLogoKind } from '../components/icons/TaskProviderLogo'
 
 /** The desktop-only task providers the Orca knwr fork adds; the phone has no screens for them. */
 const DESKTOP_ONLY_TASK_PROVIDERS: ReadonlySet<TaskProvider> = new Set(['azure-devops', 'asana'])

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
+import { PINNED_GROUP_KEY } from '../../../../shared/sidebar-list/sections/group-keys'
 
 /**
  * Why a marker beside the key: groups start folded only the first time they appear; after that
@@ -14,23 +15,32 @@ type SidebarRowLike = {
   collapseKey?: string
   repo?: unknown
   projectGroup?: unknown
+  sectionKey?: string
+  lineageGroupKey?: string
 }
 
 export function defaultFoldMarker(collapseKey: string): string {
   return `${DEFAULT_FOLD_MARKER_PREFIX}${collapseKey}`
 }
 
-/** Project and repository headers that have never been folded by default yet. */
+/** Why pinned tasks too: a multi-repo task in Pinned would otherwise list every member repo. */
+function defaultFoldKey(row: SidebarRowLike): string | undefined {
+  if (row.type === 'header' && (row.repo || row.projectGroup)) {
+    return row.collapseKey ?? row.key
+  }
+  return row.type === 'folder-workspace' && row.sectionKey === PINNED_GROUP_KEY
+    ? row.lineageGroupKey
+    : undefined
+}
+
+/** Project and repository headers, and pinned tasks, that have never been folded by default yet. */
 export function sidebarGroupsToFoldByDefault(
   rows: readonly SidebarRowLike[],
   collapsedGroups: ReadonlySet<string>
 ): string[] {
   const keys: string[] = []
   for (const row of rows) {
-    if (row.type !== 'header' || !(row.repo || row.projectGroup)) {
-      continue
-    }
-    const key = row.collapseKey ?? row.key
+    const key = defaultFoldKey(row)
     if (key && !collapsedGroups.has(defaultFoldMarker(key)) && !keys.includes(key)) {
       keys.push(key)
     }

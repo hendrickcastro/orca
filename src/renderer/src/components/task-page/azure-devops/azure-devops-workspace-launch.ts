@@ -1,9 +1,9 @@
 import type { AzureDevOpsTaskItem } from '../../../../../shared/azure-devops-tasks'
 import {
   getLinkedWorkItemSuggestedName,
-  getLinkedWorkItemWorkspaceName,
-  type LinkedWorkItemSummary
-} from '@/lib/new-workspace'
+  getLinkedWorkItemWorkspaceName
+} from '../../../../../shared/workspace/naming/workspace-name'
+import type { LinkedWorkItemSummary } from '@/lib/workspace/creation/new-workspace'
 import { useAppStore } from '@/store'
 
 export function getAzureDevOpsItemWorkspaceSeed(item: AzureDevOpsTaskItem): string {

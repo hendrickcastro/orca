@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { PluginDeclarativeProps } from '../../../../../shared/plugins/declarative/plugin-declarative-catalog'
 import { usePluginDeclarativeHostValue } from './plugin-declarative-host-value'
+import { usePluginDeclarativeActExpansion } from './plugin-declarative-act-targets'
 import type { PluginDeclarativeEmit } from './PluginDeclarativeControls'
 import { PluginDeclarativeIconGlyph } from './plugin-declarative-icons'
 import { visibleTreeRows, type PluginDeclarativeTreeRow } from './plugin-declarative-tree-rows'
@@ -18,6 +19,7 @@ export function PluginDeclarativeTree({
   props: PluginDeclarativeProps<'Tree'>
   emit: PluginDeclarativeEmit
 }): React.JSX.Element {
+  const t = useTranslate()
   // `expanded` is the plugin's record; a toggle shows at once and a changed list replaces it.
   const controlled = props.expanded?.join('\u0000')
   const [openItems, setOpenItems] = useState(() => ({
@@ -35,6 +37,7 @@ export function PluginDeclarativeTree({
     defaultValue: props.defaultSelected,
     fallback: '',
     acked: props.$edit,
+    actTarget: props,
     callback: props.onSelect?.$callback,
     send: (callback, key, edit) => emit(callback, [{ key }], { edit })
   })
@@ -50,22 +53,25 @@ export function PluginDeclarativeTree({
       elements.current.get(row.item.key)?.focus()
     }
   }
-  const toggle = (row: ItemRow, open: boolean): void => {
-    if (!row.expandable || row.expanded === open) {
-      return
-    }
+  const setExpanded = (key: string, open: boolean): void => {
     setOpenItems((previous) => {
       const keys = new Set(previous.keys)
       if (open) {
-        keys.add(row.item.key)
+        keys.add(key)
       } else {
-        keys.delete(row.item.key)
+        keys.delete(key)
       }
       return { ...previous, keys }
     })
     const callback = props.onToggle?.$callback
     if (callback) {
-      emit(callback, [{ key: row.item.key, expanded: open }])
+      emit(callback, [{ key, expanded: open }])
+    }
+  }
+  usePluginDeclarativeActExpansion(props, { expanded: () => expanded, set: setExpanded })
+  const toggle = (row: ItemRow, open: boolean): void => {
+    if (row.expandable && row.expanded !== open) {
+      setExpanded(row.item.key, open)
     }
   }
   const select = (row: ItemRow): void => {
@@ -116,7 +122,7 @@ export function PluginDeclarativeTree({
             style={{ paddingLeft: `${(row.level - 1) * 12 + 28}px` }}
           >
             <LoadingSpinner className="size-3.5" />
-            {translate('auto.components.plugins.declarative.Tree.loading', 'Loading…')}
+            {t('auto.components.plugins.declarative.Tree.loading', 'Loading…')}
           </div>
         ) : (
           <div

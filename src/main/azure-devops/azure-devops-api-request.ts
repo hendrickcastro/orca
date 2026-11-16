@@ -66,6 +66,7 @@ export type AzureDevOpsRequestOptions = {
   timeoutMs?: number
   /** JSON body; sends a POST (WIQL and work-item batch reads are POST-only). */
   body?: unknown
+  onResponse?: (response: Response) => void
 }
 
 export function normalizeAzureDevOpsApiBaseUrl(value: string): string {
@@ -142,6 +143,7 @@ export async function requestAzureDevOpsJsonAtBase<T>(
       const url = apiUrl(baseUrl, path, options.searchParams)
       const response = await doFetch(url)
       if (response.ok) {
+        options.onResponse?.(response)
         return (await response.json()) as T
       }
       const body = response.status === 400 ? await response.text().catch(() => '') : ''

@@ -3,7 +3,7 @@ import { FolderPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
-import MultiRepoWorkspaceDialog from '../new-workspace/MultiRepoWorkspaceDialog'
+import MultiRepoWorkspaceDialog from '../new-workspace/multi-repo/MultiRepoWorkspaceDialog'
 
 export function MultiRepoToolbarButton(): React.JSX.Element {
   const [open, setOpen] = React.useState(false)

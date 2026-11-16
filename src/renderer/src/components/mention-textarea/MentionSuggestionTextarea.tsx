@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { Textarea } from '@/components/ui/textarea'
-import { ImeTextarea } from '@/lib/ime-text-field'
+import { ImeTextarea } from '@/lib/text-input/ime/ime-text-field'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 
 export type MentionQuery = {

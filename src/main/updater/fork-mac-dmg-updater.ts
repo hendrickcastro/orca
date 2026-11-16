@@ -2,12 +2,12 @@ import { chmod, mkdir, open, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { app, BrowserWindow, net } from 'electron'
 import { PRODUCT_MAC_UPDATES_FROM_DMG, PRODUCT_NAME } from '../../shared/product-identity'
-import type { UpdateCheckOptions } from '../../shared/update-status-types'
+import type { UpdateCheckOptions } from '../../shared/updater/update-status-types'
 import { spawnProcess } from '@orca/process-host'
 import { killAllPty } from '../ipc/pty/kill-all'
-import { armUpdateInstallExitWatchdog } from '../update-install-exit-watchdog'
-import { compareVersions } from '../updater-fallback'
-import { recordUpdaterLifecycle } from '../updater-lifecycle-diagnostics'
+import { armUpdateInstallExitWatchdog } from './update-install-exit-watchdog'
+import { compareVersions } from './releases/updater-fallback'
+import { recordUpdaterLifecycle } from './updater-lifecycle-diagnostics'
 import {
   FORK_LATEST_RELEASE_API_URL,
   FORK_MAC_INSTALL_SCRIPT,
@@ -15,8 +15,8 @@ import {
   resolveReplaceableAppBundle,
   type ForkMacDmgRelease
 } from './fork-mac-dmg-release'
-import { AUTO_UPDATE_CHECK_INTERVAL_MS } from './updater-state'
-import { UpdaterSetup } from './updater-setup'
+import { AUTO_UPDATE_CHECK_INTERVAL_MS } from './lifecycle/updater-state'
+import { UpdaterSetup } from './lifecycle/updater-setup'
 
 const RELEASE_FETCH_TIMEOUT_MS = 10_000
 

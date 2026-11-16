@@ -1,6 +1,6 @@
-import { getTerminalFileContext } from '@/components/terminal-pane/terminal-file-path-mapping'
-import { listRuntimeFiles } from '@/runtime/runtime-file-search-client'
-import { QUICK_OPEN_LISTING_MAX_RESULTS } from '../../../../shared/quick-open-listing-limits'
+import { getTerminalFileContext } from '@/components/terminal-pane/host-files/terminal-file-path-mapping'
+import { listRuntimeFiles } from '@/runtime/files/search/runtime-file-search-client'
+import { QUICK_OPEN_LISTING_MAX_RESULTS } from '../../../../shared/quick-open/quick-open-listing-limits'
 
 const ROOTED_PATH_PATTERN = /^(?:~|\.\.|[\\/]|[A-Za-z]:[\\/])/
 const NAME_LOOKUP_MAX_RESULTS = 500

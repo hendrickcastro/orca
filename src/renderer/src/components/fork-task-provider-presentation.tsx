@@ -2,7 +2,7 @@ import type React from 'react'
 import { AsanaIcon } from '@/components/icons/AsanaIcon'
 import { AzureDevOpsIcon } from '@/components/icons/AzureDevOpsIcon'
 import { translate } from '@/i18n/i18n'
-import type { TaskProvider } from '../../../shared/task-providers'
+import type { TaskProvider } from '../../../shared/work-items/task-providers'
 
 type ForkTaskProvider = Extract<TaskProvider, 'azure-devops' | 'asana'>
 const FORK_TASK_PROVIDERS: readonly ForkTaskProvider[] = ['azure-devops', 'asana']

@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { PINNED_GROUP_KEY } from '../../../../../shared/sidebar-list/group-keys'
+import { PINNED_GROUP_KEY } from '../../../../../shared/sidebar-list/sections/group-keys'
 import { PINNED_FAVORITES_GROUP_KEY } from '../../../../../shared/sidebar-list/pinned-favorites'
 import {
   expandPinnedAgentsPanelDropIds,

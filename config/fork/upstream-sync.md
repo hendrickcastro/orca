@@ -7,10 +7,11 @@ Registro de cada vez que se trae `stablyai/orca` (upstream) a este fork (`hendri
 
 | | |
 | --- | --- |
-| Último commit de upstream integrado | `d95e2324dcd` — 2026-11-01 — fix(notifications): announce finished only when the agent is fully done (#36992) |
-| Commit de fusión en el fork | `0cb8e3406f6` (rama `sync/upstream-2026-11-01`) |
-| `main` del fork antes de la fusión | `096af0bd434` |
-| Próxima sincronización: commits nuevos | `git log --oneline d95e2324dcd..upstream/main` |
+| Último commit de upstream integrado | `6018fca4de5` — 2026-11-16 — refactor: group shared settings, profiles and execution hosts (#43047) |
+| Commit de fusión en el fork | rama `hendrickcastro/Adding-new-updates` |
+| `main` del fork antes de la fusión | `f49c27b33a1` |
+| Próxima sincronización: commits nuevos | `git log --oneline 6018fca4de5..upstream/main` |
+| Superficie de conflicto del fork | `node config/fork/fork-footprint.mjs` (archivos de upstream que el fork edita y cuántas líneas) |
 
 ## Procedimiento
 
@@ -23,17 +24,20 @@ Registro de cada vez que se trae `stablyai/orca` (upstream) a este fork (`hendri
    ```sh
    git worktree add -b sync/upstream-AAAA-MM-DD ../upstream-sync-AAAA-MM-DD origin/main
    cd ../upstream-sync-AAAA-MM-DD
-   git -c merge.renameLimit=20000 merge --no-ff --no-commit upstream/main
+   git -c merge.renameLimit=60000 merge --no-ff --no-commit upstream/main
    git diff --name-only --diff-filter=U        # lista de conflictos
    ```
 3. **Resolver cada conflicto conservando todo lo de upstream y re-aplicando el cambio del fork encima.**
    Para cada archivo: `git show :1:<ruta>` (base), `:2:` (fork), `:3:` (upstream) y la intención del fork con
-   `git log -p upstream/main..origin/main -- <ruta>`. Si upstream movió el código, el cambio del fork se porta a la ruta nueva.
+   `git log -p upstream/main..origin/main -- <ruta>`. Si upstream movió el código, el cambio del fork se porta a la ruta nueva
+   (mapa de rutas: `git -c diff.renameLimit=60000 diff --name-status -M <último integrado> upstream/main`).
+   Si el cambio del fork ocupa más de una o dos líneas, se lleva a un módulo propio (`fork-*`) y en upstream queda solo el enganche.
+   Con muchos conflictos funciona bien repartirlos por áreas (tabla de abajo) entre varios agentes en paralelo.
 4. **Dependencias y comprobaciones** (en este orden; `pnpm tc` no cubre la app móvil, que va aparte):
    ```sh
    pnpm install
    pnpm tc
-   pnpm test <carpetas tocadas por el fork y por los conflictos>
+   pnpm test --maxWorkers=4 <carpetas tocadas por el fork y por los conflictos>   # nunca `vitest run` a pelo: se salta el setup de identidad
    pnpm run check:code-quality:changed
    (cd mobile && pnpm install && pnpm run typecheck && node scripts/check-tests-typecheck-ratchet.mjs && node ../config/scripts/run-mobile-ci-tests.mjs)
    ```
@@ -44,21 +48,25 @@ Registro de cada vez que se trae `stablyai/orca` (upstream) a este fork (`hendri
 
 ## Dónde choca el fork con upstream
 
-El fork mete su código en archivos propios (`config/fork/`, `src/shared/fork-global-settings-types.ts`,
-`*fork*`, `pinned-favorites/`, `pinned-agents/`, `file-link-preview/`, proveedores `asana/` y `azure-devops/`, `new-workspace/multi-repo-*`).
+El fork mete su código en archivos propios: `config/fork/`, `*fork*`, `src/shared/settings/fork-global-settings-types.ts`,
+`src/shared/work-items/fork-task-providers.ts`, `src/shared/multi-repo/`, `src/preload/api/fork/`, `app-shell/fork-root-surfaces.tsx`,
+`pinned-favorites/`, `pinned-agents/`, `file-link-preview/`, `new-workspace/multi-repo/`, `lib/multi-repo/`,
+`sidebar/workspace-card/coordinator/`, `sidebar/workspace-card/task-providers/`, `right-sidebar/file-explorer/folder-workspace-members/`,
+proveedores `asana/` y `azure-devops/` (tareas) e `integrations/source-control/fork-azure-devops-*`.
 Aun así hay enganches en código de upstream que conflictúan casi siempre:
 
 | Área | Archivos de upstream con enganches del fork | Qué hace el fork ahí |
 | --- | --- | --- |
-| Identidad «Orca knwr» | `package.json`, `config/electron-builder.config.cjs`, `config/nsis/orca-installer-hooks.nsh`, `config/scripts/dev-electron-bundle-identity.mjs`, `src/cli/runtime/metadata.ts`, `src/main/cli/cli-install-location.ts`, `src/main/daemon/daemon-host-relocation.ts`, `src/main/macos-tcc-prompt-watch.ts`, almacenes de credenciales (`jira/site-credential-store.ts`, `zcode/zcode-plan-api-key-store.ts`, `codex/codex-home-paths.ts`) | Nombre, app id, carpeta de perfil y llaveros propios para instalarse junto a Orca |
-| Actualizador y releases | `src/main/updater*.ts`, `src/main/updater/*`, `src/shared/release-channel.ts`, `.github/workflows/fork-release.yml`, `config/scripts/verify-packaged-daemon-entry.cjs` | Lee las releases de `hendrickcastro/orca`; Mac sin firmar, actualización desde el DMG |
-| Ajustes | `src/shared/global-settings-types.ts`, `default-global-settings.ts`, `loading-store/normalize-loaded-global-settings.ts`, `prepare-loaded-profile-settings.ts` | Ajustes del fork y migraciones de una sola vez |
-| Barra lateral / Fijados | `src/shared/sidebar-list/*` (antes `worktree-list/grouping/*`), `worktree-list/rows/*`, `WorktreeCard*.tsx`, `worktree-card-*` | Fijados como acceso directo, Favoritos, tareas multi-repo plegables, nombre del proyecto en Fijados |
-| Chat y terminal | `CommentMarkdown.tsx`, `comment-markdown-*`, `NativeChatMarkdown.tsx`, `terminal-link-handlers.ts`, `App.tsx` | Enlaces a archivos por nombre y vista previa al pasar el ratón |
-| Multi-repo y tareas | `AppRootSurfaces.tsx`, `NewWorkspaceComposerModal.tsx`, `quick-creation-execution.ts`, `task-source-context-summary.ts`, `task-page/*` | Tareas multi-repositorio, proveedores Asana y Azure DevOps |
-| Vista de agentes fijados y subagentes | `AppWorkspaceShell.tsx`, `right-sidebar/index.tsx`, `right-sidebar-panel-content.tsx`, `AgentTerminalPreview.tsx`, `zoom-ipc-bridge.ts` | Vista central «Pinned agents», pestañas del panel derecho |
+| Identidad «Orca knwr» | `package.json`, `config/electron-builder.config.cjs` (3 líneas → `config/fork/electron-builder-fork-identity.cjs`), `config/nsis/orca-installer-hooks.nsh`, `dev-electron-bundle-identity.mjs`, `src/cli/runtime/profile/metadata.ts`, `src/main/cli/installation/*`, `daemon-host-relocation.ts`, `macos-tcc-prompt-watch.ts`, almacenes de credenciales (`jira`, `zcode`, `minimax`, `bitbucket`, `linear`, `codex-home-paths`, `speech/openai-api-key-store`, `credentials/encrypted-api-key-file-store`), `native/windows-cli-launcher/src/main.rs` | Nombre, app id, carpeta de perfil y llaveros propios para instalarse junto a Orca |
+| Actualizador y releases | `src/main/updater/updater-service.ts`, `updater/lifecycle/updater-setup.ts`, `updater/releases/*` (URLs en `fork-release-repo-urls.ts`), `src/shared/updater/release-channel.ts`, `.github/workflows/fork-release.yml`, `verify-packaged-daemon-entry.cjs` | Lee las releases de `hendrickcastro/orca`; Mac sin firmar, actualización desde el DMG |
+| Ajustes | `src/shared/settings/global-settings-types.ts`, `default-global-settings.ts`, `profile-loading/normalize-loaded-global-settings.ts`, `prepare-loaded-profile-settings.ts` | Ajustes del fork y migraciones de una sola vez |
+| Barra lateral / Fijados | `src/shared/sidebar-list/sidebar-row-plan.ts` (5 enganches), `row-types.ts`, `sidebar/worktree-list/{rows,listing,drag,viewport}/*`, `sidebar/workspace-card/{surface,metadata,review,template}/*` | Favoritos, tareas multi-repo fijadas, agentes del coordinador, iconos Asana/Azure DevOps en tarjetas |
+| Chat y terminal | `CommentMarkdown.tsx`, `comment-markdown-element-renderers.tsx`, `NativeChatMarkdown.tsx`, `use-native-chat-file-link-existence.tsx`, `shared/native-chat/native-chat-file-link-tree.ts`, `terminal-pane/links/files/terminal-link-handlers.ts`, `App.tsx` | Enlaces a archivos por nombre y vista previa al pasar el ratón |
+| Multi-repo y tareas | `NewWorkspaceComposerModal.tsx`, `hooks/composer-state/*`, `task-source-context-summary.ts`, `task-page/*`, `settings/tasks/*`, `settings/integrations/IntegrationsPane.tsx`, `shared/work-items/task-providers.ts`, `task-provider-identity.ts`, `main/azure-devops/*` | Tareas multi-repositorio, proveedores Asana y Azure DevOps |
+| Vista de agentes fijados | `AppWorkspaceShell.tsx`, `right-sidebar/RightSidebar.tsx`, `right-sidebar-panel-content.tsx`, `dashboard/terminal-preview/AgentTerminalPreview.tsx` (lógica en `agent-terminal-preview-host.ts`), `zoom-ipc-bridge.ts`, `shared/ui-chrome/*`, `rpc-contract/client-ui/client-ui-params.ts` | Vista central «Pinned agents», pestaña del panel derecho |
+| IPC y preload | `register-core-handlers.ts` (→ `register-fork-handlers.ts`), `src/preload/index.ts` y `api-types.ts` (→ `api/fork/fork-preload-api.ts`) | Un solo enganche por archivo |
 | Textos | `src/renderer/src/i18n/locales/en.json`, `es.json`, `en-runtime-required.json` | Claves propias del fork; conservar las de ambos lados |
-| App móvil | `mobile/src/tasks/*` y `mobile/src/components/use-new-workspace-runtime-context.ts` (filtro en `mobile/src/tasks/fork-mobile-task-providers.ts`) | Asana y Azure DevOps son solo de escritorio: el móvil los filtra y sus `Record<TaskProvider, …>` llevan las dos claves del fork |
+| App móvil | `mobile/src/tasks/*`, `mobile/src/new-workspace/creation/runtime/use-new-workspace-runtime-context.ts`, `host-screen/workspace-actions/workspace-details-sheet.tsx` (filtro en `mobile/src/tasks/fork-mobile-task-providers.ts`) | Asana y Azure DevOps son solo de escritorio: el móvil los filtra y sus `switch`/`Record<TaskProvider, …>` llevan las dos claves del fork |
 
 ## Historial
 
@@ -67,6 +75,16 @@ Aun así hay enganches en código de upstream que conflictúan casi siempre:
 | 2026-09-30 | `23a874a2a19` | — | — | Primera integración tras la feature multi-repo |
 | 2026-10-13 | `e15b77aba3a` | 657 | — | PR #5 `Upgrade-from-parent-fork` |
 | 2026-11-01 | `d95e2324dcd` | 4.603 | 63 | Ver «Decisiones» y «Novedades de upstream» abajo |
+| 2026-11-16 | `6018fca4de5` | 3.340 | 91 | Upstream reorganizó casi todo por dominios; se retira el panel Subagents del fork |
+
+## Decisiones de la sincronización del 2026-11-16
+
+- **Panel «Subagents» del fork retirado** (`right-sidebar/subagents/`, `src/main/subagent-results/`, su IPC, preload, pestaña e i18n): upstream ya abre cada subagente en su propia vista del chat nativo, con modelo, herramienta y resultado. Un ajuste guardado con la pestaña `subagents` vuelve a Explorer.
+- **Tareas multi-repo fijadas**: usan las filas de carpeta con hijos anidados que trae upstream; se borraron `pinned-task-rows.ts`, `pinned-group-rows.ts`, `PinnedTaskDisclosure.tsx` y la clave `pinned-task-open:`. Favoritos y la sección Fijados salen de `shared/sidebar-list/pinned-folder-workspaces.ts` y `pinned-section-rows.ts`.
+- **Más código del fork en archivos propios** (los enganches en archivos de upstream bajan de 1.849 a 1.150 líneas sin contar textos): identidad del build en `config/fork/electron-builder-fork-identity.cjs` (los tests de upstream ven la identidad original con `ORCA_FORK_UPSTREAM_IDENTITY=1`), URLs del actualizador en `fork-release-repo-urls.ts`, API de preload en `src/preload/api/fork/`, superficies raíz en `app-shell/fork-root-surfaces.tsx`, enlaces de archivo en `file-link-preview/` (`terminal-workspace-file-links.ts`, `DocumentFileLinkSlot.tsx`, `native-chat/`), tarjeta de Azure DevOps en `integrations/source-control/fork-azure-devops-*`, tarjetas de la barra lateral en `workspace-card/coordinator/` y `task-providers/`, multi-repo en `new-workspace/multi-repo/`, `lib/multi-repo/` y `src/shared/multi-repo/`.
+- **Duplicados retirados**: el textarea de menciones del PR usa el de upstream (sube imágenes); el estado de actividad usa `selectWorktreeActivityStatuses` de upstream; las filas «retenidas» de agentes ya no existen en upstream (#40774).
+- **Identidad revisada en código nuevo**: el desinstalador de upstream (`orca uninstall`) busca `com.stablyai.orca` / `Orca.exe` a propósito, para detectar el Orca original y no borrar los hooks compartidos de `~/.orca`.
+- **Sigue en el fork**: `claude-mcp-servers` (registrado en `register-fork-handlers.ts`) se solapa con el `/mcp` del chat que trae upstream; revisar si se retira.
 
 ## Decisiones de la sincronización del 2026-11-01
 
@@ -98,3 +116,19 @@ Resumen de los 360 commits `feat` (de 4.603: 2.184 fix, 337 refactor, 226 perf�
 - **SSH y servidores**: reconectar al arrancar por host, redirecciones de puertos con diagnóstico, actualizar y recuperar servidores gestionados, abrir workspaces SSH en Cursor y Zed, cuentas Claude/Codex en el servidor remoto.
 - **Editor**: visor de imágenes con zoom, vista previa de SVG, tipografía configurable, nuevos lenguajes (Groovy, CUDA, Glimmer, shebang).
 - **Notificaciones y orquestación**: avisos de «necesita respuesta» separados de «terminado», latido de los workers configurable, `orca ports`, `tab create --split`.
+
+## Novedades de upstream traídas el 2026-11-16
+
+Resumen de los 304 commits `feat` (de 3.340: 1.096 fix, 851 test, 292 refactor, 191 perf…):
+
+- **Chat nativo**: GitHub Copilot, Cursor y Kimi Code por ACP; `/fork`, `/mcp`, `/usage` de Codex; subagentes con vista propia; tarjetas de pregunta por opciones; vista previa de imágenes enlazadas.
+- **Dictado y voz**: modelos transcribe-cpp/GGUF con GPU, Parakeet en directo, servicios compatibles con OpenAI, pastilla de dictado, diccionario personal y por repo, página de Voz nueva.
+- **Plugins**: API del host 1.7–1.9, hooks que bloquean o reescriben envíos y llamadas a herramientas, barra de estado en vivo, fuentes web, vídeo de fondo.
+- **Ajustes y temas**: tarjetas por grupo, importar Ghostty y Kitty, temas GitHub y VS Code, icono de app propio, paquetes de idioma de la comunidad.
+- **Limpieza de workspaces**: reglas por proyecto que corren solas en cada host, `orca workspace cleanup`.
+- **Editor**: formatear al guardar, salto de línea final, vista de Markdown por defecto, PDF ajustado al ancho.
+- **Navegador**: contraseñas, extensiones activadas por defecto, perfil por repo.
+- **CLI y orquestación**: `orca chat list|read|send|wait|rename`, `orca pair`, `orca host rm`, workers en equipos emparejados.
+- **Seguridad**: cifrado E2EE v2, códigos de emparejamiento que caducan, `orca serve` con dirección de escucha.
+- **Otros**: WSL activado por defecto, recetas de VM, Automatizaciones unificadas, silenciar notificaciones por workspace, `orca uninstall`, tarjetas nuevas de workspace.
+- **Móvil**: Inicio por pestañas, pestaña Agentes, pantallas nuevas de diff/PR, modo sin conexión, dictado en el dispositivo; Android pasa a `dev.orca.app`.

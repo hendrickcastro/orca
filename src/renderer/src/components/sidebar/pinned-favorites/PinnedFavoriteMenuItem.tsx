@@ -2,7 +2,7 @@ import type React from 'react'
 import { Star, StarOff } from 'lucide-react'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
-import { useAppStore } from '@/store'
+import { useAppStore } from '@/store/index'
 import type { Worktree } from '../../../../../shared/worktree/types'
 import { togglePinnedFavoriteId } from './pinned-favorites'
 

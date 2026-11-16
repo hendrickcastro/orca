@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import type { FolderWorkspace } from '../../../../../shared/folder-workspace-types'
-import type { ProjectGroup } from '../../../../../shared/project-group-types'
+import type { FolderWorkspace } from '../../../../../shared/folder-workspaces/folder-workspace-types'
+import type { ProjectGroup } from '../../../../../shared/project/groups/project-group-types'
 import type { WorkspaceLineage } from '../../../../../shared/worktree/lineage-types'
-import { folderWorkspaceKey, worktreeWorkspaceKey } from '../../../../../shared/workspace-scope'
-import { repo, worktree } from '../../sidebar/worktree-list-groups-test-fixtures'
+import {
+  folderWorkspaceKey,
+  worktreeWorkspaceKey
+} from '../../../../../shared/workspace/identity/workspace-scope'
+import {
+  repo,
+  worktree
+} from '@/components/sidebar/worktree-list/grouping/worktree-list-groups-test-fixtures'
 import {
   expandPinnedAgentsPanelDropIds,
   movePinnedAgentsPanelItem,

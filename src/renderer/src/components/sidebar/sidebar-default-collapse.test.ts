@@ -24,6 +24,18 @@ describe('sidebarGroupsToFoldByDefault', () => {
     expect(sidebarGroupsToFoldByDefault(rows, seen)).toEqual(['repo:web:host:ssh:a'])
   })
 
+  it('folds a pinned task with members once, but no other folder row', () => {
+    const folderRows = [
+      { type: 'folder-workspace', sectionKey: 'pinned', lineageGroupKey: 'lineage:task' },
+      { type: 'folder-workspace', sectionKey: 'repo:api', lineageGroupKey: 'lineage:lane' },
+      { type: 'folder-workspace', sectionKey: 'pinned' }
+    ]
+    expect(sidebarGroupsToFoldByDefault(folderRows, new Set())).toEqual(['lineage:task'])
+    expect(
+      sidebarGroupsToFoldByDefault(folderRows, new Set([defaultFoldMarker('lineage:task')]))
+    ).toEqual([])
+  })
+
   it('never folds section lanes such as Pinned', () => {
     expect(sidebarGroupsToFoldByDefault([{ type: 'header', key: 'pinned' }], new Set())).toEqual([])
   })

@@ -1,12 +1,12 @@
-import type { DashboardAgentRow } from '@/components/dashboard/useDashboardData'
-import { readDashboardClientHost } from '@/components/dashboard/dashboard-client-host'
+import type { DashboardAgentRow } from '@/components/dashboard/rows/dashboard-agent-row'
+import { readDashboardClientHost } from '@/components/dashboard/snapshot/dashboard-client-host'
 import {
   resolveDashboardCardTerminalInput,
   type DashboardCardTerminalInputState
-} from '@/components/dashboard/dashboard-card-terminal-input'
+} from '@/components/dashboard/snapshot/dashboard-card-terminal-input'
 import type { AppState } from '@/store/types'
-import type { DashboardCardTerminalInput } from '../../../../../shared/dashboard-snapshot'
-import { parsePaneKey } from '../../../../../shared/stable-pane-id'
+import type { DashboardCardTerminalInput } from '../../../../../shared/agent-status/presentation/dashboard-snapshot'
+import { parsePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
 
 type LiveTerminalState = Pick<AppState, 'terminalLayoutsByTabId' | 'ptyIdsByTabId'>
 
@@ -15,9 +15,6 @@ export function selectAgentRowPtyId(
   state: LiveTerminalState,
   row: DashboardAgentRow
 ): string | null {
-  if (row.rowSource === 'retained') {
-    return null
-  }
   const parsed = parsePaneKey(row.activationPaneKey ?? row.paneKey)
   const tabId = parsed?.tabId ?? row.tab.id
   const leafId = parsed?.leafId ?? null

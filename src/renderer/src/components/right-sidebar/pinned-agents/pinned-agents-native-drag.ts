@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
 import type React from 'react'
 import { useAppStore } from '@/store'
-import { PINNED_GROUP_KEY } from '../../../../../shared/sidebar-list/group-keys'
+import { PINNED_GROUP_KEY } from '../../../../../shared/sidebar-list/sections/group-keys'
 import { dropWriteRows } from '@/components/sidebar/worktree-list/drag/dragged-worktree-copies'
 import {
   readWorkspaceDragDataIds,
   WORKSPACE_STATUS_DRAG_IDS_TYPE,
   WORKSPACE_STATUS_DRAG_TYPE,
   writeWorkspaceDragData
-} from '@/components/sidebar/workspace-status-drag-data'
+} from '@/components/sidebar/workspace-status/presentation/workspace-status-drag-data'
 import {
   clearPinnedAgentsPanelDropVisual,
   commitPinnedAgentsPanelDrop,

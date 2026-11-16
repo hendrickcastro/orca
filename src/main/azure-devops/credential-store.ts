@@ -8,7 +8,7 @@ import {
   readStoredCredentialToken,
   writeCredentialFileAtomic,
   writeEncryptedCredential
-} from '../integration-credential-file'
+} from '../credentials/integration-credential-file'
 import type { AzureDevOpsOrganizationCredential } from '../../shared/azure-devops-credentials'
 
 // Why: one secret envelope per machine keeps every organization's PAT behind a

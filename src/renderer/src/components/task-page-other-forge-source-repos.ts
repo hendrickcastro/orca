@@ -1,4 +1,4 @@
-import type { GitRemoteIdentity } from '../../../shared/git-remote-identity'
+import type { GitRemoteIdentity } from '../../../shared/git/remotes/git-remote-identity'
 import {
   parseRemoteRepo,
   type ManualReviewProvider

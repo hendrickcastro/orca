@@ -1,10 +1,14 @@
 import { ipcMain } from 'electron'
-import type { GitDiffResult } from '../../../shared/git-diff-compare-types'
-import { getBranchDiff, getCommitDiff } from '../../git/status'
-import { validateFullGitObjectId, validateGitRelativeFilePath } from './filesystem-path-containment'
+import type { GitDiffResult } from '../../../shared/git/diff/git-diff-compare-types'
+import { getBranchDiff } from '../../git/source-control/comparisons/branch-diff'
+import { getCommitDiff } from '../../git/source-control/comparisons/commit-diff'
+import {
+  validateFullGitObjectId,
+  validateGitRelativeFilePath
+} from './access/filesystem-path-containment'
 import type { FilesystemHandlerContext } from './filesystem-handler-context'
 import { requireReachableGitRoute } from '../../providers/execution-host-provider-dispatch'
-import { getConnectionExecutionHostId } from '../../../shared/execution-host'
+import { getConnectionExecutionHostId } from '../../../shared/execution-host/execution-host'
 import { readWorktreeGitUnlessWslStopped } from './wsl-gated-worktree-git-read'
 
 export function registerFilesystemGitDiffHandlers(context: FilesystemHandlerContext): void {

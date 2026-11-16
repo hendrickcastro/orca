@@ -1,164 +1,98 @@
-import type { WorkspaceLineage } from '../worktree/lineage-types'
 import type { Worktree } from '../worktree/types'
 import { getWorktreeHostIdentity } from '../worktree/host-qualified-identity'
-import { getFolderWorkspaceHostIdentity } from '../folder-workspace-worktree'
-import { folderWorkspaceKey, worktreeWorkspaceKey } from '../workspace-scope'
-import { PINNED_GROUP_KEY } from './group-keys'
-import { PINNED_FAVORITES_GROUP_KEY, splitPinnedFavorites } from './pinned-favorites'
-import type { RenderableFolderWorkspace } from './folder-workspace-lanes'
+import type { WorktreeOccurrenceSection } from './lineage/worktree-occurrence-plan'
+import type { RenderableFolderWorkspace } from './folders/folder-workspace-lanes'
+import type { WorktreeGroupEntry } from './sections/worktree-group-entry'
+import { PINNED_GROUP_KEY } from './sections/group-keys'
+import { PINNED_FAVORITES_GROUP_KEY } from './pinned-favorites'
 import type { PinnedWorktreeDisplayPolicy } from './row-types'
-import type { OrderedGroupEntry } from './worktree-group-entry'
 
-/** A pinned folder workspace plus the worktrees its agent works in (a multi-repository task's members). */
-export type PinnedFolderWorkspaceSection = {
-  pair: RenderableFolderWorkspace
-  members: Worktree[]
-  /** The occurrence-plan section that lists the members under the task row. */
-  sectionKey: string
+export { emitPinnedSections } from './pinned-section-rows'
+
+// Fork: a pinned folder workspace (a multi-repository task) moves to Pinned like a pinned worktree;
+// upstream's lineage nesting brings its member worktrees along under it.
+
+type PlannedSection = WorktreeOccurrenceSection<Worktree> & { group: WorktreeGroupEntry }
+
+/** Folder workspaces that still render in their lanes. */
+export function naturalFolders(
+  folderWorkspaces: RenderableFolderWorkspace[],
+  policy: PinnedWorktreeDisplayPolicy
+): RenderableFolderWorkspace[] {
+  return policy === 'duplicate-in-groups'
+    ? folderWorkspaces
+    : folderWorkspaces.filter((pair) => !pair.folderWorkspace.isPinned)
 }
 
-export type PinnedFolderWorkspaceSplit = {
-  pinned: PinnedFolderWorkspaceSection[]
-  /** Folder workspaces that still render in their natural lanes. */
-  natural: RenderableFolderWorkspace[]
-  /** Host identities of every member a pinned task lists. */
-  memberIdentities: ReadonlySet<string>
-}
-
-export function getPinnedTaskSectionKey(pair: RenderableFolderWorkspace): string {
-  return `${PINNED_GROUP_KEY}:task:${getFolderWorkspaceHostIdentity(pair.folderWorkspace)}`
+/** Every pinned row with the descendants it carries, starting from the favourite roots. */
+function collectFavoriteRows(
+  pinned: readonly Worktree[],
+  favoriteIds: ReadonlySet<string>,
+  childrenByParentIdentity: ReadonlyMap<string, readonly Worktree[]>
+): Set<Worktree> {
+  const pinnedByIdentity = new Map(pinned.map((row) => [getWorktreeHostIdentity(row), row]))
+  const favorites = new Set<Worktree>()
+  const pending = pinned.filter((row) => favoriteIds.has(row.id))
+  for (let row = pending.pop(); row; row = pending.pop()) {
+    if (favorites.has(row)) {
+      continue
+    }
+    favorites.add(row)
+    for (const child of childrenByParentIdentity.get(getWorktreeHostIdentity(row)) ?? []) {
+      const listed = pinnedByIdentity.get(getWorktreeHostIdentity(child))
+      if (listed) {
+        pending.push(listed)
+      }
+    }
+  }
+  return favorites
 }
 
 /**
- * Why: the Pinned section used to read `isPinned` from git worktrees only, so a pinned
- * folder workspace (a multi-repository task) kept its flag but never left its lane.
- * Members follow their coordinator the way lineage children follow a pinned parent.
+ * Splits favourite pinned workspaces into their own section above Pinned and drops pinned folder
+ * workspaces from the lanes they would otherwise still list.
  */
-export function splitPinnedFolderWorkspaces(args: {
-  folderWorkspaces: readonly RenderableFolderWorkspace[]
-  worktrees: readonly Worktree[]
-  workspaceLineageByChildKey: Readonly<Record<string, WorkspaceLineage>>
-  policy: PinnedWorktreeDisplayPolicy
-}): PinnedFolderWorkspaceSplit {
-  const pinnedPairs = args.folderWorkspaces.filter((pair) => pair.folderWorkspace.isPinned)
-  const membersByFolderKey = new Map<string, Worktree[]>()
-  if (pinnedPairs.length > 0) {
-    const pinnedFolderKeys = new Set(
-      pinnedPairs.map((pair) => folderWorkspaceKey(pair.folderWorkspace.id))
-    )
-    for (const worktree of args.worktrees) {
-      const parentKey =
-        args.workspaceLineageByChildKey[worktreeWorkspaceKey(worktree.id)]?.parentWorkspaceKey
-      if (!parentKey || !pinnedFolderKeys.has(parentKey)) {
-        continue
+export function pinnedSections(
+  sections: readonly PlannedSection[],
+  pinned: readonly Worktree[],
+  childrenByParentIdentity: ReadonlyMap<string, readonly Worktree[]>,
+  inputs: {
+    pinnedFavoriteIds?: ReadonlySet<string>
+    pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy
+  }
+): PlannedSection[] {
+  const pinnedRows = new Set(pinned)
+  const dropPinnedFolders =
+    inputs.pinnedDisplayPolicy !== 'duplicate-in-groups' && pinnedRows.size > 0
+  const favoriteIds = inputs.pinnedFavoriteIds
+  const favorites =
+    favoriteIds && favoriteIds.size > 0
+      ? collectFavoriteRows(pinned, favoriteIds, childrenByParentIdentity)
+      : new Set<Worktree>()
+  const result: PlannedSection[] = []
+  for (const section of sections) {
+    if (section.key === PINNED_GROUP_KEY) {
+      if (favorites.size > 0) {
+        const items = section.items.filter((row) => favorites.has(row))
+        result.push({
+          key: PINNED_FAVORITES_GROUP_KEY,
+          group: { label: '', items, repoIds: new Set() },
+          placement: 'pinned',
+          items,
+          revealPath: { key: PINNED_FAVORITES_GROUP_KEY }
+        })
+        const rest = section.items.filter((row) => !favorites.has(row))
+        result.push({ ...section, group: { ...section.group, items: rest }, items: rest })
+      } else {
+        result.push(section)
       }
-      const members = membersByFolderKey.get(parentKey) ?? []
-      members.push(worktree)
-      membersByFolderKey.set(parentKey, members)
+      continue
     }
-  }
-  const pinned = pinnedPairs.map((pair) => ({
-    pair,
-    members: membersByFolderKey.get(folderWorkspaceKey(pair.folderWorkspace.id)) ?? [],
-    sectionKey: getPinnedTaskSectionKey(pair)
-  }))
-  return {
-    pinned,
-    natural:
-      args.policy === 'duplicate-in-groups'
-        ? [...args.folderWorkspaces]
-        : args.folderWorkspaces.filter((pair) => !pair.folderWorkspace.isPinned),
-    memberIdentities: new Set(
-      pinned.flatMap((section) => section.members.map(getWorktreeHostIdentity))
+    result.push(
+      dropPinnedFolders && section.placement !== 'pinned'
+        ? { ...section, items: section.items.filter((row) => !pinnedRows.has(row)) }
+        : section
     )
   }
-}
-
-/** Favourite workspaces and pinned tasks, which the Pinned rows carry beside the plain pinned worktrees. */
-export type PinnedGroupExtras = {
-  favoriteWorktrees: Worktree[]
-  favoriteTasks: readonly PinnedFolderWorkspaceSection[]
-  restTasks: readonly PinnedFolderWorkspaceSection[]
-}
-
-export type PinnedSectionsPlan = {
-  /** Folder workspaces that still render in their natural lanes. */
-  naturalFolders: RenderableFolderWorkspace[]
-  /** The natural lanes' worktrees, without the members a pinned task lists under the single-location policy. */
-  naturalOf: (natural: readonly Worktree[]) => readonly Worktree[]
-  isPinnedSectionKey: (key: string) => boolean
-  /** Reveal a task member through the header (Favorites or Pinned) its task renders under. */
-  revealParentOf: (key: string) => { key: string } | undefined
-  /** Occurrence-plan sections for the pinned worktrees: Favorites, Pinned, then each task's members. */
-  groupsOf: (pinned: readonly Worktree[]) => OrderedGroupEntry[]
-  extrasOf: (
-    sections: readonly { key: string; group: { items: Worktree[] } }[]
-  ) => PinnedGroupExtras
-}
-
-const NO_WORKSPACE_LINEAGE: Readonly<Record<string, WorkspaceLineage>> = {}
-const NO_PINNED_FAVORITES: ReadonlySet<string> = new Set()
-
-export function planPinnedSections(args: {
-  folderWorkspaces: readonly RenderableFolderWorkspace[]
-  worktrees: readonly Worktree[]
-  workspaceLineageByChildKey?: Readonly<Record<string, WorkspaceLineage>>
-  policy: PinnedWorktreeDisplayPolicy
-  favoriteIds?: ReadonlySet<string>
-}): PinnedSectionsPlan {
-  const favoriteIds = args.favoriteIds ?? NO_PINNED_FAVORITES
-  const split = splitPinnedFolderWorkspaces({
-    ...args,
-    workspaceLineageByChildKey: args.workspaceLineageByChildKey ?? NO_WORKSPACE_LINEAGE
-  })
-  const isMember = (worktree: Worktree): boolean =>
-    split.memberIdentities.has(getWorktreeHostIdentity(worktree))
-  const tasks = splitPinnedFavorites(favoriteIds, [], split.pinned)
-  const headerKeyBySectionKey = new Map<string, string>([
-    [PINNED_FAVORITES_GROUP_KEY, PINNED_FAVORITES_GROUP_KEY],
-    [PINNED_GROUP_KEY, PINNED_GROUP_KEY]
-  ])
-  for (const task of tasks.favorites.tasks) {
-    headerKeyBySectionKey.set(task.sectionKey, PINNED_FAVORITES_GROUP_KEY)
-  }
-  for (const task of tasks.rest.tasks) {
-    headerKeyBySectionKey.set(task.sectionKey, PINNED_GROUP_KEY)
-  }
-  const groupsOf = (pinned: readonly Worktree[]): OrderedGroupEntry[] => {
-    // Why: a task's members render under the task, not again as loose pinned rows.
-    const loose = pinned.filter((worktree) => !isMember(worktree))
-    const { favorites, rest } = splitPinnedFavorites(favoriteIds, loose, split.pinned)
-    const groups: OrderedGroupEntry[] = []
-    for (const [key, part] of [
-      [PINNED_FAVORITES_GROUP_KEY, favorites],
-      [PINNED_GROUP_KEY, rest]
-    ] as const) {
-      if (part.worktrees.length > 0) {
-        groups.push([key, { label: '', items: part.worktrees, repoIds: new Set() }])
-      }
-      for (const task of part.tasks) {
-        groups.push([task.sectionKey, { label: '', items: task.members, repoIds: new Set() }])
-      }
-    }
-    return groups
-  }
-  return {
-    naturalFolders: split.natural,
-    naturalOf: (natural) =>
-      args.policy === 'duplicate-in-groups' || split.memberIdentities.size === 0
-        ? natural
-        : natural.filter((worktree) => !isMember(worktree)),
-    isPinnedSectionKey: (key) => headerKeyBySectionKey.has(key),
-    revealParentOf: (key) => {
-      const headerKey = headerKeyBySectionKey.get(key)
-      return headerKey === undefined || headerKey === key ? undefined : { key: headerKey }
-    },
-    groupsOf,
-    extrasOf: (sections) => ({
-      favoriteWorktrees:
-        sections.find((section) => section.key === PINNED_FAVORITES_GROUP_KEY)?.group.items ?? [],
-      favoriteTasks: tasks.favorites.tasks,
-      restTasks: tasks.rest.tasks
-    })
-  }
+  return result
 }

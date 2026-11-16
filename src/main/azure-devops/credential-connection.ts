@@ -4,7 +4,7 @@ import type {
   AzureDevOpsConnectionStatus
 } from '../../shared/azure-devops-credentials'
 import { cancelUnreadResponseBody } from '../lib/unread-response-body'
-import { asRecord } from '../ai-vault/session-scanner-record-value'
+import { asRecord } from '../ai-vault/parsing/session-record-fields'
 import {
   AZURE_DEVOPS_MAX_REQUEST_ATTEMPTS,
   azureDevOpsApiVersionForOrigin,

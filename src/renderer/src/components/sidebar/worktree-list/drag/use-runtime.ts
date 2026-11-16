@@ -1,14 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type React from 'react'
 import type { WorkspaceStatus } from '../../../../../../shared/worktree/types'
-import { clearWorkspaceKanbanSidebarDropTargetVisual } from '../../workspace-kanban-sidebar-drop'
+import { clearWorkspaceKanbanSidebarDropTargetVisual } from '../../workspace-board/drag/workspace-kanban-sidebar-drop'
 import { clearPinnedAgentsPanelDropVisual } from '@/components/right-sidebar/pinned-agents/pinned-agents-panel-drop'
-import { setSidebarPointerDragDocumentStyles } from '../../worktree-sidebar-pointer-drag-dom'
+import { setSidebarPointerDragDocumentStyles } from './worktree-sidebar-pointer-drag-dom'
 import type {
   WorktreeSidebarDragPoint,
   WorktreeSidebarDragSession
-} from '../../worktree-sidebar-drag-autoscroll'
-import type { WorktreeSidebarDropAnchor } from '../../worktree-sidebar-drag-geometry'
+} from './worktree-sidebar-drag-autoscroll'
+import type { WorktreeSidebarDropAnchor } from './worktree-sidebar-drag-geometry'
 import {
   WORKTREE_ROW_DRAG_INITIAL_STATE,
   type WorktreePointerDrag,
@@ -25,7 +25,9 @@ export function useWorktreeDragRuntime(args: {
   const { worktreeDragSessionRef, statusDropAnchorsRef, onWorkspaceBoardDragPreviewCancel } = args
   const [dragOverStatus, setDragOverStatus] = useState<WorkspaceStatus | null>(null)
   const [pinDragOver, setPinDragOver] = useState(false)
-  const [nativeLineageDropTargetId, setNativeLineageDropTargetId] = useState<string | null>(null)
+  const [nativeLineageDropTargetIdentity, setNativeLineageDropTargetIdentity] = useState<
+    string | null
+  >(null)
   const [worktreeDragState, setWorktreeDragState] = useState<WorktreeRowDragState>(
     WORKTREE_ROW_DRAG_INITIAL_STATE
   )
@@ -57,7 +59,7 @@ export function useWorktreeDragRuntime(args: {
   const cleanupWorktreePointerDrag = useCallback(() => {
     const drag = worktreePointerDragRef.current
     cancelWorktreePointerAutoscroll()
-    setNativeLineageDropTargetId(null)
+    setNativeLineageDropTargetIdentity(null)
     if (!drag) {
       return
     }
@@ -94,8 +96,8 @@ export function useWorktreeDragRuntime(args: {
       setDragOverStatus,
       pinDragOver,
       setPinDragOver,
-      nativeLineageDropTargetId,
-      setNativeLineageDropTargetId,
+      nativeLineageDropTargetIdentity,
+      setNativeLineageDropTargetIdentity,
       worktreeDragState,
       setWorktreeDragState,
       worktreePointerDragRef,
@@ -114,7 +116,7 @@ export function useWorktreeDragRuntime(args: {
       cancelWorktreePointerAutoscroll,
       clearWorktreeDrag,
       dragOverStatus,
-      nativeLineageDropTargetId,
+      nativeLineageDropTargetIdentity,
       pinDragOver,
       worktreeDragState
     ]

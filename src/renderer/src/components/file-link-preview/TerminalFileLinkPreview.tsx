@@ -1,6 +1,6 @@
 import { useMemo, useSyncExternalStore } from 'react'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
-import { terminalLinkClickBehaviorFor } from '@/components/terminal-pane/terminal-link-click-behavior'
+import { terminalLinkClickBehaviorFor } from '@/components/terminal-pane/links/gestures/terminal-link-click-behavior'
 import { useAppStore } from '@/store'
 import { FileLinkPreviewBody, fileLinkOpenHint } from './FileLinkPreviewBody'
 import {

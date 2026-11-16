@@ -1,20 +1,19 @@
+import { claudeObservedEffort } from './launch/claude-structured-session-options'
 import type { ClaudeSession } from './claude-structured-session-state'
 
-/** Provider observations only; requested choices and picker defaults cannot vouch for a run. */
+/** Fast routing reports precede this input and cannot vouch for its execution. */
 export function claudeExecutionObservations(session: ClaudeSession): Record<string, string> {
   const model =
     session.reportedModelMutation === session.optionMutationSequence
       ? (session.reportedOptions.model ?? session.appliedOptions?.model)
       : session.appliedOptions?.model
-  const effort = session.appliedOptions?.effort
-  const fast =
-    session.fastModeReportedMutation === session.optionMutationSequence &&
-    session.fastModeState === 'on' &&
-    session.reportedOptions.fastMode !== false
+  const effort = claudeObservedEffort(
+    session.appliedOptions?.effort,
+    session.appliedOptions?.ultracode
+  )
   return {
     ...(model ? { model } : {}),
-    ...(effort ? { effort } : {}),
-    ...(fast ? { fastMode: 'true' } : {})
+    ...(effort ? { effort } : {})
   }
 }
 
@@ -33,21 +32,22 @@ export function beginClaudeOptionMutation(session: ClaudeSession, key: string): 
       session.appliedOptions = applied
     }
   }
-  if (key === 'model' || key === 'fastMode') {
-    delete session.fastModeReportedMutation
-  } else if (session.fastModeReportedMutation === previous) {
-    session.fastModeReportedMutation = sequence
-  }
   return sequence
 }
 
-/** An init names the model that runs; a control answer only acknowledges its input. */
-export function observeClaudeExecutionModel(session: ClaudeSession, model: string): boolean {
+/** An init names execution; a control answer only acknowledges its input. */
+export function observeClaudeExecutionModel(
+  session: ClaudeSession | null,
+  model: string | null | undefined
+): { model: string } | null {
+  if (!session || !model) {
+    return null
+  }
   const previous = claudeExecutionObservations(session).model
   if (previous !== model) {
     delete session.appliedOptions
   }
   session.reportedOptions.model = model
   session.reportedModelMutation = session.optionMutationSequence
-  return previous !== model
+  return previous !== model ? { model } : null
 }

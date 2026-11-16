@@ -2,7 +2,7 @@ import { ArrowRight, Circle, CircleCheck, ExternalLink, LoaderCircle } from 'luc
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { useState } from 'react'
 import type { AsanaTask } from '../../../../../shared/asana-types'

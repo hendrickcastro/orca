@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { summarizeMcpServer } from '../../shared/mcp-server-inspection'
-import { MCP_CONFIG_INSPECTION_MAX_SERVERS } from '../../shared/mcp-config-inspection-limits'
+import { summarizeMcpServer } from '../../shared/mcp/configuration/mcp-server-inspection'
+import { MCP_CONFIG_INSPECTION_MAX_SERVERS } from '../../shared/mcp/configuration/mcp-config-inspection-limits'
 import type {
   ClaudeMcpServerEntry,
   ClaudeUserMcpServers
@@ -11,7 +11,7 @@ import {
   resolveClaudeGlobalConfigFile,
   toClaudeTrustKey,
   type ClaudeTrustPathStyle
-} from './claude-folder-trust-file'
+} from './configuration/claude-folder-trust-file'
 
 // Why: ~/.claude.json also holds per-project history, so it outgrows the 256 KiB MCP-file limit.
 const MAX_CLAUDE_GLOBAL_CONFIG_BYTES = 32 * 1024 * 1024

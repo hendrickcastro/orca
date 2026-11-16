@@ -1,6 +1,6 @@
 import { Pin } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
-import type { ActivityBarItem } from '../activity-bar-buttons'
+import type { ActivityBarItem } from '@/components/right-sidebar/activity-bar/activity-bar-buttons'
 
 export function pinnedAgentsActivityItem(): ActivityBarItem {
   return {

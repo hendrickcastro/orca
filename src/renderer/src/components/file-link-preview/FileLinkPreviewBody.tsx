@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import type { TerminalFileContext } from '@/components/terminal-pane/terminal-file-path-mapping'
-import { NativeChatHighlightedCode } from '@/components/native-chat/NativeChatHighlightedCode'
-import { readRuntimeFilePreview } from '@/runtime/runtime-file-read-client'
-import { detectLanguage } from '@/lib/language-detect'
+import type { TerminalFileContext } from '@/components/terminal-pane/host-files/terminal-file-path-mapping'
+import { NativeChatHighlightedCode } from '@/components/native-chat/markdown/code/NativeChatHighlightedCode'
+import { readRuntimeFilePreview } from '@/runtime/files/reads/runtime-file-read-client'
+import { detectLanguage } from '../../../../shared/editor-language/editor-language-detect'
 import { translate } from '@/i18n/i18n'
 
 const LINES_BEFORE_TARGET = 4

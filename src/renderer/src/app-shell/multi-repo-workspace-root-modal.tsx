@@ -1,9 +1,9 @@
-import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
+import { lazyWithRetry as lazy } from '@/app-shell/startup/lazy-with-retry'
 import { useAppStore } from '../store'
 import { ModalBoundary } from './app-root-surface-boundaries'
 
 const MultiRepoWorkspaceModalHost = lazy(
-  () => import('../components/new-workspace/MultiRepoWorkspaceModalHost')
+  () => import('../components/new-workspace/multi-repo/MultiRepoWorkspaceModalHost')
 )
 
 /** Root-hosted so the composer and the task page can both hand a task to the multi-repo flow. */

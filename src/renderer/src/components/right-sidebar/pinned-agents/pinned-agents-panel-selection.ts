@@ -1,5 +1,5 @@
 import type { WorkspaceLineage } from '../../../../../shared/worktree/lineage-types'
-import { parseWorkspaceKey } from '../../../../../shared/workspace-scope'
+import { parseWorkspaceKey } from '../../../../../shared/workspace/identity/workspace-scope'
 import type { PinnedWorkspaceEntry } from './pinned-workspaces-catalog'
 
 export type PinnedAgentsPanelItem = {

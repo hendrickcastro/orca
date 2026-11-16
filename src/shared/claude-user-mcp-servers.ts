@@ -1,4 +1,4 @@
-import type { McpServerSummary } from './mcp-config'
+import type { McpServerSummary } from './mcp/configuration/mcp-config'
 
 export type ClaudeMcpServerEntry = Pick<McpServerSummary, 'name' | 'transport' | 'status'>
 

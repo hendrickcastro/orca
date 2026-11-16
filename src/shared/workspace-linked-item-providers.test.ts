@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeWorkspaceLinkedItem } from './workspace-linked-item'
+import { normalizeWorkspaceLinkedItem } from './workspace-attachments/workspace-linked-item'
 
 describe('workspace linked item providers', () => {
   it('keeps Asana and Azure DevOps items so the worktree stays linked to its task', () => {

@@ -2,12 +2,16 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp, ArrowUpDown, Check } from 'lucide-react'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { PluginDeclarativeProps } from '../../../../../shared/plugins/declarative/plugin-declarative-catalog'
 import { usePluginDeclarativeHostValue } from './plugin-declarative-host-value'
 import type { PluginDeclarativeEmit } from './PluginDeclarativeControls'
 import { nextTableRow, nextTableSelection } from './plugin-declarative-table-selection'
 import { PluginDeclarativeRelativeTimeText } from './PluginDeclarativeRelativeTime'
+import {
+  PLUGIN_TABLE_MIN_WIDTHS,
+  pluginTableVisibleColumns
+} from '../../../../../shared/plugins/declarative/plugin-declarative-table-columns'
 
 type TableProps = PluginDeclarativeProps<'Table'>
 type Column = TableProps['columns'][number]
@@ -26,11 +30,12 @@ const COLUMN_WIDTH: Record<NonNullable<Column['width']>, string> = {
 const IS_MAC = typeof navigator !== 'undefined' && navigator.userAgent.includes('Mac')
 
 function CellValue({ value }: { value: Cell | undefined }): React.ReactNode {
+  const t = useTranslate()
   if (value === true) {
     return (
       <Check
         className="size-4"
-        aria-label={translate('auto.components.plugins.declarative.Table.yes', 'Yes')}
+        aria-label={t('auto.components.plugins.declarative.Table.yes', 'Yes')}
       />
     )
   }
@@ -44,7 +49,12 @@ function CellValue({ value }: { value: Cell | undefined }): React.ReactNode {
   if (value === false || value === null || value === undefined || value === '') {
     return <span className="text-muted-foreground">{value === false ? '' : '–'}</span>
   }
-  return <span className="truncate">{String(value)}</span>
+  // The full text on hover, since narrow columns cut it.
+  return (
+    <span className="truncate" title={String(value)}>
+      {String(value)}
+    </span>
+  )
 }
 
 function SortGlyph({ direction }: { direction: 'asc' | 'desc' | null }): React.JSX.Element {
@@ -63,10 +73,28 @@ export function PluginDeclarativeTable({
   props: TableProps
   emit: PluginDeclarativeEmit
 }): React.JSX.Element {
+  const t = useTranslate()
   const id = useId()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const mode = props.selectionMode ?? 'none'
-  const { rows, columns } = props
+  const { rows } = props
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  // Infinity until measured, so a table first draws every column (and tests without layout do).
+  const [width, setWidth] = useState(Number.POSITIVE_INFINITY)
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root || typeof ResizeObserver === 'undefined') {
+      return
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry && entry.contentRect.width > 0) {
+        setWidth(entry.contentRect.width)
+      }
+    })
+    observer.observe(root)
+    return () => observer.disconnect()
+  }, [])
+  const columns = pluginTableVisibleColumns(props.columns, width)
   const keys = rows.map((row) => row.key)
   const selectionCallback = props.onSelectionChange?.$callback
   const selection = usePluginDeclarativeHostValue<readonly string[]>({
@@ -74,6 +102,7 @@ export function PluginDeclarativeTable({
     defaultValue: props.defaultSelected,
     fallback: [],
     acked: props.$edit,
+    actTarget: props,
     callback: selectionCallback,
     send: (callback, value, edit) => emit(callback, [{ keys: [...value] }], { edit })
   })
@@ -109,7 +138,13 @@ export function PluginDeclarativeTable({
     }
   }, [emit, lastShown, listSignature, loadMore, props.hasMore, props.loading, rows.length])
 
-  const template = columns.map((column) => COLUMN_WIDTH[column.width ?? 'auto']).join(' ')
+  const template = columns
+    .map((column) =>
+      (column.width ?? 'auto') === 'auto'
+        ? `minmax(${PLUGIN_TABLE_MIN_WIDTHS[column.minWidth ?? 'auto']},1fr)`
+        : COLUMN_WIDTH[column.width ?? 'auto']
+    )
+    .join(' ')
   const select = (key: string, toggle: boolean, extend: boolean): void => {
     const row = rows.find((entry) => entry.key === key)
     if (mode === 'none' || !row || row.disabled) {
@@ -140,6 +175,7 @@ export function PluginDeclarativeTable({
 
   return (
     <div
+      ref={rootRef}
       role="grid"
       aria-label={props.label}
       aria-rowcount={rows.length + 1}
@@ -147,7 +183,7 @@ export function PluginDeclarativeTable({
       aria-multiselectable={mode === 'multiple' || undefined}
       aria-activedescendant={rows.length > 0 ? `${id}-row-${activeIndex}` : undefined}
       tabIndex={0}
-      className="flex min-w-0 flex-col overflow-hidden rounded-md border border-border text-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="group/grid flex min-w-0 flex-col overflow-hidden rounded-md border border-border text-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       onKeyDown={(event) => {
         const row = rows[activeIndex]
         if (event.key === 'Enter' && row) {
@@ -197,11 +233,15 @@ export function PluginDeclarativeTable({
                   className="flex min-w-0 cursor-pointer items-center gap-1 uppercase hover:text-foreground"
                   onClick={() => sortBy(column)}
                 >
-                  <span className="truncate">{column.label}</span>
+                  <span className="truncate" title={column.label}>
+                    {column.label}
+                  </span>
                   <SortGlyph direction={direction} />
                 </button>
               ) : (
-                <span className="truncate">{column.label}</span>
+                <span className="truncate" title={column.label}>
+                  {column.label}
+                </span>
               )}
             </div>
           )
@@ -214,8 +254,7 @@ export function PluginDeclarativeTable({
       >
         {rows.length === 0 && !showLoading ? (
           <div className="px-2 py-3 text-center text-muted-foreground">
-            {props.emptyText ??
-              translate('auto.components.plugins.declarative.Table.empty', 'No rows')}
+            {props.emptyText ?? t('auto.components.plugins.declarative.Table.empty', 'No rows')}
           </div>
         ) : (
           <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
@@ -230,10 +269,7 @@ export function PluginDeclarativeTable({
                     style={{ top: item.start, height: ROW_HEIGHT }}
                   >
                     <LoadingSpinner className="size-3.5" />
-                    {translate(
-                      'auto.components.plugins.declarative.Table.loading',
-                      'Loading more…'
-                    )}
+                    {t('auto.components.plugins.declarative.Table.loading', 'Loading more…')}
                   </div>
                 )
               }
@@ -248,7 +284,7 @@ export function PluginDeclarativeTable({
                   aria-disabled={row.disabled || undefined}
                   data-current={isSelected}
                   data-active={item.index === activeIndex}
-                  className="absolute inset-x-0 grid cursor-default items-center border-b border-border/60 hover:bg-accent data-[active=true]:ring-1 data-[active=true]:ring-ring/40 data-[active=true]:ring-inset data-[current=true]:bg-accent aria-disabled:opacity-50"
+                  className="absolute inset-x-0 grid cursor-default items-center border-b border-border/60 hover:bg-accent group-focus-visible/grid:data-[active=true]:ring-1 group-focus-visible/grid:data-[active=true]:ring-ring/40 group-focus-visible/grid:data-[active=true]:ring-inset data-[current=true]:bg-accent aria-disabled:opacity-50"
                   style={{ top: item.start, height: ROW_HEIGHT, gridTemplateColumns: template }}
                   onClick={(event) => {
                     setActive(item.index)

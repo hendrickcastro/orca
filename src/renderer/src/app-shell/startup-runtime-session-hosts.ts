@@ -2,8 +2,8 @@ import {
   toRuntimeExecutionHostId,
   toSshExecutionHostId,
   type ExecutionHostId
-} from '../../../shared/execution-host'
-import { getRuntimeSshAccess } from '../../../shared/runtime-environments'
+} from '../../../shared/execution-host/execution-host'
+import { getRuntimeSshAccess } from '../../../shared/remote-runtime/host-catalog/runtime-environments'
 
 export async function listRuntimeSessionHostsForStartup(): Promise<{
   hostIds: ExecutionHostId[]

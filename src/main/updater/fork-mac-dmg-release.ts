@@ -1,8 +1,8 @@
 import path from 'node:path'
 import { PRODUCT_PACKAGE_NAME, PRODUCT_RELEASE_REPO } from '../../shared/product-identity'
-import { normalizeTagToVersion } from '../../shared/release-channel'
-import { isValidVersion } from '../updater-fallback'
-import { asRecord } from '../ai-vault/session-scanner-record-value'
+import { normalizeTagToVersion } from '../../shared/updater/release-channel'
+import { isValidVersion } from './releases/updater-fallback'
+import { asRecord } from '../ai-vault/parsing/session-record-fields'
 
 export type ForkMacDmgRelease = {
   version: string

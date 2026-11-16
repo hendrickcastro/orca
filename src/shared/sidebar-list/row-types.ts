@@ -1,9 +1,10 @@
-import type { WorktreeOccurrence } from '../worktree-occurrence-plan'
-import type { FolderWorkspace } from '../folder-workspace-types'
-import type { ProjectGroup } from '../project-group-types'
-import type { Repo } from '../repo-types'
+import type { WorktreeLineageSource } from './worktree-lineage-range'
+import type { WorktreeOccurrence } from './lineage/worktree-occurrence-plan'
+import type { FolderWorkspace } from '../folder-workspaces/folder-workspace-types'
+import type { ProjectGroup } from '../project/groups/project-group-types'
+import type { Repo } from '../repository/repo-types'
 import type { DetectedWorktree, WorkspaceStatus, Worktree } from '../worktree/types'
-import type { ExecutionHostId } from '../execution-host'
+import type { ExecutionHostId } from '../execution-host/execution-host'
 import type { PRGroupKey } from '../workspace-view/workspace-pr-groups'
 
 export type WorktreeGroupBy = 'none' | 'workspace-status' | 'repo' | 'pr-status'
@@ -65,6 +66,8 @@ export type WorktreeRow = {
   lineageChildWorktreeIds?: readonly string[]
   lineageGroupKey?: string
   lineageCollapsed?: boolean
+  /** Every workspace nested under this one, collapsed or not; host-qualified. */
+  lineageDescendantIdentities?: WorktreeLineageSource
   hostContextLabel?: string
   showProjectName?: boolean
   /** Replaces the card title, e.g. a pinned task's member shows its repo, not the task name. */
@@ -81,13 +84,18 @@ export type ImportedWorktreesCardCandidate = {
 export type ImportedWorktreesCardRow = {
   type: 'imported-worktrees-card'
   key: string
-  repo: Repo
-  hiddenWorktrees: DetectedWorktree[]
-  placement: 'repo-group' | 'pinned-fallback'
-  /** Set only when the row's project is checked out on more than one host. */
+  /** Set only when the row's project, or this line's host, needs naming among several hosts. */
   hostContextLabel?: string
   hostContextHostId?: ExecutionHostId
-}
+} & (
+  | { placement: 'repo-group'; repo: Repo; hiddenWorktrees: DetectedWorktree[] }
+  // Outside project grouping no header owns a project, so one line covers a host's projects.
+  | {
+      placement: 'all-projects'
+      hostId: ExecutionHostId
+      projects: ImportedWorktreesCardCandidate[]
+    }
+)
 
 export type NewExternalWorktreesInboxCandidate = {
   repo: Repo
@@ -112,19 +120,22 @@ export type PendingCreationRow = {
 }
 
 export type FolderWorkspaceRow = {
+  lineageDescendantIdentities?: WorktreeLineageSource
   type: 'folder-workspace'
   key: string
   folderWorkspace: FolderWorkspace
   projectGroup: ProjectGroup
   depth: number
   groupDepth: number
-  /** Set when the row renders outside its lane (the Pinned section). */
-  sectionKey?: string
-  /** A pinned task's disclosure for its member repos. */
+  hostContextLabel?: string
+  /** Workspaces nested under this folder; set only when it has any. */
   lineageChildCount?: number
-  lineageCollapsed?: boolean
+  lineageChildWorktreeIds?: readonly string[]
   lineageGroupKey?: string
-  /** Extra left offset (px) that seats a section's rows under its header, e.g. Pinned. */
+  lineageCollapsed?: boolean
+  /** Fork: set when the row renders outside its lane (the Pinned section). */
+  sectionKey?: string
+  /** Fork: extra left offset (px) that seats a section's rows under its header, e.g. Pinned. */
   sectionIndent?: number
 }
 

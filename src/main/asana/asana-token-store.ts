@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { getSecretStore } from '../../shared/secret-store'
+import { getSecretStore } from '../../shared/secure-storage/secret-store'
 import { PRODUCT_HOME_STATE_DIR_NAME } from '../../shared/product-identity'
 
 const ASANA_TOKEN_FILE = 'asana-token.enc'

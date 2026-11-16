@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import type { RuntimeGraphStatus } from '../../../shared/runtime-session-contracts'
+import type { RuntimeGraphStatus } from '../../../shared/remote-runtime/session-graph/runtime-session-contracts'
 import { OrcaRuntimeService } from '../orca-runtime'
 
 class InventoryPublicationRuntime extends OrcaRuntimeService {
   setGraph(status: RuntimeGraphStatus, epoch: number): void {
     this.graphStatus = status
-    this.rendererGraphEpoch = epoch
+    if (this.rendererGraphEpoch !== epoch) {
+      this.terminalIdentity.advanceRendererEpoch()
+    }
+    expect(this.rendererGraphEpoch).toBe(epoch)
   }
 
   get epoch(): number | null {

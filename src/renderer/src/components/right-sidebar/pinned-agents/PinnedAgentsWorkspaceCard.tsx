@@ -2,20 +2,21 @@ import { useId, useMemo, useRef, useState } from 'react'
 import type React from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { ChevronRight, GripVertical, MonitorPlay, Workflow, X } from 'lucide-react'
-import { AgentIcon } from '@/lib/agent-catalog'
-import { agentTypeToIconAgent, formatAgentTypeLabel } from '@/lib/agent-status'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
-import { cn } from '@/lib/utils'
+import { AgentIcon } from '@/components/agent/icons/AgentIcon'
+import { agentTypeToIconAgent } from '../../../../../shared/agent-status/presentation/agent-type-icon-agent'
+import { formatAgentTypeLabel } from '../../../../../shared/agent-status/presentation/agent-type-label'
+import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { AgentTerminalPreview } from '@/components/dashboard-popout/AgentTerminalPreview'
-import StatusIndicator from '@/components/sidebar/StatusIndicator'
-import WorktreeCardAgents from '@/components/sidebar/WorktreeCardAgents'
-import { useWorktreeAgentRows } from '@/components/sidebar/useWorktreeAgentRows'
-import { useWorktreeActivityStatus } from '@/components/sidebar/use-worktree-activity-status'
+import { AgentTerminalPreview } from '@/components/dashboard/terminal-preview/AgentTerminalPreview'
+import StatusIndicator from '@/components/sidebar/workspace-card/surface/StatusIndicator'
+import WorktreeCardAgents from '@/components/sidebar/workspace-card/activity/WorktreeCardAgents'
+import { useWorktreeAgentRows } from '@/components/sidebar/workspace-card/activity/useWorktreeAgentRows'
+import { useWorktreeActivityStatus } from '@/components/sidebar/workspace-card/activity/use-worktree-activity-status'
 import { resolveAgentRowTerminalInput, selectAgentRowPtyId } from './agent-row-live-terminal'
 import { PINNED_AGENTS_ZOOM_SCOPE_ATTR, usePinnedAgentsPaneZoom } from './pinned-agents-pane-zoom'
 import type { PinnedAgentsPanelItem } from './pinned-agents-panel-selection'
@@ -240,7 +241,7 @@ export function PinnedAgentsWorkspaceCard({
               {translate('pinnedAgentsPanel.card.noAgents', 'No agents here right now')}
             </p>
           ) : (
-            <WorktreeCardAgents worktreeId={entry.id} agents={rows} className="mt-0.5" />
+            <WorktreeCardAgents worktreeId={entry.id} className="mt-0.5" />
           )}
           {showLive ? (
             <LiveTerminal

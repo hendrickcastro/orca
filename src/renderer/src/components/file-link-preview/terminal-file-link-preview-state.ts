@@ -1,4 +1,4 @@
-import type { TerminalFileContext } from '@/components/terminal-pane/terminal-file-path-mapping'
+import type { TerminalFileContext } from '@/components/terminal-pane/host-files/terminal-file-path-mapping'
 
 /** A terminal file link the pointer rests on, with where to anchor its preview. */
 export type TerminalFileLinkPreviewRequest = {

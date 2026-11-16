@@ -1,6 +1,7 @@
 import { CircleX, FolderTree, List, Pin } from 'lucide-react'
 import type React from 'react'
 import { translate } from '@/i18n/i18n'
+import type { Translate } from '@/i18n/use-translate'
 import type { PRGroupKey } from '../../../../../../shared/workspace-view/workspace-pr-groups'
 import type { SidebarHeaderIcon } from '../../../../../../shared/sidebar-list/row-types'
 import type { WorkspaceStatusDefinition } from '../../../../../../shared/worktree/types'
@@ -8,8 +9,8 @@ import {
   ConductorDoneIcon,
   ConductorProgressIcon,
   ConductorReviewIcon
-} from '../../workspace-status-icons'
-import { getWorkspaceStatusVisualMeta } from '../../workspace-status'
+} from '../../workspace-status/presentation/workspace-status-icons'
+import { getWorkspaceStatusVisualMeta } from '../../workspace-status/presentation/workspace-status'
 import { PINNED_FAVORITES_GROUP_META } from '../../pinned-favorites/pinned-favorites'
 
 const PR_GROUP_META: Record<
@@ -81,7 +82,8 @@ type SidebarHeaderVisual = {
 /** What the window draws for a header's icon key; read at paint so labels follow the locale. */
 export function getSidebarHeaderVisual(
   icon: SidebarHeaderIcon,
-  workspaceStatuses: readonly WorkspaceStatusDefinition[]
+  workspaceStatuses: readonly WorkspaceStatusDefinition[],
+  t?: Translate
 ): SidebarHeaderVisual {
   switch (icon.kind) {
     case 'pinned':
@@ -94,7 +96,8 @@ export function getSidebarHeaderVisual(
       return PR_GROUP_META[icon.prGroup]
     case 'workspace-status': {
       const { icon: statusIcon, tone } = getWorkspaceStatusVisualMeta(
-        workspaceStatuses.find((status) => status.id === icon.status) ?? icon.status
+        workspaceStatuses.find((status) => status.id === icon.status) ?? icon.status,
+        t
       )
       return { icon: statusIcon, tone }
     }

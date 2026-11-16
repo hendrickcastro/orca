@@ -1,5 +1,10 @@
 import { stat } from 'node:fs/promises'
 import {
+  PLUGIN_FRAME_ASSET_MAX_BYTES,
+  PLUGIN_FRAME_CHECKED_MAX_BYTES,
+  PLUGIN_SOURCE_MODULE_MAX_BYTES
+} from '../../../shared/plugins/frames/plugin-frame-entry-limits'
+import {
   parsePluginFrameUrl,
   PLUGIN_DECLARATIVE_HOST_FILE,
   PLUGIN_DECLARATIVE_RUNTIME_FILE
@@ -11,44 +16,39 @@ import {
 } from '../../../shared/plugins/frames/plugin-panel-shell'
 import type { PluginFrameTheme } from '../../../shared/plugins/frames/plugin-frame-bridge'
 import { isPluginSourceModulePath } from '../../../shared/plugins/frames/plugin-frame-source-modules'
-import type { ValidDiscoveredPlugin } from '../plugin-discovery'
+import type { ValidDiscoveredPlugin } from '../discovery/plugin-discovery'
 import {
   readContainedPluginArtifactBytes,
   resolveContainedPluginArtifact
-} from '../plugin-artifact-validation'
+} from '../artifacts/plugin-contained-artifact'
 import {
   createPluginFrameIntegrity,
   matchesVerifiedDigest,
   verifyPluginFrameTree,
   type PluginFrameTreeVerifier
-} from './plugin-frame-integrity'
+} from './frame-serving/plugin-frame-integrity'
 import {
   bufferedResponse,
   busy,
+  notFound,
+  streamedResponse
+} from './frame-serving/plugin-frame-responses'
+import {
   HTML_CONTENT_TYPE,
   isCheckedPluginFrameType,
   JAVASCRIPT_CONTENT_TYPE,
-  notFound,
-  pluginFrameContentType,
-  streamedResponse
-} from './plugin-frame-responses'
+  pluginFrameContentType
+} from './frame-serving/plugin-frame-content-types'
 import {
   createPluginSourceModuleCompiler,
-  PLUGIN_SOURCE_MODULE_MAX_BYTES,
   type PluginSourceModuleCompiler
-} from './plugin-frame-module-transform'
+} from './frame-serving/plugin-frame-module-transform'
 import {
   pluginFileExistsIn,
   pluginSourceModuleDocumentBody,
   PLUGIN_SOURCE_MODULE_QUERY
-} from './plugin-frame-source-serving'
+} from './frame-serving/plugin-frame-source-serving'
 
-export { pluginFrameContentType } from './plugin-frame-responses'
-
-/** Streamed assets (images, fonts, media); the whole plugin tree is capped at 50 MiB anyway. */
-export const PLUGIN_FRAME_ASSET_MAX_BYTES = 32 * 1024 * 1024
-/** Documents, scripts and WASM are read whole to check their digest, so they get a lower cap. */
-export const PLUGIN_FRAME_CHECKED_MAX_BYTES = 16 * 1024 * 1024
 /** Concurrent requests one guest session may hold open; more get 503 until some finish. */
 export const PLUGIN_FRAME_MAX_IN_FLIGHT = 32
 
