@@ -22654,8 +22654,17 @@
         "oneLeftTwoRight": "Una a la izquierda, dos a la derecha",
         "twoLeftOneRight": "Dos a la izquierda, una a la derecha"
       },
-      "zoomHint": "Cmd/Ctrl y + o - amplían solo este panel mientras su terminal tiene el foco"
-    }
+      "zoomHint": "Cmd/Ctrl y + o - amplían solo este panel mientras su terminal tiene el foco",
+      "liveSubtitle": "Los agentes trabajando en tus workspaces fijados, de cualquier proyecto",
+      "noPinnedTitle": "Todavía no hay nada fijado",
+      "noPinnedCopy": "Fija workspaces o tareas multirrepositorio en la barra lateral. Sus agentes aparecen aquí en cuanto empiezan a trabajar.",
+      "noLiveTitle": "Ningún agente está trabajando ahora",
+      "noLiveCopy": "Cuando un agente empiece en uno de tus workspaces fijados, su terminal o su chat aparecerá aquí.",
+      "idleLabel": "Sin agentes:",
+      "openChat": "Abrir el chat",
+      "noReplyYet": "Todavía no hay respuesta"
+    },
+    "liveSubtitle": "Agentes trabajando en tus workspaces fijados"
   },
   "workspaceDeletion": {
     "preferenceSaveFailed": "No se pudo guardar la preferencia de eliminación",

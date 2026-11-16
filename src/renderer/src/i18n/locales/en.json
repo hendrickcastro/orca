@@ -24593,8 +24593,17 @@
         "oneLeftTwoRight": "One on the left, two on the right",
         "twoLeftOneRight": "Two on the left, one on the right"
       },
-      "zoomHint": "Cmd/Ctrl and + or - zoom only this pane while its terminal has focus"
-    }
+      "zoomHint": "Cmd/Ctrl and + or - zoom only this pane while its terminal has focus",
+      "liveSubtitle": "The agents working in your pinned workspaces, from any project",
+      "noPinnedTitle": "Nothing pinned yet",
+      "noPinnedCopy": "Pin workspaces or multi-repository tasks in the sidebar. Their agents appear here as soon as they start working.",
+      "noLiveTitle": "No agent is working right now",
+      "noLiveCopy": "When an agent starts in one of your pinned workspaces, its terminal or chat appears here.",
+      "idleLabel": "No agents:",
+      "openChat": "Open the chat",
+      "noReplyYet": "No reply yet"
+    },
+    "liveSubtitle": "Agents working in your pinned workspaces"
   },
   "updates": {
     "installBlock": {

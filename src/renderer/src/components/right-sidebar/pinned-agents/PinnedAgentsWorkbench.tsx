@@ -3,16 +3,13 @@ import type React from 'react'
 import { Pin, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useWorktreeAgentRows } from '@/components/sidebar/workspace-card/activity/useWorktreeAgentRows'
-import type { DashboardAgentRow } from '@/components/dashboard/rows/dashboard-agent-row'
 import { translate } from '@/i18n/i18n'
 import { cn } from '@/lib/class-names'
 import { useAppStore } from '@/store'
 import { selectAgentRowPtyId } from './agent-row-live-terminal'
 import type { PinnedAgentsPanelItem } from './pinned-agents-panel-selection'
-import { PinnedAgentsWorkspacePicker } from './PinnedAgentsWorkspacePicker'
 import {
-  PinnedAgentsWorkbenchIdlePane,
+  PinnedAgentsWorkbenchActivityPane,
   PinnedAgentsWorkbenchPane,
   type PanePlacement
 } from './PinnedAgentsWorkbenchPane'
@@ -23,74 +20,77 @@ import {
   normalizePinnedAgentsWorkbenchRowHeight,
   pinnedAgentsWorkbenchGridStyle
 } from './pinned-agents-workbench-layout'
+import { flattenPinnedWorkspaces, usePinnedLiveAgentRows } from './pinned-live-agents'
+import { PinnedIdleWorkspaceChip } from './PinnedIdleWorkspaceChip'
 import { usePinnedAgentsPanel } from './use-pinned-agents-panel'
 
-type LivePane = { row: DashboardAgentRow; ptyId: string }
-
-/** The panes of one followed workspace: one per agent with a live terminal, else a placeholder. */
-function WorkspacePanes({
+/** One pane per live agent of a pinned workspace: its terminal, or its activity when it has none. */
+function WorkspaceAgentPanes({
   item,
-  onRemove,
   expandedPaneKey,
   onToggleExpand
 }: {
   item: PinnedAgentsPanelItem
-  onRemove: (id: string) => void
   expandedPaneKey: string | null
   onToggleExpand: (paneKey: string) => void
-}): React.JSX.Element {
+}): React.JSX.Element | null {
+  const rows = usePinnedLiveAgentRows(item.entry.id)
+  const ptyIdsByTabId = useAppStore((s) => s.ptyIdsByTabId)
+  const terminalLayoutsByTabId = useAppStore((s) => s.terminalLayoutsByTabId)
+  const panes = useMemo(() => {
+    const seenPtys = new Set<string>()
+    return rows.flatMap((row) => {
+      const ptyId = selectAgentRowPtyId({ ptyIdsByTabId, terminalLayoutsByTabId }, row)
+      if (ptyId && seenPtys.has(ptyId)) {
+        return []
+      }
+      if (ptyId) {
+        seenPtys.add(ptyId)
+      }
+      return [{ row, ptyId, key: ptyId ?? row.paneKey }]
+    })
+  }, [rows, ptyIdsByTabId, terminalLayoutsByTabId])
+  if (panes.length === 0) {
+    return null
+  }
   const placementFor = (paneKey: string): PanePlacement => ({
     paneKey,
     expanded: expandedPaneKey === paneKey,
     hidden: expandedPaneKey !== null && expandedPaneKey !== paneKey,
     onToggleExpand
   })
-  const rows = useWorktreeAgentRows(item.entry.id)
-  const ptyIdsByTabId = useAppStore((s) => s.ptyIdsByTabId)
-  const terminalLayoutsByTabId = useAppStore((s) => s.terminalLayoutsByTabId)
-  const panes = useMemo<LivePane[]>(() => {
-    const seen = new Set<string>()
-    const out: LivePane[] = []
-    for (const row of rows) {
-      const ptyId = selectAgentRowPtyId({ ptyIdsByTabId, terminalLayoutsByTabId }, row)
-      if (ptyId && !seen.has(ptyId)) {
-        seen.add(ptyId)
-        out.push({ row, ptyId })
-      }
-    }
-    return out
-  }, [rows, ptyIdsByTabId, terminalLayoutsByTabId])
-  if (panes.length === 0) {
-    return (
-      <PinnedAgentsWorkbenchIdlePane
-        entry={item.entry}
-        placement={placementFor(item.entry.id)}
-        onRemove={() => onRemove(item.entry.id)}
-      />
-    )
-  }
   return (
     <>
-      {panes.map((pane) => (
-        <PinnedAgentsWorkbenchPane
-          key={pane.ptyId}
-          entry={item.entry}
-          row={pane.row}
-          ptyId={pane.ptyId}
-          placement={placementFor(pane.ptyId)}
-          onRemove={() => onRemove(item.entry.id)}
-        />
-      ))}
+      {panes.map((pane) =>
+        pane.ptyId ? (
+          <PinnedAgentsWorkbenchPane
+            key={pane.key}
+            entry={item.entry}
+            row={pane.row}
+            ptyId={pane.ptyId}
+            placement={placementFor(pane.key)}
+          />
+        ) : (
+          <PinnedAgentsWorkbenchActivityPane
+            key={pane.key}
+            entry={item.entry}
+            row={pane.row}
+            placement={placementFor(pane.key)}
+          />
+        )
+      )}
     </>
   )
 }
 
 /**
- * The centre-area view: every followed workspace's agents side by side, each in a live terminal
- * big enough to read. Opened by dropping a card from the sidebar's Pinned section on the centre.
+ * The centre view: every live agent of every pinned workspace, from any project, side by side.
+ * Why automatic: a hand-picked list showed empty panes for idle workspaces and missed agents
+ * that started elsewhere; pinning is already the user's statement of what to watch.
  */
 export default function PinnedAgentsWorkbench(): React.JSX.Element {
-  const { catalog, items, shownIds, toggle, remove } = usePinnedAgentsPanel()
+  const { catalog } = usePinnedAgentsPanel()
+  const items = useMemo(() => flattenPinnedWorkspaces(catalog), [catalog])
   const setActiveView = useAppStore((s) => s.setActiveView)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const arrangement = useAppStore((s) =>
@@ -123,8 +123,8 @@ export default function PinnedAgentsWorkbench(): React.JSX.Element {
           </div>
           <div className="truncate text-xs text-muted-foreground">
             {translate(
-              'pinnedAgentsPanel.workbench.subtitle',
-              'Live terminals of the agents in the workspaces you dropped here, from any project'
+              'pinnedAgentsPanel.workbench.liveSubtitle',
+              'The agents working in your pinned workspaces, from any project'
             )}
           </div>
         </div>
@@ -142,7 +142,6 @@ export default function PinnedAgentsWorkbench(): React.JSX.Element {
             })
           }
         />
-        <PinnedAgentsWorkspacePicker catalog={catalog} shownIds={shownIds} onToggle={toggle} />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -161,34 +160,60 @@ export default function PinnedAgentsWorkbench(): React.JSX.Element {
       {items.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
           <div className="text-sm font-medium text-foreground">
-            {translate('pinnedAgentsPanel.noPinnedTitle', 'Nothing here yet')}
+            {translate('pinnedAgentsPanel.workbench.noPinnedTitle', 'Nothing pinned yet')}
           </div>
           <div className="mt-2 max-w-[22rem] text-xs leading-5 text-muted-foreground">
             {translate(
-              'pinnedAgentsPanel.workbench.empty',
-              'Drag a workspace or a multi-repository task from the Pinned section of the sidebar and drop it here. Each of its agents gets its own live terminal.'
+              'pinnedAgentsPanel.workbench.noPinnedCopy',
+              'Pin workspaces or multi-repository tasks in the sidebar. Their agents appear here as soon as they start working.'
             )}
           </div>
         </div>
       ) : (
-        <div
-          className={cn(
-            'scrollbar-sleek grid min-h-0 flex-1 gap-2 overflow-y-auto p-2',
-            // Why: an expanded pane owns the whole grid, so the shaped placement must not apply to it.
-            expandedPaneKey === null && pinnedAgentsWorkbenchGridClassName(arrangement)
-          )}
-          style={gridStyle}
-        >
-          {items.map((item) => (
-            <WorkspacePanes
-              key={item.entry.id}
-              item={item}
-              onRemove={remove}
-              expandedPaneKey={expandedPaneKey}
-              onToggleExpand={toggleExpand}
-            />
-          ))}
-        </div>
+        <>
+          <div
+            data-pinned-agents-grid=""
+            className={cn(
+              'scrollbar-sleek grid min-h-0 flex-1 gap-2 overflow-y-auto p-2',
+              // Why: an expanded pane owns the whole grid, so the shaped placement must not apply to it.
+              expandedPaneKey === null && pinnedAgentsWorkbenchGridClassName(arrangement),
+              // Why: with no live agent the grid is empty; the message below takes its place.
+              'empty:hidden'
+            )}
+            style={gridStyle}
+          >
+            {items.map((item) => (
+              <WorkspaceAgentPanes
+                key={item.entry.id}
+                item={item}
+                expandedPaneKey={expandedPaneKey}
+                onToggleExpand={toggleExpand}
+              />
+            ))}
+          </div>
+          <div className="hidden flex-1 flex-col items-center justify-center px-6 text-center [[data-pinned-agents-grid]:empty+&]:flex">
+            <div className="text-sm font-medium text-foreground">
+              {translate(
+                'pinnedAgentsPanel.workbench.noLiveTitle',
+                'No agent is working right now'
+              )}
+            </div>
+            <div className="mt-2 max-w-[22rem] text-xs leading-5 text-muted-foreground">
+              {translate(
+                'pinnedAgentsPanel.workbench.noLiveCopy',
+                'When an agent starts in one of your pinned workspaces, its terminal or chat appears here.'
+              )}
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-t border-border px-3 py-2 empty:hidden [&:not(:has(button))]:hidden">
+            <span className="text-[11px] text-muted-foreground">
+              {translate('pinnedAgentsPanel.workbench.idleLabel', 'No agents:')}
+            </span>
+            {items.map((item) => (
+              <PinnedIdleWorkspaceChip key={item.entry.id} item={item} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

@@ -3,7 +3,8 @@ import type React from 'react'
 import { Maximize2, Minimize2, SquareArrowOutUpRight, X } from 'lucide-react'
 import { AgentStateDot } from '@/components/AgentStateDot'
 import { AgentTerminalPreview } from '@/components/dashboard/terminal-preview/AgentTerminalPreview'
-import type { DashboardAgentRow } from '@/components/dashboard/rows/dashboard-agent-row'
+import DashboardAgentRow from '@/components/dashboard/DashboardAgentRow'
+import type { DashboardAgentRow as DashboardAgentRowData } from '@/components/dashboard/rows/dashboard-agent-row'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
@@ -15,6 +16,8 @@ import { getAgentRowPrimaryText } from '../../../../../shared/agent-status/prese
 import { agentTypeToIconAgent } from '../../../../../shared/agent-status/presentation/agent-type-icon-agent'
 import { formatAgentTypeLabel } from '../../../../../shared/agent-status/presentation/agent-type-label'
 import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
+import { activateStructuredAgentSessionTab } from '@/lib/agent-session/structured-agent-session-tab-activation'
+import { useNow } from '@/hooks/use-now'
 import { useAppStore } from '@/store'
 import { parsePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
 import { resolveAgentRowTerminalInput } from './agent-row-live-terminal'
@@ -39,7 +42,7 @@ function PaneFrame({
   entry: PinnedWorkspaceEntry
   title: React.ReactNode
   placement: PanePlacement
-  onRemove: () => void
+  onRemove?: () => void
   children: React.ReactNode
 }): React.JSX.Element {
   const openLabel = translate('pinnedAgentsPanel.workbench.openWorkspace', 'Open its workspace')
@@ -98,20 +101,22 @@ function PaneFrame({
           </TooltipTrigger>
           <TooltipContent side="bottom">{openLabel}</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              aria-label={removeLabel}
-              onClick={onRemove}
-            >
-              <X className="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">{removeLabel}</TooltipContent>
-        </Tooltip>
+        {onRemove ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={removeLabel}
+                onClick={onRemove}
+              >
+                <X className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{removeLabel}</TooltipContent>
+          </Tooltip>
+        ) : null}
       </div>
       {children}
     </section>
@@ -127,10 +132,10 @@ export function PinnedAgentsWorkbenchPane({
   onRemove
 }: {
   entry: PinnedWorkspaceEntry
-  row: DashboardAgentRow
+  row: DashboardAgentRowData
   ptyId: string
   placement: PanePlacement
-  onRemove: () => void
+  onRemove?: () => void
 }): React.JSX.Element {
   // Why once per pty: host facts decide key encodings and do not change while the pane lives.
   const terminalInput = useMemo(
@@ -145,7 +150,6 @@ export function PinnedAgentsWorkbenchPane({
     [ptyId, entry.id, entry.path]
   )
   const focusLabel = translate('pinnedAgentsPanel.workbench.focusAgent', 'Go to this agent')
-  const parsed = parsePaneKey(row.activationPaneKey ?? row.paneKey)
   const zoomScopeRef = useRef<HTMLDivElement | null>(null)
   const baseFontSize = useAppStore((s) => s.settings?.terminalFontSize ?? 14)
   const zoom = usePinnedAgentsPaneZoom(zoomScopeRef, baseFontSize)
@@ -168,12 +172,7 @@ export function PinnedAgentsWorkbenchPane({
             type="button"
             title={focusLabel}
             className="min-w-0 flex-1 truncate text-left hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            onClick={() => {
-              activateAndRevealWorktree(entry.id)
-              if (parsed) {
-                activateTabAndFocusPane(parsed.tabId, parsed.leafId, { flashFocusedPane: true })
-              }
-            }}
+            onClick={() => revealPinnedAgent(entry.id, row)}
           >
             {formatAgentTypeLabel(row.agentType)}
             {getAgentRowPrimaryText(row.entry) ? ` · ${getAgentRowPrimaryText(row.entry)}` : ''}
@@ -208,29 +207,83 @@ export function PinnedAgentsWorkbenchPane({
   )
 }
 
-/** A followed workspace with nothing live to show yet keeps its place so the user knows it is listed. */
-export function PinnedAgentsWorkbenchIdlePane({
+/**
+ * An agent without a terminal (a native chat session): its latest request, reply and step, with a
+ * way into the chat. Why not an empty pane: these agents work like any other and must be seen.
+ */
+export function PinnedAgentsWorkbenchActivityPane({
   entry,
-  placement,
-  onRemove
+  row,
+  placement
 }: {
   entry: PinnedWorkspaceEntry
+  row: DashboardAgentRowData
   placement: PanePlacement
-  onRemove: () => void
 }): React.JSX.Element {
+  const now = useNow(30_000)
+  const openLabel = translate('pinnedAgentsPanel.workbench.openChat', 'Open the chat')
+  const reply = row.entry.lastAssistantMessage?.trim()
   return (
     <PaneFrame
       entry={entry}
       placement={placement}
-      onRemove={onRemove}
-      title={<span className="truncate">{entry.name}</span>}
+      title={
+        <>
+          <span className="inline-flex shrink-0">
+            <AgentIcon agent={agentTypeToIconAgent(row.agentType)} size={13} />
+          </span>
+          <AgentStateDot state={agentRowDisplayDotState(row)} size="sm" />
+          <span className="min-w-0 flex-1 truncate">
+            {formatAgentTypeLabel(row.agentType)}
+            {getAgentRowPrimaryText(row.entry) ? ` · ${getAgentRowPrimaryText(row.entry)}` : ''}
+          </span>
+        </>
+      }
     >
-      <div className="flex flex-1 items-center justify-center px-6 text-center text-xs leading-5 text-muted-foreground">
-        {translate(
-          'pinnedAgentsPanel.workbench.noLiveAgents',
-          'No agent is running here right now. Start one in this workspace and it will appear in this pane.'
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
+        <DashboardAgentRow
+          agent={row}
+          now={now}
+          onActivate={() => revealPinnedAgent(entry.id, row)}
+          onDismiss={() => undefined}
+          hideExpand
+        />
+        {reply ? (
+          <div className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-md border border-border px-2 py-1.5 text-xs leading-5 text-foreground">
+            {reply}
+          </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">
+            {translate('pinnedAgentsPanel.workbench.noReplyYet', 'No reply yet')}
+          </div>
         )}
+        <div className="flex shrink-0 justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="xs"
+            onClick={() => revealPinnedAgent(entry.id, row)}
+          >
+            <SquareArrowOutUpRight className="size-3" />
+            {openLabel}
+          </Button>
+        </div>
       </div>
     </PaneFrame>
   )
+}
+
+/** Opens the agent where it lives: its terminal pane, or its chat tab when it has no terminal. */
+function revealPinnedAgent(workspaceId: string, row: DashboardAgentRowData): void {
+  activateAndRevealWorktree(workspaceId)
+  const parsed = parsePaneKey(row.activationPaneKey ?? row.paneKey)
+  const tabId = parsed?.tabId ?? row.tab.id
+  const hasTerminalTab = (useAppStore.getState().tabsByWorktree[workspaceId] ?? []).some(
+    (tab) => tab.id === tabId
+  )
+  if (parsed && hasTerminalTab) {
+    activateTabAndFocusPane(parsed.tabId, parsed.leafId, { flashFocusedPane: true })
+    return
+  }
+  activateStructuredAgentSessionTab({ worktreeId: workspaceId, tabId })
 }

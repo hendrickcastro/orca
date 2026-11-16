@@ -1,7 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import type React from 'react'
-import { useSortable } from '@dnd-kit/sortable'
-import { ChevronRight, GripVertical, MonitorPlay, Workflow, X } from 'lucide-react'
+import { ChevronRight, MonitorPlay, Workflow } from 'lucide-react'
 import { AgentIcon } from '@/components/agent/icons/AgentIcon'
 import { agentTypeToIconAgent } from '../../../../../shared/agent-status/presentation/agent-type-icon-agent'
 import { formatAgentTypeLabel } from '../../../../../shared/agent-status/presentation/agent-type-label'
@@ -93,11 +92,9 @@ function LiveTerminal({
 }
 
 export function PinnedAgentsWorkspaceCard({
-  item,
-  onRemove
+  item
 }: {
   item: PinnedAgentsPanelItem
-  onRemove: (id: string) => void
 }): React.JSX.Element {
   const { entry, parent } = item
   const contentId = useId()
@@ -106,15 +103,6 @@ export function PinnedAgentsWorkspaceCard({
   const [liveOpen, setLiveOpen] = useState(true)
   const status = useWorktreeActivityStatus(entry.id)
   const rows = useWorktreeAgentRows(entry.id)
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: entry.id })
   const ptyIdsByTabId = useAppStore((s) => s.ptyIdsByTabId)
   const terminalLayoutsByTabId = useAppStore((s) => s.terminalLayoutsByTabId)
   const liveChoices = useMemo<LiveAgentChoice[]>(() => {
@@ -132,9 +120,7 @@ export function PinnedAgentsWorkspaceCard({
   }, [rows, ptyIdsByTabId, terminalLayoutsByTabId])
   const showLive = liveOpen && liveChoices.length > 0
   const openLabel = translate('pinnedAgentsPanel.card.open', 'Go to this workspace')
-  const removeLabel = translate('pinnedAgentsPanel.card.remove', 'Remove from this panel')
   const toggleLabel = translate('pinnedAgentsPanel.card.toggle', 'Show or hide its agents')
-  const dragLabel = translate('pinnedAgentsPanel.card.drag', 'Drag to reorder')
   const liveLabel =
     liveChoices.length > 0
       ? translate('pinnedAgentsPanel.card.live', 'Live terminal')
@@ -143,29 +129,10 @@ export function PinnedAgentsWorkspaceCard({
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <section
-        ref={setNodeRef}
-        // Why: translate only; dnd-kit's scale would stretch the card's text while it moves.
-        style={{
-          transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-          transition
-        }}
-        className={cn(
-          'rounded-md border border-sidebar-border/70 bg-sidebar-accent/25 px-2 py-1.5',
-          isDragging && 'relative z-10 shadow-md'
-        )}
+        className="rounded-md border border-sidebar-border/70 bg-sidebar-accent/25 px-2 py-1.5"
         data-pinned-agents-card={entry.id}
       >
         <div className="flex min-w-0 items-center gap-1">
-          <button
-            ref={setActivatorNodeRef}
-            type="button"
-            aria-label={dragLabel}
-            className="flex shrink-0 cursor-grab touch-none items-center text-muted-foreground/60 hover:text-muted-foreground active:cursor-grabbing focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="size-3.5" />
-          </button>
           <CollapsibleTrigger asChild>
             <Button
               type="button"
@@ -218,21 +185,6 @@ export function PinnedAgentsWorkspaceCard({
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">{liveLabel}</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                aria-label={removeLabel}
-                onClick={() => onRemove(entry.id)}
-                className="shrink-0"
-              >
-                <X className="size-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{removeLabel}</TooltipContent>
           </Tooltip>
         </div>
         <CollapsibleContent id={contentId}>
