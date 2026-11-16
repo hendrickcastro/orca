@@ -19,7 +19,8 @@ export function getRenderRowKey(row: RenderRow): string {
     return `pending:${row.creationId}`
   }
   if (row.type === 'folder-workspace') {
-    return row.key
+    // Fork: a pinned folder also renders in its own lane; duplicate React keys leave stale rows stacked.
+    return row.sectionKey ? `${row.sectionKey}:${row.key}` : row.key
   }
   return `wt:${row.rowKey}`
 }

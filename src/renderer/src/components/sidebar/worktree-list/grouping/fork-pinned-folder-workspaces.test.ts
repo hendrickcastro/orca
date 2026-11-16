@@ -22,6 +22,7 @@ import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-
 import { folderWorkspaceKey } from '../../../../../../shared/workspace/identity/workspace-scope'
 import { cloneDefaultWorkspaceStatuses } from '../../../../../../shared/workspace/status/workspace-statuses'
 import { PINNED_FAVORITES_GROUP_KEY } from '../../../../../../shared/sidebar-list/pinned-favorites'
+import { getRenderRowKey } from '../listing/render-row'
 
 const GROUP: ProjectGroup = {
   id: 'group-1',
@@ -163,6 +164,11 @@ describe('fork: a pinned multi-repository task in the sidebar', () => {
       `item:${member.id}:${PINNED_GROUP_KEY}:${repo.displayName}`
     ])
     expect(rows).toContain(`folder:${TASK.id}:lane`)
+  })
+
+  it('keeps a distinct render key for the pinned copy and the lane copy', () => {
+    const keys = buildRows({ policy: 'duplicate-in-groups' }).map(getRenderRowKey)
+    expect(new Set(keys).size).toBe(keys.length)
   })
 
   it('counts the task and its member on the Pinned header host', () => {
