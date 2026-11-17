@@ -2,8 +2,10 @@ import {
   EMPTY_BOOK_CATALOG,
   type BookCatalog,
   type BookEntry,
+  type BookConversation,
   type BookFolder,
-  type BookLinkedTask
+  type BookLinkedTask,
+  type BookRepoRef
 } from './book-catalog-types'
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -42,6 +44,34 @@ function normalizeLinkedTask(value: unknown): BookLinkedTask | undefined {
   }
 }
 
+function normalizeConversation(value: unknown): BookConversation | undefined {
+  if (!isObject(value) || typeof value.agent !== 'string') {
+    return undefined
+  }
+  const conversation: BookConversation = {
+    agent: value.agent,
+    providerSessionId: optionalString(value.providerSessionId),
+    chatSessionId: optionalString(value.chatSessionId),
+    paneKey: optionalString(value.paneKey),
+    title: optionalString(value.title),
+    cwd: optionalString(value.cwd),
+    transcriptPath: optionalString(value.transcriptPath)
+  }
+  return conversation.providerSessionId || conversation.chatSessionId ? conversation : undefined
+}
+
+function normalizeRepoRef(value: unknown): BookRepoRef | undefined {
+  if (!isObject(value)) {
+    return undefined
+  }
+  const repo: BookRepoRef = {
+    repoId: optionalString(value.repoId),
+    projectId: optionalString(value.projectId),
+    remoteUrl: optionalString(value.remoteUrl)
+  }
+  return repo.repoId || repo.projectId || repo.remoteUrl ? repo : undefined
+}
+
 function normalizeEntry(value: unknown): BookEntry | null {
   if (
     !isObject(value) ||
@@ -63,6 +93,8 @@ function normalizeEntry(value: unknown): BookEntry | null {
     branch: optionalString(value.branch),
     path: optionalString(value.path),
     linkedTask: normalizeLinkedTask(value.linkedTask),
+    conversation: normalizeConversation(value.conversation),
+    repo: normalizeRepoRef(value.repo),
     createdAt,
     updatedAt: finiteNumber(value.updatedAt, createdAt)
   }

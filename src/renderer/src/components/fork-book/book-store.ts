@@ -5,11 +5,17 @@ import { useAppStore } from '@/store/index'
 import {
   EMPTY_BOOK_CATALOG,
   type BookCatalog,
+  type BookConversation,
   type BookEntry
 } from '../../../../shared/fork-book/book-catalog-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { draftBookEntryText } from '../../../../shared/fork-book/book-entry-text'
-import { snapshotBookWorkspace, type BookWorkspaceSnapshot } from './book-entry-snapshot'
+import {
+  findBookWorktree,
+  snapshotBookWorkspace,
+  type BookWorkspaceSnapshot
+} from './book-entry-snapshot'
+import type { AgentSessionContinuationRequest } from '@/lib/agent-session/context/agent-session-continuation'
 
 /** Selection value that lists every entry; folder ids are UUIDs, so it cannot collide. */
 export const BOOK_ALL_ENTRIES = '__all__'
@@ -24,7 +30,19 @@ export type BookEditorState = {
   title: string
   description: string
   folderId: string | null
+  /** The conversation 'Open agent' returns to; undefined saves the workspace only. */
+  conversation: BookConversation | undefined
 }
+
+/** A pending hand-off of a saved conversation to a new agent; null request while it loads. */
+export type BookContinuationState = {
+  entryId: string
+  request: AgentSessionContinuationRequest | null
+  sourceWorkingDirectory?: string
+}
+
+/** A saved entry whose workspace was removed, waiting for the user to recreate it. */
+export type BookRecreatePrompt = { entryId: string; next: 'open' | 'handoff' }
 
 type BookStore = {
   catalog: BookCatalog
@@ -32,6 +50,10 @@ type BookStore = {
   selectedFolder: BookFolderSelection
   query: string
   editor: BookEditorState | null
+  continuation: BookContinuationState | null
+  setContinuation: (continuation: BookContinuationState | null) => void
+  recreatePrompt: BookRecreatePrompt | null
+  setRecreatePrompt: (prompt: BookRecreatePrompt | null) => void
   ensureLoaded: () => Promise<void>
   commit: (update: (catalog: BookCatalog) => BookCatalog) => void
   setSelectedFolder: (folder: BookFolderSelection) => void
@@ -59,6 +81,10 @@ export const useBookStore = create<BookStore>((set, get) => ({
   selectedFolder: BOOK_ALL_ENTRIES,
   query: '',
   editor: null,
+  continuation: null,
+  setContinuation: (continuation) => set({ continuation }),
+  recreatePrompt: null,
+  setRecreatePrompt: (recreatePrompt) => set({ recreatePrompt }),
   ensureLoaded: async () => {
     if (get().loadState === 'loading' || get().loadState === 'ready') {
       return
@@ -92,20 +118,26 @@ export const useBookStore = create<BookStore>((set, get) => ({
         snapshot,
         title: draft.title,
         description: draft.description,
-        folderId: selected === BOOK_ALL_ENTRIES ? null : selected
+        folderId: selected === BOOK_ALL_ENTRIES ? null : selected,
+        conversation: snapshot.conversations[0]?.conversation
       }
     })
   },
-  openEditorForEntry: (entry) =>
+  openEditorForEntry: (entry) => {
+    // A live workspace lets the user re-pick which of its conversations the entry opens.
+    const state = useAppStore.getState()
+    const worktree = findBookWorktree(state, entry.workspaceId)
     set({
       editor: {
         entryId: entry.id,
-        snapshot: null,
+        snapshot: worktree ? snapshotBookWorkspace(state, worktree) : null,
         title: entry.title,
         description: entry.description,
-        folderId: entry.folderId
+        folderId: entry.folderId,
+        conversation: entry.conversation
       }
-    }),
+    })
+  },
   updateEditor: (patch) => {
     const editor = get().editor
     if (editor) {

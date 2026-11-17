@@ -28,7 +28,7 @@ const GIT_LOG_TIMEOUT_MS = 5_000
 const generationCwd = os.homedir()
 let activeRequestId = 0
 
-async function readRecentCommitSubjects(path: string | undefined): Promise<string[]> {
+export async function readRecentCommitSubjects(path: string | undefined): Promise<string[]> {
   // Remote and WSL-only paths are not readable here; the notes and task still carry the summary.
   if (!path || !existsSync(path)) {
     return []
@@ -100,4 +100,37 @@ export async function generateBookEntryText(
   return parsed
     ? { success: true, ...parsed, agentLabel: result.agentLabel }
     : { success: false, error: 'The agent answer had no title and description.' }
+}
+
+/** Runs one free-form prompt through the configured text-generation agent (export summaries). */
+export async function runBookAgentText(
+  host: BookEntryGenerationHost,
+  prompt: string
+): Promise<{ success: true; text: string } | { success: false; error: string }> {
+  const resolved = resolveTextGenerationParams(
+    host.getSettings(),
+    LOCAL_COMMIT_MESSAGE_HOST_KEY,
+    'branchName',
+    null
+  )
+  if (!resolved.ok) {
+    return { success: false, error: resolved.error }
+  }
+  const localEnv = await prepareLocalCommitMessageAgentEnv(
+    resolved.params.agentId,
+    host.getAgentEnvironment()
+  )
+  if (!localEnv.ok) {
+    return { success: false, error: localEnv.error }
+  }
+  const result = await runGenerationRequest({
+    params: resolved.params,
+    prompt,
+    target: { kind: 'local', cwd: generationCwd, ...(localEnv.env ? { env: localEnv.env } : {}) },
+    spawnAgent: spawnSourceControlAgent,
+    operation: BOOK_GENERATION_OPERATION
+  })
+  return result.success
+    ? { success: true, text: result.rawOutput.trim() }
+    : { success: false, error: result.error }
 }

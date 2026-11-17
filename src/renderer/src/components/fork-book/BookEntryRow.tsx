@@ -1,5 +1,9 @@
+import { useState } from 'react'
 import {
+  ArrowRightLeft,
   ExternalLink,
+  FileDown,
+  LoaderCircle,
   FolderInput,
   Inbox,
   MoreHorizontal,
@@ -27,7 +31,8 @@ import {
 import type { BookEntry } from '../../../../shared/fork-book/book-catalog-types'
 import { useBookStore } from './book-store'
 import { flattenBookFolders } from './book-folder-options'
-import { openBookEntry } from './book-entry-open'
+import { handOffBookEntryAction, openBookEntryAction } from './book-entry-actions'
+import { exportBookEntryContext } from './book-context-actions'
 import { startBookDrag } from './book-drag'
 
 /** One saved piece of work: what it was, where it lives, and the way back to its agent. */
@@ -43,6 +48,11 @@ export function BookEntryRow({
   const catalog = useBookStore((s) => s.catalog)
   const commit = useBookStore((s) => s.commit)
   const openEditorForEntry = useBookStore((s) => s.openEditorForEntry)
+  const [opening, setOpening] = useState(false)
+  const open = (): void => {
+    setOpening(true)
+    void openBookEntryAction(entry).finally(() => setOpening(false))
+  }
   const folderLabel = showFolder
     ? folderPath(catalog, entry.folderId)
         .map((folder) => folder.name)
@@ -68,21 +78,27 @@ export function BookEntryRow({
             {folderLabel ? `${folderLabel} — ` : ''}
             {meta.join(' · ')}
           </p>
+          {live ? null : (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {translate(
+                'forkBook.workspaceRemovedHint',
+                'Workspace removed — opening recreates it on its branch.'
+              )}
+            </p>
+          )}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!live}
-            title={
-              live
-                ? undefined
-                : translate('forkBook.workspaceGone', 'This workspace no longer exists.')
-            }
-            onClick={() => openBookEntry(entry)}
-          >
-            <SquareArrowOutUpRight className="size-4" />
+        <div className="flex shrink-0 flex-wrap items-center gap-1">
+          <Button variant="outline" size="sm" disabled={opening} onClick={open}>
+            {opening ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : (
+              <SquareArrowOutUpRight className="size-4" />
+            )}
             {translate('forkBook.openAgent', 'Open agent')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handOffBookEntryAction(entry)}>
+            <ArrowRightLeft className="size-4" />
+            {translate('forkBook.handOff', 'Hand off to a new agent')}
           </Button>
           <Button
             variant="ghost"
@@ -142,6 +158,10 @@ export function BookEntryRow({
                   {translate('forkBook.openTask', 'Open task')}
                 </DropdownMenuItem>
               ) : null}
+              <DropdownMenuItem onSelect={() => void exportBookEntryContext(entry)}>
+                <FileDown className="size-3.5" />
+                {translate('forkBook.exportContext', 'Export context…')}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"

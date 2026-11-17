@@ -3,6 +3,11 @@ import { getWorkspaceAttachments } from '../../../../shared/workspace-attachment
 import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import { getFolderWorkspaceWorktree } from '../../../../shared/folder-workspaces/folder-workspace-worktree'
 import type { Worktree, WorkspaceAttachment } from '../../../../shared/worktree/types'
+import {
+  bookRepoRefFor,
+  listBookConversationCandidates,
+  type BookConversationCandidate
+} from './book-conversations'
 import type {
   BookEntry,
   BookEntryContext,
@@ -17,6 +22,7 @@ type SnapshotState = Pick<
   | 'projectGroups'
   | 'workspaceLineageByChildKey'
   | 'unifiedTabsByWorktree'
+  | 'agentStatusByPaneKey'
 >
 
 const PROVIDER_NAMES: Record<WorkspaceAttachment['provider'], string> = {
@@ -125,8 +131,10 @@ export type BookWorkspaceSnapshot = {
   context: BookEntryContext
   fields: Pick<
     BookEntry,
-    'workspaceId' | 'workspaceName' | 'repoName' | 'branch' | 'path' | 'linkedTask'
+    'workspaceId' | 'workspaceName' | 'repoName' | 'branch' | 'path' | 'linkedTask' | 'repo'
   >
+  /** Conversations open in the workspace, newest first; the editor offers them as a choice. */
+  conversations: BookConversationCandidate[]
 }
 
 /** Everything Book freezes about a workspace when it is saved, plus the facts used to draft text. */
@@ -140,14 +148,17 @@ export function snapshotBookWorkspace(
   const isFolder = parseWorkspaceKey(worktree.id)?.type === 'folder'
   const branch = isFolder ? undefined : worktree.branch?.replace(/^refs\/heads\//, '') || undefined
   const path = worktree.path || undefined
+  const memberIds = members.map((member) => member.id)
   return {
+    conversations: listBookConversationCandidates(state, [worktree.id, ...memberIds]),
     fields: {
       workspaceId: worktree.id,
       workspaceName: worktree.displayName,
       repoName,
       branch,
       path,
-      linkedTask
+      linkedTask,
+      repo: bookRepoRefFor(state, worktree)
     },
     context: {
       workspaceName: worktree.displayName,
@@ -156,7 +167,7 @@ export function snapshotBookWorkspace(
       path,
       comment: worktree.comment || undefined,
       linkedTask,
-      agentTitles: agentTitlesOf(state, [worktree.id, ...members.map((member) => member.id)]),
+      agentTitles: agentTitlesOf(state, [worktree.id, ...memberIds]),
       memberWorkspaces: members.map((member) => ({
         name: member.displayName,
         repoName: repoNameOf(state, member),

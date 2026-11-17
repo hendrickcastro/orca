@@ -15,6 +15,31 @@ export type BookLinkedTask = {
 }
 
 /**
+ * The agent conversation an entry points at. `providerSessionId` is the agent's own session id
+ * (what `claude --resume` / AI Vault know); `chatSessionId` is set for Orca native-chat tabs.
+ */
+export type BookConversation = {
+  agent: string
+  providerSessionId?: string
+  chatSessionId?: string
+  /** Last known pane, a hint only: it is gone after the tab closes or Orca restarts. */
+  paneKey?: string
+  title?: string
+  /** Where the agent ran, to find its transcript and to relativize exported paths. */
+  cwd?: string
+  /** The provider transcript file, when the agent reported it. */
+  transcriptPath?: string
+}
+
+/** Enough to find or recreate the repository checkout on this or another computer. */
+export type BookRepoRef = {
+  repoId?: string
+  /** Canonical remote identity, e.g. `github:owner/name`; matches clones on other machines. */
+  projectId?: string
+  remoteUrl?: string
+}
+
+/**
  * One saved piece of agent work. The workspace fields are a snapshot so the entry stays
  * readable (and findable) after the workspace itself is renamed, archived or deleted.
  */
@@ -30,6 +55,8 @@ export type BookEntry = {
   branch?: string
   path?: string
   linkedTask?: BookLinkedTask
+  conversation?: BookConversation
+  repo?: BookRepoRef
   createdAt: number
   updatedAt: number
 }

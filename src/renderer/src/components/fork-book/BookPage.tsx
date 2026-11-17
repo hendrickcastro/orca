@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BookMarked, FolderPlus, LoaderCircle, Search } from 'lucide-react'
+import { BookMarked, FileUp, FolderPlus, LoaderCircle, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
@@ -13,6 +13,7 @@ import { BOOK_ALL_ENTRIES, useBookStore } from './book-store'
 import { BookFolderTree, type FolderEditing } from './BookFolderTree'
 import { BookEntryRow } from './BookEntryRow'
 import { BookFolderSelect } from './BookFolderSelect'
+import { importBookContext } from './book-context-actions'
 import { findBookWorktree } from './book-entry-snapshot'
 
 function useLiveWorkspaceIds(workspaceIds: string[]): Set<string> {
@@ -99,6 +100,17 @@ export default function BookPage(): React.JSX.Element {
           variant="outline"
           size="sm"
           className="ml-auto"
+          aria-label={translate('forkBook.importContext', 'Import context')}
+          onClick={() => void importBookContext()}
+        >
+          <FileUp className="size-4" />
+          <span className="@max-[760px]/book:hidden">
+            {translate('forkBook.importContext', 'Import context')}
+          </span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           aria-label={translate('forkBook.newFolder', 'New folder')}
           onClick={() => {
             const parentId =

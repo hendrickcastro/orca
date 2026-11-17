@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createNonSecureContextUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { LoaderCircle, Sparkles, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -26,6 +26,9 @@ import { upsertBookEntry } from '../../../../shared/fork-book/book-catalog-opera
 import { draftBookEntryText } from '../../../../shared/fork-book/book-entry-text'
 import { useBookStore } from './book-store'
 import { BOOK_ROOT_FOLDER_VALUE, flattenBookFolders } from './book-folder-options'
+import { BookConversationPicker } from './BookConversationPicker'
+import { useBookHistoryConversations } from './use-book-history-conversations'
+import { bookConversationKey } from './book-conversations'
 
 /** Create or edit one Book entry; mounted once at the app root so the sidebar menu can open it. */
 export function BookEntryEditorDialog(): React.JSX.Element | null {
@@ -35,6 +38,31 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
   const closeEditor = useBookStore((s) => s.closeEditor)
   const commit = useBookStore((s) => s.commit)
   const [generating, setGenerating] = useState(false)
+  const history = useBookHistoryConversations(editor?.snapshot?.fields.path)
+  const liveCandidates = editor?.snapshot?.conversations
+  const candidates = useMemo(() => {
+    const seen = new Set<string>()
+    return [...(liveCandidates ?? []), ...history].filter((candidate) => {
+      const key = bookConversationKey(candidate.conversation)
+      if (seen.has(key)) {
+        return false
+      }
+      seen.add(key)
+      return true
+    })
+  }, [liveCandidates, history])
+  // A new entry picks the newest conversation once; a later "only the workspace" choice sticks.
+  const autoPickedFor = useRef<object | null>(null)
+  useEffect(() => {
+    const snapshot = editor?.snapshot
+    if (!snapshot || editor.entryId !== null || editor.conversation || candidates.length === 0) {
+      return
+    }
+    if (autoPickedFor.current !== snapshot) {
+      autoPickedFor.current = snapshot
+      updateEditor({ conversation: candidates[0].conversation })
+    }
+  }, [candidates, editor, updateEditor])
   if (!editor) {
     return null
   }
@@ -89,6 +117,8 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
           title: editor.title.trim(),
           description: editor.description.trim(),
           folderId: editor.folderId,
+          conversation: editor.conversation,
+          repo: existing.repo ?? snapshot?.fields.repo,
           updatedAt: now
         })
       )
@@ -100,6 +130,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
           title: editor.title.trim(),
           description: editor.description.trim(),
           folderId: editor.folderId,
+          conversation: editor.conversation,
           createdAt: now,
           updatedAt: now
         })
@@ -178,6 +209,11 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
               </SelectContent>
             </Select>
           </div>
+          <BookConversationPicker
+            candidates={candidates}
+            value={editor.conversation}
+            onChange={(conversation) => updateEditor({ conversation })}
+          />
           {context ? (
             <div className="flex flex-wrap gap-2">
               <Button
