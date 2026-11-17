@@ -92,8 +92,8 @@ export function registerForkBookHandlers(
   store: Pick<Store, 'getSettings'>,
   commitMessageAgentEnv?: CommitMessageAgentEnvironmentResolvers
 ): void {
-  ipcMain.handle('forkBook:load', (): BookCatalog => readBookCatalog())
-  ipcMain.handle('forkBook:save', (_event, catalog: unknown): BookCatalog =>
+  ipcMain.handle('forkBook:load', (): Promise<BookCatalog> => readBookCatalog())
+  ipcMain.handle('forkBook:save', (_event, catalog: unknown): Promise<BookCatalog> =>
     writeBookCatalog(catalog)
   )
   ipcMain.handle('forkBook:generate', (_event, args: unknown): Promise<BookEntryGenerationResult> =>

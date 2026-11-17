@@ -7,6 +7,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { getIntlLocale, translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import type { BookConversation } from '../../../../shared/fork-book/book-catalog-types'
 import { bookConversationKey, type BookConversationCandidate } from './book-conversations'
 
@@ -32,6 +33,7 @@ export function BookConversationPicker({
   value: BookConversation | undefined
   onChange: (conversation: BookConversation | undefined) => void
 }): React.JSX.Element | null {
+  const t = useTranslate()
   const options = candidates.map((candidate) => candidate.conversation)
   const activeAt = new Map(
     candidates.map((candidate) => [
@@ -48,7 +50,7 @@ export function BookConversationPicker({
   }
   return (
     <div className="space-y-1.5">
-      <Label>{translate('forkBook.fieldConversation', 'Conversation')}</Label>
+      <Label>{t('forkBook.fieldConversation', 'Conversation')}</Label>
       <Select
         value={valueKey || WORKSPACE_ONLY_VALUE}
         onValueChange={(key) => {
@@ -68,7 +70,7 @@ export function BookConversationPicker({
             </SelectItem>
           ))}
           <SelectItem value={WORKSPACE_ONLY_VALUE}>
-            {translate('forkBook.workspaceOnly', 'Only the workspace')}
+            {t('forkBook.workspaceOnly', 'Only the workspace')}
           </SelectItem>
         </SelectContent>
       </Select>

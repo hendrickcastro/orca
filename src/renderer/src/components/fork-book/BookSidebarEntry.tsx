@@ -1,10 +1,11 @@
 import { BookMarked } from 'lucide-react'
 import { cn } from '@/lib/class-names'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store/index'
 
 /** Sidebar navigation entry for Book, under Orca Mobile; matches its sibling nav rows. */
 export function BookSidebarEntry(): React.JSX.Element {
+  const t = useTranslate()
   const active = useAppStore((s) => s.activeView === 'book')
   const setActiveView = useAppStore((s) => s.setActiveView)
   return (
@@ -23,7 +24,7 @@ export function BookSidebarEntry(): React.JSX.Element {
         className={cn('size-4 shrink-0', !active && 'text-worktree-sidebar-foreground/30')}
         strokeWidth={active ? 2.25 : 1.75}
       />
-      <span className="flex-1">{translate('forkBook.navLabel', 'Book')}</span>
+      <span className="flex-1">{t('forkBook.navLabel', 'Book')}</span>
     </button>
   )
 }

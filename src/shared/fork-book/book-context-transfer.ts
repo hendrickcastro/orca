@@ -238,7 +238,10 @@ export function readBookContextManifest(markdown: string): BookContextManifest |
   }
 }
 
-function readStringField(value: object, key: string): string | undefined {
+function readStringField(value: unknown, key: string): string | undefined {
+  if (typeof value !== 'object' || value === null) {
+    return undefined
+  }
   const field = new Map(Object.entries(value)).get(key)
   return typeof field === 'string' && field ? field : undefined
 }

@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { getIntlLocale, translate } from '@/i18n/i18n'
+import { useIntlLocale, useTranslate } from '@/i18n/use-translate'
 import { upsertBookEntry } from '../../../../shared/fork-book/book-catalog-operations'
 import { draftBookEntryText } from '../../../../shared/fork-book/book-entry-text'
 import { useBookStore } from './book-store'
@@ -32,6 +32,8 @@ import { bookConversationKey } from './book-conversations'
 
 /** Create or edit one Book entry; mounted once at the app root so the sidebar menu can open it. */
 export function BookEntryEditorDialog(): React.JSX.Element | null {
+  const intlLocale = useIntlLocale()
+  const t = useTranslate()
   const editor = useBookStore((s) => s.editor)
   const catalog = useBookStore((s) => s.catalog)
   const updateEditor = useBookStore((s) => s.updateEditor)
@@ -78,27 +80,28 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
     closeEditor()
   }
 
-  const generate = async (): Promise<void> => {
+  const generate = (): void => {
     if (!context) {
       return
     }
     setGenerating(true)
-    try {
-      const result = await window.api.forkBook.generate({
-        context,
-        includeGitLog: true,
-        language: getIntlLocale()
+    void window.api.forkBook
+      .generate({ context, includeGitLog: true, language: intlLocale })
+      .then((result) => {
+        if (result.success) {
+          updateEditor({ title: result.title, description: result.description })
+        } else if (!result.canceled) {
+          toast.error(t('forkBook.generateFailed', 'Could not generate the text.'), {
+            description: result.error
+          })
+        }
       })
-      if (result.success) {
-        updateEditor({ title: result.title, description: result.description })
-      } else if (!result.canceled) {
-        toast.error(translate('forkBook.generateFailed', 'Could not generate the text.'), {
-          description: result.error
+      .catch((error: unknown) => {
+        toast.error(t('forkBook.generateFailed', 'Could not generate the text.'), {
+          description: error instanceof Error ? error.message : String(error)
         })
-      }
-    } finally {
-      setGenerating(false)
-    }
+      })
+      .finally(() => setGenerating(false))
   }
 
   const save = (): void => {
@@ -135,7 +138,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
           updatedAt: now
         })
       )
-      toast.success(translate('forkBook.saved', 'Saved to Book.'))
+      toast.success(t('forkBook.saved', 'Saved to Book.'))
     }
     closeEditor()
   }
@@ -146,8 +149,8 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
         <DialogHeader>
           <DialogTitle>
             {editor.entryId
-              ? translate('forkBook.editTitle', 'Edit Book entry')
-              : translate('forkBook.newTitle', 'Save to Book')}
+              ? t('forkBook.editTitle', 'Edit Book entry')
+              : t('forkBook.newTitle', 'Save to Book')}
           </DialogTitle>
           {context ? (
             <DialogDescription>
@@ -165,9 +168,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
           }}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="fork-book-entry-title">
-              {translate('forkBook.fieldTitle', 'Title')}
-            </Label>
+            <Label htmlFor="fork-book-entry-title">{t('forkBook.fieldTitle', 'Title')}</Label>
             <Input
               id="fork-book-entry-title"
               value={editor.title}
@@ -177,7 +178,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="fork-book-entry-description">
-              {translate('forkBook.fieldDescription', 'Description')}
+              {t('forkBook.fieldDescription', 'Description')}
             </Label>
             <Textarea
               id="fork-book-entry-description"
@@ -187,7 +188,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>{translate('forkBook.fieldFolder', 'Folder')}</Label>
+            <Label>{t('forkBook.fieldFolder', 'Folder')}</Label>
             <Select
               value={editor.folderId ?? BOOK_ROOT_FOLDER_VALUE}
               onValueChange={(value) =>
@@ -199,7 +200,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={BOOK_ROOT_FOLDER_VALUE}>
-                  {translate('forkBook.rootFolder', 'No folder')}
+                  {t('forkBook.rootFolder', 'No folder')}
                 </SelectItem>
                 {folderOptions.map((option) => (
                   <SelectItem key={option.id} value={option.id}>
@@ -224,30 +225,30 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
                 onClick={() => updateEditor(draftBookEntryText(context))}
               >
                 <Wand2 className="size-4" />
-                {translate('forkBook.fillFromTask', 'Fill from task')}
+                {t('forkBook.fillFromTask', 'Fill from task')}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 disabled={generating}
-                onClick={() => void generate()}
+                onClick={generate}
               >
                 {generating ? (
                   <LoaderCircle className="size-4 animate-spin" />
                 ) : (
                   <Sparkles className="size-4" />
                 )}
-                {translate('forkBook.generateWithAi', 'Generate with AI')}
+                {t('forkBook.generateWithAi', 'Generate with AI')}
               </Button>
             </div>
           ) : null}
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={close}>
-              {translate('forkBook.cancel', 'Cancel')}
+              {t('forkBook.cancel', 'Cancel')}
             </Button>
             <Button type="submit" disabled={!canSave || generating}>
-              {translate('forkBook.save', 'Save')}
+              {t('forkBook.save', 'Save')}
             </Button>
           </DialogFooter>
         </form>

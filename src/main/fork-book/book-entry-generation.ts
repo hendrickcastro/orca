@@ -1,5 +1,5 @@
 import os from 'node:os'
-import { existsSync } from 'node:fs'
+import { access } from 'node:fs/promises'
 import { LOCAL_COMMIT_MESSAGE_HOST_KEY } from '../../shared/source-control/ai/generation/commit-message-host-key'
 import { textGenerationFailureCodeFields } from '../../shared/text-generation/text-generation-failure-copy'
 import { buildBookEntryPrompt, parseBookEntryAnswer } from '../../shared/fork-book/book-entry-text'
@@ -28,9 +28,16 @@ const GIT_LOG_TIMEOUT_MS = 5_000
 const generationCwd = os.homedir()
 let activeRequestId = 0
 
+export function bookPathExists(path: string): Promise<boolean> {
+  return access(path).then(
+    () => true,
+    () => false
+  )
+}
+
 export async function readRecentCommitSubjects(path: string | undefined): Promise<string[]> {
   // Remote and WSL-only paths are not readable here; the notes and task still carry the summary.
-  if (!path || !existsSync(path)) {
+  if (!path || !(await bookPathExists(path))) {
     return []
   }
   try {

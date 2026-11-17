@@ -1,4 +1,8 @@
 import type { AppState } from '@/store/types'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 import { getWorkspaceAttachments } from '../../../../shared/workspace-attachments/workspace-attachments'
 import { parseWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import { getFolderWorkspaceWorktree } from '../../../../shared/folder-workspaces/folder-workspace-worktree'
@@ -43,10 +47,10 @@ export function findBookWorktree(
 ): Worktree | null {
   const scope = parseWorkspaceKey(workspaceId)
   if (scope?.type === 'folder') {
-    const folder = state.folderWorkspaces.find((item) => item.id === scope.folderWorkspaceId)
+    const folder = selectFolderWorkspaces(state).find((item) => item.id === scope.folderWorkspaceId)
     return folder ? getFolderWorkspaceWorktree(folder) : null
   }
-  for (const worktrees of Object.values(state.worktreesByRepo)) {
+  for (const worktrees of Object.values(selectWorktreesByRepo(state))) {
     const match = worktrees.find(
       (worktree) => worktree.id === workspaceId || worktree.priorWorktreeIds?.includes(workspaceId)
     )
@@ -85,7 +89,7 @@ function repoNameOf(state: SnapshotState, worktree: Worktree): string | undefine
   if (scope?.type !== 'folder') {
     return undefined
   }
-  const folder = state.folderWorkspaces.find((item) => item.id === scope.folderWorkspaceId)
+  const folder = selectFolderWorkspaces(state).find((item) => item.id === scope.folderWorkspaceId)
   return state.projectGroups.find((group) => group.id === folder?.projectGroupId)?.name
 }
 

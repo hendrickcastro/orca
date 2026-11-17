@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
 import {
   ArrowRightLeft,
   ExternalLink,
@@ -22,7 +23,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { getIntlLocale, translate } from '@/i18n/i18n'
+import { useIntlLocale, useTranslate } from '@/i18n/use-translate'
 import {
   folderPath,
   moveBookEntry,
@@ -45,6 +46,8 @@ export function BookEntryRow({
   live: boolean
   showFolder: boolean
 }): React.JSX.Element {
+  const intlLocale = useIntlLocale()
+  const t = useTranslate()
   const catalog = useBookStore((s) => s.catalog)
   const commit = useBookStore((s) => s.commit)
   const openEditorForEntry = useBookStore((s) => s.openEditorForEntry)
@@ -62,7 +65,7 @@ export function BookEntryRow({
     entry.repoName,
     entry.branch,
     entry.linkedTask?.label,
-    new Date(entry.updatedAt).toLocaleDateString(getIntlLocale())
+    new Date(entry.updatedAt).toLocaleDateString(intlLocale)
   ].filter(Boolean)
 
   return (
@@ -80,7 +83,7 @@ export function BookEntryRow({
           </p>
           {live ? null : (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {translate(
+              {t(
                 'forkBook.workspaceRemovedHint',
                 'Workspace removed — opening recreates it on its branch.'
               )}
@@ -94,16 +97,16 @@ export function BookEntryRow({
             ) : (
               <SquareArrowOutUpRight className="size-4" />
             )}
-            {translate('forkBook.openAgent', 'Open agent')}
+            {t('forkBook.openAgent', 'Open agent')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => handOffBookEntryAction(entry)}>
             <ArrowRightLeft className="size-4" />
-            {translate('forkBook.handOff', 'Hand off to a new agent')}
+            {t('forkBook.handOff', 'Hand off to a new agent')}
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label={translate('forkBook.editEntry', 'Edit')}
+            aria-label={t('forkBook.editEntry', 'Edit')}
             onClick={() => openEditorForEntry(entry)}
           >
             <Pencil className="size-4" />
@@ -113,7 +116,7 @@ export function BookEntryRow({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={translate('forkBook.entryActions', 'More actions')}
+                aria-label={t('forkBook.entryActions', 'More actions')}
               >
                 <MoreHorizontal className="size-4" />
               </Button>
@@ -122,7 +125,7 @@ export function BookEntryRow({
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <FolderInput className="size-3.5" />
-                  {translate('forkBook.moveTo', 'Move to')}
+                  {t('forkBook.moveTo', 'Move to')}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   <DropdownMenuItem
@@ -131,7 +134,7 @@ export function BookEntryRow({
                     }
                   >
                     <Inbox className="size-3.5" />
-                    {translate('forkBook.rootFolder', 'No folder')}
+                    {t('forkBook.rootFolder', 'No folder')}
                   </DropdownMenuItem>
                   {flattenBookFolders(catalog).map((option) => (
                     <DropdownMenuItem
@@ -150,17 +153,17 @@ export function BookEntryRow({
                 <DropdownMenuItem
                   onSelect={() => {
                     if (entry.linkedTask?.url) {
-                      void window.api.shell.openUrl(entry.linkedTask.url)
+                      openAppHttpLink(entry.linkedTask.url)
                     }
                   }}
                 >
                   <ExternalLink className="size-3.5" />
-                  {translate('forkBook.openTask', 'Open task')}
+                  {t('forkBook.openTask', 'Open task')}
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem onSelect={() => void exportBookEntryContext(entry)}>
                 <FileDown className="size-3.5" />
-                {translate('forkBook.exportContext', 'Export context…')}
+                {t('forkBook.exportContext', 'Export context…')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -168,7 +171,7 @@ export function BookEntryRow({
                 onSelect={() => commit((current) => removeBookEntry(current, entry.id))}
               >
                 <Trash2 className="size-3.5" />
-                {translate('forkBook.removeEntry', 'Remove from Book')}
+                {t('forkBook.removeEntry', 'Remove from Book')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

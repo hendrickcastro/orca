@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { selectWorktreesByRepo } from '@/store/workspaces/catalog/workspace-record-fields'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store/index'
 import { getProjectIdentityKey } from '../../../../shared/project/host-setup/project-host-setup-projection'
@@ -28,7 +29,7 @@ export function findBookRepo(
 
 /** A workspace of the repo already on the branch, if any. */
 export function existingBookCheckout(repoId: string, branch: string): Worktree | null {
-  const worktrees = useAppStore.getState().worktreesByRepo[repoId] ?? []
+  const worktrees = selectWorktreesByRepo(useAppStore.getState())[repoId] ?? []
   return (
     worktrees.find((worktree) => worktree.branch?.replace(/^refs\/heads\//, '') === branch) ?? null
   )

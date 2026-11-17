@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/class-names'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import {
   addBookFolder,
   childFolders,
@@ -81,13 +81,14 @@ function FolderNameInput({
   initial: string
   onDone: (name: string | null) => void
 }): React.JSX.Element {
+  const t = useTranslate()
   const [value, setValue] = useState(initial)
   return (
     <Input
       autoFocus
       value={value}
       className="h-7"
-      placeholder={translate('forkBook.folderNamePlaceholder', 'Folder name')}
+      placeholder={t('forkBook.folderNamePlaceholder', 'Folder name')}
       onChange={(event) => setValue(event.target.value)}
       onBlur={() => onDone(value)}
       onKeyDown={(event) => {
@@ -117,6 +118,7 @@ function FolderNode(props: {
   editing: FolderEditing | null
   setEditing: (editing: FolderEditing | null) => void
 }): React.JSX.Element {
+  const t = useTranslate()
   const { folder, depth, catalog, counts, editing, setEditing } = props
   const selected = useBookStore((s) => s.selectedFolder)
   const setSelected = useBookStore((s) => s.setSelectedFolder)
@@ -160,11 +162,7 @@ function FolderNode(props: {
       >
         <button
           type="button"
-          aria-label={
-            open
-              ? translate('forkBook.collapse', 'Collapse')
-              : translate('forkBook.expand', 'Expand')
-          }
+          aria-label={open ? t('forkBook.collapse', 'Collapse') : t('forkBook.expand', 'Expand')}
           className={cn('rounded p-0.5', children.length === 0 && 'invisible')}
           onClick={(event) => {
             event.stopPropagation()
@@ -188,7 +186,7 @@ function FolderNode(props: {
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label={translate('forkBook.folderActions', 'Folder actions')}
+                aria-label={t('forkBook.folderActions', 'Folder actions')}
                 onClick={(event) => event.stopPropagation()}
               >
                 <MoreHorizontal className="size-3.5" />
@@ -202,11 +200,11 @@ function FolderNode(props: {
                 }}
               >
                 <FolderPlus className="size-3.5" />
-                {translate('forkBook.newSubfolder', 'New subfolder')}
+                {t('forkBook.newSubfolder', 'New subfolder')}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setEditing({ mode: 'rename', id: folder.id })}>
                 <Pencil className="size-3.5" />
-                {translate('forkBook.renameFolder', 'Rename')}
+                {t('forkBook.renameFolder', 'Rename')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -219,7 +217,7 @@ function FolderNode(props: {
                 }}
               >
                 <Trash2 className="size-3.5" />
-                {translate('forkBook.deleteFolder', 'Delete folder (keeps its entries)')}
+                {t('forkBook.deleteFolder', 'Delete folder (keeps its entries)')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -299,6 +297,7 @@ export function BookFolderTree({
   editing: FolderEditing | null
   setEditing: (editing: FolderEditing | null) => void
 }): React.JSX.Element {
+  const t = useTranslate()
   const catalog = useBookStore((s) => s.catalog)
   const counts = useMemo(() => {
     const map = new Map<string, number>()
@@ -317,13 +316,13 @@ export function BookFolderTree({
       <TopLevelRow
         value={BOOK_ALL_ENTRIES}
         icon={<Library className="size-4 shrink-0 text-muted-foreground" />}
-        label={translate('forkBook.allEntries', 'All entries')}
+        label={t('forkBook.allEntries', 'All entries')}
         count={catalog.entries.length}
       />
       <TopLevelRow
         value={null}
         icon={<Inbox className="size-4 shrink-0 text-muted-foreground" />}
-        label={translate('forkBook.unfiled', 'Unfiled')}
+        label={t('forkBook.unfiled', 'Unfiled')}
         count={unfiled}
       />
       <div className="my-1 h-px bg-border" />

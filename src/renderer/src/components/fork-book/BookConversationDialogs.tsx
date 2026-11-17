@@ -10,11 +10,12 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { AgentSessionContinuationDialog } from '@/components/agent-session-continuation/AgentSessionContinuationDialog'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { useBookStore } from './book-store'
 import { recreateAndContinueBookEntry } from './book-entry-actions'
 
 function BookRecreateDialog(): React.JSX.Element | null {
+  const t = useTranslate()
   const prompt = useBookStore((s) => s.recreatePrompt)
   const entry = useBookStore((s) =>
     prompt ? s.catalog.entries.find((candidate) => candidate.id === prompt.entryId) : undefined
@@ -29,31 +30,29 @@ function BookRecreateDialog(): React.JSX.Element | null {
       setRecreatePrompt(null)
     }
   }
-  const confirm = async (): Promise<void> => {
+  const confirm = (): void => {
     setBusy(true)
-    try {
-      if (await recreateAndContinueBookEntry(prompt.entryId, prompt.next)) {
-        setRecreatePrompt(null)
-      }
-    } finally {
-      setBusy(false)
-    }
+    void recreateAndContinueBookEntry(prompt.entryId, prompt.next)
+      .then((done) => {
+        if (done) {
+          setRecreatePrompt(null)
+        }
+      })
+      .finally(() => setBusy(false))
   }
   return (
     <Dialog open onOpenChange={(open) => !open && close()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {translate('forkBook.recreateTitle', 'This workspace was removed')}
-          </DialogTitle>
+          <DialogTitle>{t('forkBook.recreateTitle', 'This workspace was removed')}</DialogTitle>
           <DialogDescription>
             {entry.branch
-              ? translate(
+              ? t(
                   'forkBook.recreateDescription',
                   'Open branch {{branch}} of {{repo}} in a new workspace and continue the conversation there.',
                   { branch: entry.branch, repo: entry.repoName ?? '' }
                 )
-              : translate(
+              : t(
                   'forkBook.recreateNoBranch',
                   'This entry has no branch, so its workspace cannot be recreated.'
                 )}
@@ -61,11 +60,11 @@ function BookRecreateDialog(): React.JSX.Element | null {
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={close} disabled={busy}>
-            {translate('forkBook.cancel', 'Cancel')}
+            {t('forkBook.cancel', 'Cancel')}
           </Button>
-          <Button onClick={() => void confirm()} disabled={busy || !entry.branch}>
+          <Button onClick={confirm} disabled={busy || !entry.branch}>
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            {translate('forkBook.recreateConfirm', 'Create workspace and continue')}
+            {t('forkBook.recreateConfirm', 'Create workspace and continue')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { mkdir, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { writeFileAtomically } from '../filesystem/atomic-file-publication'
+import { writePluginFileAtomically } from '../plugins/installation/plugin-atomic-file-write'
 import {
   getOrcaProfileDirectory,
   getOrcaProfileIndexPath,
@@ -20,21 +20,27 @@ export function bookCatalogPath(userDataPath = getProfileUserDataPath()): string
     : join(userDataPath, BOOK_CATALOG_FILE_NAME)
 }
 
-export function readBookCatalog(path = bookCatalogPath()): BookCatalog {
-  if (!existsSync(path)) {
-    return EMPTY_BOOK_CATALOG
-  }
+export async function readBookCatalog(path = bookCatalogPath()): Promise<BookCatalog> {
   try {
-    return normalizeBookCatalog(JSON.parse(readFileSync(path, 'utf-8')))
+    return normalizeBookCatalog(JSON.parse(await readFile(path, 'utf-8')))
   } catch {
-    // Why: a hand-edited or truncated file must not take the whole page down; the next save rewrites it.
+    // Why: a missing, hand-edited or truncated file must not take the page down; the next save rewrites it.
     return EMPTY_BOOK_CATALOG
   }
 }
 
-export function writeBookCatalog(catalog: unknown, path = bookCatalogPath()): BookCatalog {
+// Saves run in order so a slow earlier write cannot land after a newer one.
+let pendingWrite: Promise<unknown> = Promise.resolve()
+
+export function writeBookCatalog(catalog: unknown, path = bookCatalogPath()): Promise<BookCatalog> {
   const normalized = normalizeBookCatalog(catalog)
-  mkdirSync(dirname(path), { recursive: true })
-  writeFileAtomically(path, `${JSON.stringify(normalized, null, 2)}\n`)
-  return normalized
+  const write = pendingWrite
+    .catch(() => undefined)
+    .then(async () => {
+      await mkdir(dirname(path), { recursive: true })
+      await writePluginFileAtomically(path, `${JSON.stringify(normalized, null, 2)}\n`)
+      return normalized
+    })
+  pendingWrite = write
+  return write
 }

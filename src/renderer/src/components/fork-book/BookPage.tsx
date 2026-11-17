@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  selectFolderWorkspaces,
+  selectWorktreesByRepo
+} from '@/store/workspaces/catalog/workspace-record-fields'
 import { BookMarked, FileUp, FolderPlus, LoaderCircle, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store/index'
 import {
   bookEntryMatchesQuery,
@@ -17,8 +21,8 @@ import { importBookContext } from './book-context-actions'
 import { findBookWorktree } from './book-entry-snapshot'
 
 function useLiveWorkspaceIds(workspaceIds: string[]): Set<string> {
-  const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
-  const folderWorkspaces = useAppStore((s) => s.folderWorkspaces)
+  const worktreesByRepo = useAppStore(selectWorktreesByRepo)
+  const folderWorkspaces = useAppStore(selectFolderWorkspaces)
   return useMemo(
     () =>
       new Set(
@@ -32,6 +36,7 @@ function useLiveWorkspaceIds(workspaceIds: string[]): Set<string> {
 
 /** Book: a catalogue of finished agent work, organised in nested folders and searchable. */
 export default function BookPage(): React.JSX.Element {
+  const t = useTranslate()
   const catalog = useBookStore((s) => s.catalog)
   const loadState = useBookStore((s) => s.loadState)
   const ensureLoaded = useBookStore((s) => s.ensureLoaded)
@@ -66,11 +71,11 @@ export default function BookPage(): React.JSX.Element {
   const liveIds = useLiveWorkspaceIds(workspaceIds)
 
   const heading = searching
-    ? translate('forkBook.searchResults', 'Search results')
+    ? t('forkBook.searchResults', 'Search results')
     : selectedFolder === BOOK_ALL_ENTRIES
-      ? translate('forkBook.allEntries', 'All entries')
+      ? t('forkBook.allEntries', 'All entries')
       : selectedFolder === null
-        ? translate('forkBook.unfiled', 'Unfiled')
+        ? t('forkBook.unfiled', 'Unfiled')
         : folderPath(catalog, selectedFolder)
             .map((folder) => folder.name)
             .join(' / ')
@@ -79,17 +84,17 @@ export default function BookPage(): React.JSX.Element {
     <div className="@container/book flex h-full min-h-0 flex-1 flex-col bg-background">
       <header className="flex items-center gap-3 border-b border-border px-6 py-3">
         <BookMarked className="size-5 text-muted-foreground" />
-        <h1 className="text-base font-semibold">{translate('forkBook.pageTitle', 'Book')}</h1>
+        <h1 className="text-base font-semibold">{t('forkBook.pageTitle', 'Book')}</h1>
         <div className="ml-2 flex max-w-md min-w-0 flex-1 items-center gap-2">
           <Search className="size-4 shrink-0 text-muted-foreground" />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={translate(
+            placeholder={t(
               'forkBook.searchPlaceholder',
               'Search titles, descriptions, branches, tasks…'
             )}
-            aria-label={translate(
+            aria-label={t(
               'forkBook.searchPlaceholder',
               'Search titles, descriptions, branches, tasks…'
             )}
@@ -100,18 +105,18 @@ export default function BookPage(): React.JSX.Element {
           variant="outline"
           size="sm"
           className="ml-auto"
-          aria-label={translate('forkBook.importContext', 'Import context')}
+          aria-label={t('forkBook.importContext', 'Import context')}
           onClick={() => void importBookContext()}
         >
           <FileUp className="size-4" />
           <span className="@max-[760px]/book:hidden">
-            {translate('forkBook.importContext', 'Import context')}
+            {t('forkBook.importContext', 'Import context')}
           </span>
         </Button>
         <Button
           variant="outline"
           size="sm"
-          aria-label={translate('forkBook.newFolder', 'New folder')}
+          aria-label={t('forkBook.newFolder', 'New folder')}
           onClick={() => {
             const parentId =
               selectedFolder === BOOK_ALL_ENTRIES || selectedFolder === null ? null : selectedFolder
@@ -119,9 +124,7 @@ export default function BookPage(): React.JSX.Element {
           }}
         >
           <FolderPlus className="size-4" />
-          <span className="@max-[760px]/book:hidden">
-            {translate('forkBook.newFolder', 'New folder')}
-          </span>
+          <span className="@max-[760px]/book:hidden">{t('forkBook.newFolder', 'New folder')}</span>
         </Button>
       </header>
       <div className="@container flex min-h-0 flex-1">
@@ -145,13 +148,13 @@ export default function BookPage(): React.JSX.Element {
             <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
           ) : loadState === 'error' ? (
             <p className="text-sm text-destructive">
-              {translate('forkBook.loadFailed', 'Book could not be loaded.')}
+              {t('forkBook.loadFailed', 'Book could not be loaded.')}
             </p>
           ) : visibleEntries.length === 0 ? (
             <p className="max-w-md text-sm text-muted-foreground">
               {searching
-                ? translate('forkBook.noMatches', 'No entries match this search.')
-                : translate(
+                ? t('forkBook.noMatches', 'No entries match this search.')
+                : t(
                     'forkBook.emptyHint',
                     'Nothing here yet. Right-click a workspace in the sidebar and choose “Save to Book”, or drag entries onto a folder.'
                   )}

@@ -1,5 +1,5 @@
 import os from 'node:os'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { dialog, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
@@ -26,6 +26,7 @@ import {
 } from '../../shared/fork-book/book-context-transfer'
 import { bookCatalogPath } from './book-catalog-store'
 import {
+  bookPathExists,
   readRecentCommitSubjects,
   runBookAgentText,
   type BookEntryGenerationHost
@@ -125,7 +126,7 @@ export async function exportBookContext(
   window: BrowserWindow | null,
   request: BookContextExportRequest
 ): Promise<BookContextExportResult> {
-  if (!existsSync(request.workspacePath)) {
+  if (!(await bookPathExists(request.workspacePath))) {
     return { status: 'failed', error: 'The workspace folder is not on this computer.' }
   }
   const push = await readPushState(request.workspacePath)
@@ -176,14 +177,14 @@ export async function exportBookContext(
     conversationFile
   }
   const summaryPath = join(folder, `${stem}${SUMMARY_SUFFIX}`)
-  writeFileSync(
+  await writeFile(
     summaryPath,
     embedBookContextManifest(relativizeBookPaths(summary.text, request.roots, home), manifest)
   )
   let conversationPath: string | undefined
   if (conversationMarkdown && conversationFile) {
     conversationPath = join(folder, conversationFile)
-    writeFileSync(conversationPath, conversationMarkdown)
+    await writeFile(conversationPath, conversationMarkdown)
   }
   return { status: 'exported', summaryPath, conversationPath }
 }
@@ -206,10 +207,10 @@ export async function pickBookContextImport(
   const summaryPath = file.endsWith(CONVERSATION_SUFFIX)
     ? join(dirname(file), `${basename(file, CONVERSATION_SUFFIX)}${SUMMARY_SUFFIX}`)
     : file
-  if (!existsSync(summaryPath)) {
+  if (!(await bookPathExists(summaryPath))) {
     return { status: 'invalid', error: `Missing ${basename(summaryPath)} next to the file.` }
   }
-  const manifest = readBookContextManifest(readFileSync(summaryPath, 'utf-8'))
+  const manifest = readBookContextManifest(await readFile(summaryPath, 'utf-8'))
   if (!manifest) {
     return { status: 'invalid', error: 'This file is not an exported Orca Book context.' }
   }
@@ -221,33 +222,33 @@ export async function pickBookContextImport(
     manifest,
     summaryPath,
     conversationPath:
-      conversationPath && existsSync(conversationPath) ? conversationPath : undefined
+      conversationPath && (await bookPathExists(conversationPath)) ? conversationPath : undefined
   }
 }
 
 /** Copies an imported context next to the Book catalog with `<REPO_ROOT>` set to this checkout. */
-export function materializeBookContextImport(
+export async function materializeBookContextImport(
   request: BookContextMaterializeRequest
-): BookContextMaterializeResult {
+): Promise<BookContextMaterializeResult> {
   const separator = process.platform === 'win32' ? '\\' : '/'
   const folder = join(
     dirname(bookCatalogPath()),
     'book-imports',
     bookContextFileStem(request.folderName)
   )
-  mkdirSync(folder, { recursive: true })
+  await mkdir(folder, { recursive: true })
   const summaryText = restoreBookPaths(
-    stripBookContextManifest(readFileSync(request.summaryPath, 'utf-8')),
+    stripBookContextManifest(await readFile(request.summaryPath, 'utf-8')),
     request.worktreePath,
     separator
   )
   let conversationPath: string | undefined
-  if (request.conversationPath && existsSync(request.conversationPath)) {
+  if (request.conversationPath && (await bookPathExists(request.conversationPath))) {
     conversationPath = join(folder, basename(request.conversationPath))
-    writeFileSync(
+    await writeFile(
       conversationPath,
       restoreBookPaths(
-        readFileSync(request.conversationPath, 'utf-8'),
+        await readFile(request.conversationPath, 'utf-8'),
         request.worktreePath,
         separator
       )
@@ -258,6 +259,6 @@ export function materializeBookContextImport(
     ? `${summaryText}\n\n---\n\nFull conversation (read the parts you need): ${conversationPath}\n`
     : summaryText
   const summaryPath = join(folder, basename(request.summaryPath))
-  writeFileSync(summaryPath, handoffText)
+  await writeFile(summaryPath, handoffText)
   return { summaryPath, conversationPath, summaryText: handoffText }
 }
