@@ -5,34 +5,37 @@ import { upsertBookEntry } from '../../../../shared/fork-book/book-catalog-opera
 import { isTuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent-config'
 import { createNonSecureContextUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import type { BookEntry } from '../../../../shared/fork-book/book-catalog-types'
-import type { BookContextExportResult } from '../../../../shared/fork-book/book-context-transfer'
+import {
+  hasBookPendingWork,
+  type BookPendingWork
+} from '../../../../shared/fork-book/book-context-manifest'
 import { useBookStore, BOOK_ALL_ENTRIES } from './book-store'
 import { findBookWorktree } from './book-entry-snapshot'
 import { findBookConversationSession } from './book-conversation-open'
 import { createBookWorkspace, findBookRepo } from './book-workspace-recreate'
 
-function notPushedMessage(
-  result: Extract<BookContextExportResult, { status: 'not-pushed' }>
-): string {
+function pendingWorkMessage(pending: BookPendingWork): string {
   const reasons: string[] = []
-  if (result.dirtyFiles > 0) {
+  if (pending.uncommittedFiles.length > 0) {
     reasons.push(
-      translate('forkBook.exportDirty', '{{count}} uncommitted files', { count: result.dirtyFiles })
+      translate('forkBook.exportDirty', '{{count}} uncommitted files', {
+        count: pending.uncommittedFiles.length
+      })
     )
   }
-  if (result.noUpstream) {
+  if (!pending.branchOnRemote) {
     reasons.push(translate('forkBook.exportNoUpstream', 'the branch is not on the remote'))
-  } else if (result.unpushedCommits > 0) {
+  } else if (pending.unpushedCommits > 0) {
     reasons.push(
       translate('forkBook.exportUnpushed', '{{count}} commits not pushed', {
-        count: result.unpushedCommits
+        count: pending.unpushedCommits
       })
     )
   }
   return reasons.join(' · ')
 }
 
-/** Exports the entry's AI summary and full conversation; refuses while work is not pushed. */
+/** Exports the entry's AI summary and full conversation; work not on the remote is only flagged. */
 export async function exportBookEntryContext(entry: BookEntry): Promise<void> {
   const worktree = findBookWorktree(useAppStore.getState(), entry.workspaceId)
   const workspacePath = worktree?.path ?? entry.path
@@ -69,16 +72,27 @@ export async function exportBookEntryContext(entry: BookEntry): Promise<void> {
         : undefined,
       language: getIntlLocale()
     })
-    if (result.status === 'exported') {
+    if (result.status === 'exported' && hasBookPendingWork(result.pendingWork)) {
+      toast.warning(
+        translate(
+          'forkBook.exportedWithPending',
+          'Context exported. Code not on the remote does not travel with it.'
+        ),
+        { id: toastId, description: pendingWorkMessage(result.pendingWork) }
+      )
+    } else if (result.status === 'exported') {
       toast.success(translate('forkBook.exported', 'Context exported.'), {
         id: toastId,
         description: result.summaryPath
       })
-    } else if (result.status === 'not-pushed') {
-      toast.error(translate('forkBook.exportNotPushed', 'Push your work before exporting.'), {
-        id: toastId,
-        description: notPushedMessage(result)
-      })
+    } else if (result.status === 'no-conversation') {
+      toast.error(
+        translate(
+          'forkBook.exportNoConversation',
+          'This entry has no readable conversation. Edit it and pick the conversation to export.'
+        ),
+        { id: toastId }
+      )
     } else if (result.status === 'failed') {
       toast.error(translate('forkBook.exportFailed', 'Could not export the context.'), {
         id: toastId,
@@ -124,7 +138,8 @@ export async function importBookContext(): Promise<void> {
     ref: { ...manifest.repo, repoId: repo.id },
     repoName: manifest.repoName,
     branch: manifest.branch,
-    displayName: manifest.title
+    displayName: manifest.title,
+    allowNewBranch: true
   })
   if (!worktree) {
     return

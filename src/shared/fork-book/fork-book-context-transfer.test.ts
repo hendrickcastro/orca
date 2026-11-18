@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { relativizeBookPaths, restoreBookPaths } from './book-context-transfer'
 import {
   embedBookContextManifest,
   readBookContextManifest,
-  relativizeBookPaths,
-  restoreBookPaths,
   stripBookContextManifest,
   type BookContextManifest
-} from './book-context-transfer'
+} from './book-context-manifest'
 
 describe('fork: Book context transfer between computers', () => {
   it('rewrites a Windows checkout in every spelling a transcript uses', () => {

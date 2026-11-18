@@ -60,6 +60,8 @@ export async function createBookWorkspace(args: {
   repoName?: string
   branch: string | undefined
   displayName: string
+  /** Imports: when the branch never reached the remote, start it fresh from the default base. */
+  allowNewBranch?: boolean
 }): Promise<Worktree | null> {
   const repo = findBookRepo(useAppStore.getState().repos, args.ref, args.repoName)
   if (!repo) {
@@ -79,19 +81,33 @@ export async function createBookWorkspace(args: {
     return existing
   }
   let lastError = ''
-  for (const baseBranch of [args.branch, `origin/${args.branch}`]) {
+  const attempts: { baseBranch?: string; intent: 'open-existing-v2' | 'create-new' }[] = [
+    { baseBranch: args.branch, intent: 'open-existing-v2' },
+    { baseBranch: `origin/${args.branch}`, intent: 'open-existing-v2' },
+    ...(args.allowNewBranch ? [{ intent: 'create-new' as const }] : [])
+  ]
+  for (const attempt of attempts) {
     try {
       const result = await window.api.worktrees.create({
         repoId: repo.id,
         name: args.branch,
         branchNameOverride: args.branch,
-        baseBranch,
-        branchIntent: 'open-existing-v2',
+        baseBranch: attempt.baseBranch,
+        branchIntent: attempt.intent,
         displayName: args.displayName,
         displayNameKind: 'user',
         setupDecision: 'inherit',
         telemetrySource: 'sidebar'
       })
+      if (attempt.intent === 'create-new') {
+        toast.warning(
+          translate(
+            'forkBook.importNewBranch',
+            'Branch {{branch}} is not on the remote, so it was started from the default branch.',
+            { branch: args.branch }
+          )
+        )
+      }
       return await waitForWorktree(result.worktree.id)
     } catch (error) {
       lastError = errorMessage(error)

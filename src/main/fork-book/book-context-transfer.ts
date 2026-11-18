@@ -9,21 +9,25 @@ import {
   bookContextFileStem,
   boundedBookTranscript,
   buildBookSummaryPrompt,
-  embedBookContextManifest,
-  readBookContextManifest,
   relativizeBookPaths,
   renderBookTranscript,
   restoreBookPaths,
-  stripBookContextManifest,
   type BookContextExportRequest,
   type BookContextExportResult,
   type BookContextImportPick,
-  type BookContextManifest,
   type BookContextMaterializeRequest,
   type BookContextMaterializeResult,
   type BookTranscriptBlock,
   type BookTranscriptMessage
 } from '../../shared/fork-book/book-context-transfer'
+import {
+  embedBookContextManifest,
+  readBookContextManifest,
+  renderBookPendingWork,
+  stripBookContextManifest,
+  type BookContextManifest,
+  type BookPendingWork
+} from '../../shared/fork-book/book-context-manifest'
 import { bookCatalogPath } from './book-catalog-store'
 import {
   bookPathExists,
@@ -47,28 +51,33 @@ async function git(cwd: string, args: string[]): Promise<string | null> {
   }
 }
 
-type PushState =
-  | { pushed: true; branch: string; headCommit: string }
-  | Extract<BookContextExportResult, { status: 'not-pushed' }>
+const UNCOMMITTED_FILE_LIMIT = 200
 
-/** The export only references git, so everything it needs must already be on the remote. */
-async function readPushState(cwd: string): Promise<PushState> {
-  const branch = await git(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])
+type GitState = { branch: string; headCommit: string; pendingWork: BookPendingWork }
+
+/** Never blocks the export: what is not on the remote is listed in the summary instead. */
+async function readGitState(cwd: string): Promise<GitState> {
+  const head = await git(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])
+  const branch = head && head !== 'HEAD' ? head : ''
   const headCommit = (await git(cwd, ['rev-parse', 'HEAD'])) ?? ''
   const status = (await git(cwd, ['status', '--porcelain'])) ?? ''
-  const dirtyFiles = status ? status.split(/\r?\n/).filter(Boolean).length : 0
-  const upstream = await git(cwd, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
-  const ahead = upstream ? Number(await git(cwd, ['rev-list', '--count', '@{u}..HEAD'])) || 0 : 0
-  if (!branch || branch === 'HEAD' || dirtyFiles > 0 || !upstream || ahead > 0) {
-    return {
-      status: 'not-pushed',
-      branch: branch && branch !== 'HEAD' ? branch : undefined,
-      dirtyFiles,
-      unpushedCommits: ahead,
-      noUpstream: !upstream
-    }
+  const uncommittedFiles = status
+    .split(/\r?\n/)
+    .map((line) => line.slice(3).trim())
+    .filter(Boolean)
+    .slice(0, UNCOMMITTED_FILE_LIMIT)
+  const onRemote = branch
+    ? (await git(cwd, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])) !== null ||
+      (await git(cwd, ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}`])) !==
+        null
+    : false
+  const unpushed =
+    Number(await git(cwd, ['rev-list', '--count', 'HEAD', '--not', '--remotes'])) || 0
+  return {
+    branch,
+    headCommit,
+    pendingWork: { uncommittedFiles, unpushedCommits: unpushed, branchOnRemote: onRemote }
   }
-  return { pushed: true, branch, headCommit }
 }
 
 function toTranscriptBlock(block: NativeChatBlock): BookTranscriptBlock {
@@ -118,8 +127,8 @@ async function pickFolder(window: BrowserWindow | null, title: string): Promise<
 }
 
 /**
- * Writes `<name>.summary.md` (AI hand-off notes plus a manifest) and `<name>.conversation.md`
- * (the whole conversation). Paths inside the checkout become `<REPO_ROOT>`.
+ * Always writes both `<name>.summary.md` (AI hand-off notes plus a manifest) and
+ * `<name>.conversation.md` (the whole conversation). Paths inside the checkout become `<REPO_ROOT>`.
  */
 export async function exportBookContext(
   host: BookEntryGenerationHost,
@@ -129,24 +138,23 @@ export async function exportBookContext(
   if (!(await bookPathExists(request.workspacePath))) {
     return { status: 'failed', error: 'The workspace folder is not on this computer.' }
   }
-  const push = await readPushState(request.workspacePath)
-  if (!('pushed' in push)) {
-    return push
-  }
   const home = os.homedir()
   const transcript = await readConversationMarkdown(request)
-  const conversationMarkdown = transcript
-    ? relativizeBookPaths(transcript, request.roots, home)
-    : null
+  if (!transcript) {
+    return { status: 'no-conversation' }
+  }
+  const conversationMarkdown = relativizeBookPaths(transcript, request.roots, home)
+  const folder = await pickFolder(window, request.title)
+  if (!folder) {
+    return { status: 'canceled' }
+  }
+  const gitState = await readGitState(request.workspacePath)
   const gitLog = await readRecentCommitSubjects(request.workspacePath)
   const summary = await runBookAgentText(
     host,
     buildBookSummaryPrompt({
-      manifest: { ...request, branch: push.branch },
-      transcript: boundedBookTranscript(
-        conversationMarkdown ?? request.description,
-        SUMMARY_TRANSCRIPT_LIMIT
-      ),
+      manifest: { ...request, branch: gitState.branch },
+      transcript: boundedBookTranscript(conversationMarkdown, SUMMARY_TRANSCRIPT_LIMIT),
       gitLog,
       language: request.language
     })
@@ -154,12 +162,8 @@ export async function exportBookContext(
   if (!summary.success) {
     return { status: 'failed', error: summary.error }
   }
-  const folder = await pickFolder(window, request.title)
-  if (!folder) {
-    return { status: 'canceled' }
-  }
   const stem = bookContextFileStem(request.title)
-  const conversationFile = conversationMarkdown ? `${stem}${CONVERSATION_SUFFIX}` : undefined
+  const conversationFile = `${stem}${CONVERSATION_SUFFIX}`
   const manifest: BookContextManifest = {
     format: 'orca-book-context',
     version: 1,
@@ -168,25 +172,31 @@ export async function exportBookContext(
     linkedTask: request.linkedTask,
     repo: request.repo,
     repoName: request.repoName,
-    branch: push.branch,
-    headCommit: push.headCommit,
+    branch: gitState.branch,
+    headCommit: gitState.headCommit,
     agent: request.conversation?.agent,
     conversationTitle: request.conversation?.title,
     exportedAt: new Date().toISOString(),
     sourcePlatform: process.platform,
-    conversationFile
+    conversationFile,
+    pendingWork: gitState.pendingWork
   }
   const summaryPath = join(folder, `${stem}${SUMMARY_SUFFIX}`)
   await writeFile(
     summaryPath,
-    embedBookContextManifest(relativizeBookPaths(summary.text, request.roots, home), manifest)
+    embedBookContextManifest(
+      [
+        relativizeBookPaths(summary.text, request.roots, home),
+        renderBookPendingWork(gitState.pendingWork)
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+      manifest
+    )
   )
-  let conversationPath: string | undefined
-  if (conversationMarkdown && conversationFile) {
-    conversationPath = join(folder, conversationFile)
-    await writeFile(conversationPath, conversationMarkdown)
-  }
-  return { status: 'exported', summaryPath, conversationPath }
+  const conversationPath = join(folder, conversationFile)
+  await writeFile(conversationPath, conversationMarkdown)
+  return { status: 'exported', summaryPath, conversationPath, pendingWork: gitState.pendingWork }
 }
 
 /** Accepts either exported file and finds its sibling. */
