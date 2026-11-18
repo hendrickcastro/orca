@@ -83,10 +83,15 @@ export function BookEntryRow({
           </p>
           {live ? null : (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {t(
-                'forkBook.workspaceRemovedHint',
-                'Workspace removed — opening recreates it on its branch.'
-              )}
+              {entry.workspaceId
+                ? t(
+                    'forkBook.workspaceRemovedHint',
+                    'Workspace removed — opening recreates it on its branch.'
+                  )
+                : t(
+                    'forkBook.importedHint',
+                    'Imported from another computer — opening sets up its workspace here.'
+                  )}
             </p>
           )}
         </div>

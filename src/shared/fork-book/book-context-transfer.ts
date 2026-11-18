@@ -75,7 +75,7 @@ export function relativizeBookPaths(text: string, roots: readonly string[], home
 
 /** Puts the new checkout back in place of the placeholder, with this computer's separators. */
 export function restoreBookPaths(text: string, root: string, separator: '/' | '\\'): string {
-  const base = root.replace(/[\\/]+$/, '')
+  const base = root.replace(/[\\/]+$/, '').replace(/[\\/]/g, separator)
   return text.replace(
     /<REPO_ROOT>((?:[\\/][^\s"'`<>|)\]]*)?)/g,
     (_match, tail: string) => `${base}${tail.replace(/\\\\|[\\/]/g, separator)}`

@@ -10,6 +10,8 @@ export type BookConversationCandidate = {
   conversation: BookConversation
   /** Most recent activity, so the default pick is the conversation the user last worked in. */
   lastActiveAt: number
+  /** When the conversation began, when history knows it. */
+  startedAt?: number
 }
 
 /** Every agent conversation open in the workspace (and its multi-repo members), newest first. */

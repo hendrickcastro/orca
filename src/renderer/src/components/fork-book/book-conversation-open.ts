@@ -1,5 +1,3 @@
-import { toast } from 'sonner'
-import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store/index'
 import { activateAndRevealWorkspace } from '@/lib/workspace/activation/worktree-activation'
 import { revealTerminalPane } from '@/lib/workspace/activation/reveal-terminal-pane'
@@ -10,13 +8,16 @@ import {
   prepareAiVaultSessionForTerminalResume
 } from '@/lib/agent-session/resume/history/ai-vault-session-resume-preparation'
 import { launchAiVaultSessionAndReveal } from '@/lib/agent-session/resume/history/launch-ai-vault-session-and-reveal'
+import { collectAgentPaneConversations } from '@/lib/agent-session/identity/pane-agent-conversations'
 import { parsePaneKey } from '../../../../shared/workspace-layout/stable-pane-id'
+import type { AgentType } from '../../../../shared/agent-status/contracts/agent-status-types'
 import { createNonSecureContextUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import type { AiVaultSession } from '../../../../shared/ai-vault/contracts/ai-vault-types'
 import type { BookConversation, BookEntry } from '../../../../shared/fork-book/book-catalog-types'
 import { findBookWorktree } from './book-entry-snapshot'
 
-export type BookOpenOutcome = 'opened' | 'workspace-gone' | 'failed'
+/** `conversation-missing`: the workspace is there but the saved conversation could not be reopened. */
+export type BookOpenOutcome = 'opened' | 'workspace-gone' | 'conversation-missing' | 'failed'
 
 function matchesConversation(session: AiVaultSession, conversation: BookConversation): boolean {
   if (session.subagent) {
@@ -50,25 +51,23 @@ export async function findBookConversationSession(
   return null
 }
 
-function focusLivePane(worktreeId: string, conversation: BookConversation): boolean {
-  for (const entry of useAppStore.getState().agentStatusByPaneKey.values()) {
-    if (
-      entry.providerSession?.id !== conversation.providerSessionId ||
-      entry.agentType !== conversation.agent
-    ) {
-      continue
-    }
-    const pane = parsePaneKey(entry.paneKey)
-    if (pane) {
-      return revealTerminalPane({
-        worktreeId: entry.worktreeId ?? worktreeId,
-        tabId: pane.tabId,
-        leafId: pane.leafId,
-        executionHostId: null
-      })
-    }
+/** Focuses the conversation only while its agent still runs in an open tab. */
+function focusLivePane(conversation: BookConversation): boolean {
+  const isSavedAgent = (agent: AgentType | null | undefined): agent is AgentType =>
+    agent === conversation.agent
+  const live = collectAgentPaneConversations(useAppStore.getState(), isSavedAgent, {
+    runningAgentsOnly: true
+  }).find((candidate) => candidate.providerSession.id === conversation.providerSessionId)
+  const pane = live ? parsePaneKey(live.paneKey) : null
+  if (!live || !pane) {
+    return false
   }
-  return false
+  return revealTerminalPane({
+    worktreeId: live.worktreeId,
+    tabId: live.tabId,
+    leafId: pane.leafId,
+    executionHostId: live.executionHostId
+  })
 }
 
 async function resumeInTerminal(worktreeId: string, session: AiVaultSession): Promise<boolean> {
@@ -98,6 +97,9 @@ export async function openBookEntry(entry: BookEntry): Promise<BookOpenOutcome> 
   }
   const conversation = entry.conversation
   if (!conversation) {
+    if (entry.importedContext) {
+      return 'conversation-missing'
+    }
     return activateAndRevealWorkspace(worktree.id) === false ? 'failed' : 'opened'
   }
   if (conversation.chatSessionId) {
@@ -107,7 +109,7 @@ export async function openBookEntry(entry: BookEntry): Promise<BookOpenOutcome> 
     })
     return opened ? 'opened' : 'failed'
   }
-  if (focusLivePane(worktree.id, conversation)) {
+  if (focusLivePane(conversation)) {
     return 'opened'
   }
   try {
@@ -116,11 +118,7 @@ export async function openBookEntry(entry: BookEntry): Promise<BookOpenOutcome> 
       return 'opened'
     }
   } catch {
-    // Fall through: the workspace still opens and the toast explains the conversation is missing.
+    // Fall through: the caller explains the conversation is missing and offers a new agent.
   }
-  activateAndRevealWorkspace(worktree.id)
-  toast.error(
-    translate('forkBook.conversationMissing', 'The saved conversation was not found in history.')
-  )
-  return 'failed'
+  return 'conversation-missing'
 }

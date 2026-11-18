@@ -2,7 +2,6 @@ import { toast } from 'sonner'
 import { getIntlLocale, translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store/index'
 import { upsertBookEntry } from '../../../../shared/fork-book/book-catalog-operations'
-import { isTuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent-config'
 import { createNonSecureContextUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import type { BookEntry } from '../../../../shared/fork-book/book-catalog-types'
 import {
@@ -12,7 +11,8 @@ import {
 import { useBookStore, BOOK_ALL_ENTRIES } from './book-store'
 import { findBookWorktree } from './book-entry-snapshot'
 import { findBookConversationSession } from './book-conversation-open'
-import { createBookWorkspace, findBookRepo } from './book-workspace-recreate'
+import { findBookRepo } from './book-workspace-recreate'
+import { openBookEntryAction } from './book-entry-actions'
 
 function pendingWorkMessage(pending: BookPendingWork): string {
   const reasons: string[] = []
@@ -110,8 +110,9 @@ export async function exportBookEntryContext(entry: BookEntry): Promise<void> {
 }
 
 /**
- * Imports an exported context: finds the clone of the same repository, opens the branch
- * (reusing a checkout already on it), files a Book entry and offers to continue in a new agent.
+ * Imports an exported context as a Book entry, then opens its branch (reusing a checkout already
+ * on it) and offers to continue in a new agent. The entry is kept even when the repository or
+ * branch is not here yet: "Open agent" then asks where the repository is.
  */
 export async function importBookContext(): Promise<void> {
   const picked = await window.api.forkBook.pickImport()
@@ -125,67 +126,36 @@ export async function importBookContext(): Promise<void> {
     return
   }
   const { manifest } = picked
-  const state = useAppStore.getState()
-  const repo = findBookRepo(state.repos, manifest.repo, manifest.repoName)
-  if (!repo) {
-    toast.error(
-      translate('forkBook.repoMissing', 'The repository is not open in Orca on this computer.'),
-      { description: manifest.repo?.remoteUrl ?? manifest.repoName }
-    )
-    return
-  }
-  const worktree = await createBookWorkspace({
-    ref: { ...manifest.repo, repoId: repo.id },
-    repoName: manifest.repoName,
-    branch: manifest.branch,
-    displayName: manifest.title,
-    allowNewBranch: true
-  })
-  if (!worktree) {
-    return
-  }
-  const files = await window.api.forkBook.materializeImport({
-    summaryPath: picked.summaryPath,
-    conversationPath: picked.conversationPath,
-    worktreePath: worktree.path,
-    folderName: manifest.title
-  })
+  const repo = findBookRepo(useAppStore.getState().repos, manifest.repo, manifest.repoName)
   const now = Date.now()
-  const entryId = createNonSecureContextUuid()
+  const entry: BookEntry = {
+    id: createNonSecureContextUuid(),
+    folderId: null,
+    title: manifest.title,
+    description: manifest.description,
+    workspaceId: '',
+    workspaceName: manifest.title,
+    repoName: manifest.repoName ?? repo?.displayName,
+    branch: manifest.branch || undefined,
+    linkedTask: manifest.linkedTask,
+    repo: { ...manifest.repo, repoId: repo?.id },
+    importedContext: {
+      summaryPath: picked.summaryPath,
+      conversationPath: picked.conversationPath,
+      agent: manifest.agent
+    },
+    createdAt: now,
+    updatedAt: now
+  }
   const book = useBookStore.getState()
   await book.ensureLoaded()
-  book.commit((catalog) =>
-    upsertBookEntry(catalog, {
-      id: entryId,
-      folderId: book.selectedFolder === BOOK_ALL_ENTRIES ? null : book.selectedFolder,
-      title: manifest.title,
-      description: manifest.description,
-      workspaceId: worktree.id,
-      workspaceName: worktree.displayName || manifest.title,
-      repoName: manifest.repoName ?? repo.displayName,
-      branch: manifest.branch,
-      path: worktree.path,
-      linkedTask: manifest.linkedTask,
-      repo: { ...manifest.repo, repoId: repo.id },
-      createdAt: now,
-      updatedAt: now
-    })
-  )
-  book.setContinuation({
-    entryId,
-    sourceWorkingDirectory: worktree.path,
-    request: {
-      source: {
-        sourceAgent: manifest.agent && isTuiAgent(manifest.agent) ? manifest.agent : null,
-        capturedText: files.summaryText,
-        sourceTitle: manifest.conversationTitle ?? manifest.title,
-        sourceWorkingDirectory: worktree.path,
-        transcriptPath: files.summaryPath
-      },
-      worktreeId: worktree.id,
-      workspacePath: worktree.path,
-      initialCwd: worktree.path,
-      launchSource: 'sidebar'
-    }
+  const filed: BookEntry = {
+    ...entry,
+    folderId: book.selectedFolder === BOOK_ALL_ENTRIES ? null : book.selectedFolder
+  }
+  book.commit((catalog) => upsertBookEntry(catalog, filed))
+  toast.success(translate('forkBook.imported', 'Context imported into Book.'), {
+    description: manifest.title
   })
+  await openBookEntryAction(filed)
 }

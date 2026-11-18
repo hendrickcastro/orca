@@ -1,5 +1,5 @@
 import os from 'node:os'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { dialog, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import { gitExecFileAsync } from '../git/command-runner/git-exec-file'
@@ -224,15 +224,29 @@ export async function pickBookContextImport(
   if (!manifest) {
     return { status: 'invalid', error: 'This file is not an exported Orca Book context.' }
   }
-  const conversationPath = manifest.conversationFile
+  const pickedConversation = manifest.conversationFile
     ? join(dirname(summaryPath), manifest.conversationFile)
     : undefined
+  // Copies outlive a USB stick or a cleaned Downloads folder; the entry keeps pointing at them.
+  const staged = join(
+    dirname(bookCatalogPath()),
+    'book-imports',
+    `${bookContextFileStem(manifest.title)}-${Date.now()}`,
+    'source'
+  )
+  await mkdir(staged, { recursive: true })
+  const stagedSummary = join(staged, basename(summaryPath))
+  await copyFile(summaryPath, stagedSummary)
+  let stagedConversation: string | undefined
+  if (pickedConversation && (await bookPathExists(pickedConversation))) {
+    stagedConversation = join(staged, basename(pickedConversation))
+    await copyFile(pickedConversation, stagedConversation)
+  }
   return {
     status: 'picked',
     manifest,
-    summaryPath,
-    conversationPath:
-      conversationPath && (await bookPathExists(conversationPath)) ? conversationPath : undefined
+    summaryPath: stagedSummary,
+    conversationPath: stagedConversation
   }
 }
 

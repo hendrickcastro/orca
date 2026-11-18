@@ -4,6 +4,7 @@ import {
   type BookEntry,
   type BookConversation,
   type BookFolder,
+  type BookImportedContext,
   type BookLinkedTask,
   type BookRepoRef
 } from './book-catalog-types'
@@ -72,6 +73,17 @@ function normalizeRepoRef(value: unknown): BookRepoRef | undefined {
   return repo.repoId || repo.projectId || repo.remoteUrl ? repo : undefined
 }
 
+function normalizeImportedContext(value: unknown): BookImportedContext | undefined {
+  if (!isObject(value) || typeof value.summaryPath !== 'string' || !value.summaryPath) {
+    return undefined
+  }
+  return {
+    summaryPath: value.summaryPath,
+    conversationPath: optionalString(value.conversationPath),
+    agent: optionalString(value.agent)
+  }
+}
+
 function normalizeEntry(value: unknown): BookEntry | null {
   if (
     !isObject(value) ||
@@ -95,6 +107,7 @@ function normalizeEntry(value: unknown): BookEntry | null {
     linkedTask: normalizeLinkedTask(value.linkedTask),
     conversation: normalizeConversation(value.conversation),
     repo: normalizeRepoRef(value.repo),
+    importedContext: normalizeImportedContext(value.importedContext),
     createdAt,
     updatedAt: finiteNumber(value.updatedAt, createdAt)
   }

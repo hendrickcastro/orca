@@ -15,11 +15,28 @@ function toCandidate(session: AiVaultSession): BookConversationCandidate {
       cwd: session.cwd ?? undefined,
       transcriptPath: session.filePath || undefined
     },
-    lastActiveAt: Date.parse(session.updatedAt ?? session.modifiedAt) || 0
+    lastActiveAt: Date.parse(session.updatedAt ?? session.modifiedAt) || 0,
+    startedAt: session.createdAt ? Date.parse(session.createdAt) || undefined : undefined
   }
 }
 
-/** Past conversations that ran in the workspace, newest first, for when its agent was closed. */
+/** Past conversations that ran in the workspace, newest first. */
+export async function listBookHistoryConversations(
+  path: string
+): Promise<BookConversationCandidate[]> {
+  const listed = await window.api.aiVault.listSessions({
+    scopePaths: [path],
+    scopeOnly: true,
+    requestToken: createNonSecureContextUuid()
+  })
+  return listed.sessions
+    .filter((session) => !session.subagent)
+    .map(toCandidate)
+    .sort((left, right) => right.lastActiveAt - left.lastActiveAt)
+    .slice(0, HISTORY_CANDIDATE_LIMIT)
+}
+
+/** The workspace's past conversations, for when its agent was closed before saving. */
 export function useBookHistoryConversations(path: string | undefined): BookConversationCandidate[] {
   const [candidates, setCandidates] = useState<BookConversationCandidate[]>([])
   useEffect(() => {
@@ -28,21 +45,10 @@ export function useBookHistoryConversations(path: string | undefined): BookConve
       return
     }
     let current = true
-    void window.api.aiVault
-      .listSessions({
-        scopePaths: [path],
-        scopeOnly: true,
-        requestToken: createNonSecureContextUuid()
-      })
+    void listBookHistoryConversations(path)
       .then((listed) => {
         if (current) {
-          setCandidates(
-            listed.sessions
-              .filter((session) => !session.subagent)
-              .map(toCandidate)
-              .sort((left, right) => right.lastActiveAt - left.lastActiveAt)
-              .slice(0, HISTORY_CANDIDATE_LIMIT)
-          )
+          setCandidates(listed)
         }
       })
       .catch(() => {

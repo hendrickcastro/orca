@@ -4,6 +4,7 @@ import { isTuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent-co
 import type { Worktree } from '../../../../shared/worktree/types'
 import type { BookEntry } from '../../../../shared/fork-book/book-catalog-types'
 import { findBookConversationSession } from './book-conversation-open'
+import { importedContextRequest } from './book-imported-context'
 import { useBookStore } from './book-store'
 
 function entryOnlyRequest(entry: BookEntry, target: Worktree): AgentSessionContinuationRequest {
@@ -24,7 +25,7 @@ function entryOnlyRequest(entry: BookEntry, target: Worktree): AgentSessionConti
 }
 
 /**
- * Opens Orca's "continue in a new agent" dialog for a saved conversation, into `target`.
+ * Opens Orca's "continue in a new agent" dialog for a saved or imported conversation, into `target`.
  * The new agent always starts in `target`: the original folder may be the removed workspace.
  */
 export async function handOffBookEntry(entry: BookEntry, target: Worktree): Promise<void> {
@@ -42,7 +43,7 @@ export async function handOffBookEntry(entry: BookEntry, target: Worktree): Prom
           }),
           initialCwd: target.path
         }
-      : entryOnlyRequest(entry, target)
+      : ((await importedContextRequest(entry, target)) ?? entryOnlyRequest(entry, target))
   } catch {
     request = entryOnlyRequest(entry, target)
   }

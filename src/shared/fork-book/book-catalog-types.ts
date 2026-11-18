@@ -39,6 +39,14 @@ export type BookRepoRef = {
   remoteUrl?: string
 }
 
+/** A context exported on another computer; a new agent continues from it until one is linked. */
+export type BookImportedContext = {
+  /** Copies kept next to the catalog, with `<REPO_ROOT>` still unresolved. */
+  summaryPath: string
+  conversationPath?: string
+  agent?: string
+}
+
 /**
  * One saved piece of agent work. The workspace fields are a snapshot so the entry stays
  * readable (and findable) after the workspace itself is renamed, archived or deleted.
@@ -57,6 +65,7 @@ export type BookEntry = {
   linkedTask?: BookLinkedTask
   conversation?: BookConversation
   repo?: BookRepoRef
+  importedContext?: BookImportedContext
   createdAt: number
   updatedAt: number
 }

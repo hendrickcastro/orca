@@ -7,6 +7,8 @@ import type { Repo } from '../../../../shared/repository/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import type { BookEntry, BookRepoRef } from '../../../../shared/fork-book/book-catalog-types'
 import { findBookWorktree } from './book-entry-snapshot'
+import { upsertAddedRepoWithProjectHostSetup } from '@/components/sidebar/project-admission/completion/add-repo-store-upsert'
+import { worktreeRefreshOptions } from '@/components/sidebar/project-admission/host-selection/add-repo-runtime-owner'
 
 const WORKTREE_APPEAR_TIMEOUT_MS = 10_000
 
@@ -131,7 +133,8 @@ export async function recreateBookEntryWorkspace(
     ref: entry.repo,
     repoName: entry.repoName,
     branch: entry.branch,
-    displayName: entry.workspaceName
+    displayName: entry.workspaceName,
+    allowNewBranch: Boolean(entry.importedContext)
   })
   if (worktree) {
     commit((current) => ({
@@ -142,4 +145,41 @@ export async function recreateBookEntryWorkspace(
     }))
   }
   return worktree
+}
+
+/**
+ * Brings the entry's repository into Orca on this computer: the user's existing clone, or a fresh
+ * clone of its remote into a folder they pick. Null when they cancel or it fails (with a toast).
+ */
+export async function locateBookRepo(
+  ref: BookRepoRef | undefined,
+  how: 'folder' | 'clone'
+): Promise<Repo | null> {
+  if (how === 'folder') {
+    return useAppStore.getState().addRepo()
+  }
+  if (!ref?.remoteUrl) {
+    return null
+  }
+  const destination = await window.api.repos.pickDirectory()
+  if (!destination) {
+    return null
+  }
+  const toastId = toast.loading(translate('forkBook.cloning', 'Cloning the repository…'))
+  try {
+    const cloned = await window.api.repos.clone({ url: ref.remoteUrl, destination })
+    const { repo } = upsertAddedRepoWithProjectHostSetup(cloned, { runtimeEnvironmentId: null })
+    await useAppStore.getState().fetchWorktrees(repo.id, worktreeRefreshOptions(null))
+    toast.success(translate('forkBook.cloned', 'Repository cloned.'), {
+      id: toastId,
+      description: repo.displayName
+    })
+    return repo
+  } catch (error) {
+    toast.error(translate('forkBook.cloneFailed', 'Could not clone the repository.'), {
+      id: toastId,
+      description: errorMessage(error)
+    })
+    return null
+  }
 }
