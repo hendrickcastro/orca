@@ -24276,6 +24276,8 @@
     "exportedWithPending": "Contexto exportado. El código que no está en el remoto no viaja con él.",
     "exportNoConversation": "Esta ficha no tiene una conversación legible. Edítala y elige la conversación que quieres exportar.",
     "importNewBranch": "La rama {{branch}} no está en el remoto, así que se ha creado desde la rama principal.",
+    "conversationAlreadySaved": "Esta conversación ya está en Book como «{{title}}».",
+    "editExistingEntry": "Editar esa ficha",
     "imported": "Contexto importado en Book.",
     "importedHint": "Importado de otro equipo: al abrirlo se prepara su workspace aquí.",
     "notOnThisComputerTitle": "Este trabajo aún no está en este equipo",

@@ -102,12 +102,3 @@ export function bookRepoRefFor(
     remoteUrl: repo.gitRemoteIdentity?.remoteUrl
   }
 }
-
-export function bookConversationKey(conversation: BookConversation | undefined): string {
-  if (!conversation) {
-    return ''
-  }
-  return conversation.chatSessionId
-    ? `chat:${conversation.chatSessionId}`
-    : `cli:${conversation.agent}:${conversation.providerSessionId ?? ''}`
-}

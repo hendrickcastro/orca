@@ -26335,6 +26335,8 @@
     "exportedWithPending": "Context exported. Code not on the remote does not travel with it.",
     "exportNoConversation": "This entry has no readable conversation. Edit it and pick the conversation to export.",
     "importNewBranch": "Branch {{branch}} is not on the remote, so it was started from the default branch.",
+    "conversationAlreadySaved": "This conversation is already in Book as “{{title}}”.",
+    "editExistingEntry": "Edit that entry",
     "imported": "Context imported into Book.",
     "importedHint": "Imported from another computer — opening sets up its workspace here.",
     "notOnThisComputerTitle": "This work is not on this computer yet",

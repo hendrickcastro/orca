@@ -22,13 +22,16 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { useIntlLocale, useTranslate } from '@/i18n/use-translate'
-import { upsertBookEntry } from '../../../../shared/fork-book/book-catalog-operations'
+import {
+  bookConversationKey,
+  findBookEntryForConversation,
+  upsertBookEntry
+} from '../../../../shared/fork-book/book-catalog-operations'
 import { draftBookEntryText } from '../../../../shared/fork-book/book-entry-text'
 import { useBookStore } from './book-store'
 import { BOOK_ROOT_FOLDER_VALUE, flattenBookFolders } from './book-folder-options'
 import { BookConversationPicker } from './BookConversationPicker'
 import { useBookHistoryConversations } from './use-book-history-conversations'
-import { bookConversationKey } from './book-conversations'
 
 /** Create or edit one Book entry; mounted once at the app root so the sidebar menu can open it. */
 export function BookEntryEditorDialog(): React.JSX.Element | null {
@@ -38,6 +41,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
   const catalog = useBookStore((s) => s.catalog)
   const updateEditor = useBookStore((s) => s.updateEditor)
   const closeEditor = useBookStore((s) => s.closeEditor)
+  const openEditorForEntry = useBookStore((s) => s.openEditorForEntry)
   const commit = useBookStore((s) => s.commit)
   const [generating, setGenerating] = useState(false)
   const history = useBookHistoryConversations(editor?.snapshot?.fields.path)
@@ -70,7 +74,8 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
   }
   const context = editor.snapshot?.context ?? null
   const folderOptions = flattenBookFolders(catalog)
-  const canSave = editor.title.trim().length > 0
+  const alreadySaved = findBookEntryForConversation(catalog, editor.conversation, editor.entryId)
+  const canSave = editor.title.trim().length > 0 && !alreadySaved
 
   const close = (): void => {
     if (generating) {
@@ -215,6 +220,27 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
             value={editor.conversation}
             onChange={(conversation) => updateEditor({ conversation })}
           />
+          {alreadySaved ? (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <span className="min-w-0 flex-1">
+                {t(
+                  'forkBook.conversationAlreadySaved',
+                  'This conversation is already in Book as “{{title}}”.',
+                  {
+                    title: alreadySaved.title
+                  }
+                )}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => openEditorForEntry(alreadySaved)}
+              >
+                {t('forkBook.editExistingEntry', 'Edit that entry')}
+              </Button>
+            </div>
+          ) : null}
           {context ? (
             <div className="flex flex-wrap gap-2">
               <Button

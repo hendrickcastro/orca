@@ -248,6 +248,32 @@ export function deleteBookFolder(catalog: BookCatalog, folderId: string): BookCa
   }
 }
 
+/** One key per conversation: chat sessions by id, terminal agents by agent and provider session. */
+export function bookConversationKey(conversation: BookConversation | undefined): string {
+  if (!conversation) {
+    return ''
+  }
+  return conversation.chatSessionId
+    ? `chat:${conversation.chatSessionId}`
+    : `cli:${conversation.agent}:${conversation.providerSessionId ?? ''}`
+}
+
+/** The entry that already holds this conversation, other than `exceptEntryId`. */
+export function findBookEntryForConversation(
+  catalog: BookCatalog,
+  conversation: BookConversation | undefined,
+  exceptEntryId: string | null
+): BookEntry | undefined {
+  // A terminal conversation without a provider id cannot be told apart from others of its agent.
+  if (!conversation || (!conversation.chatSessionId && !conversation.providerSessionId)) {
+    return undefined
+  }
+  const key = bookConversationKey(conversation)
+  return catalog.entries.find(
+    (entry) => entry.id !== exceptEntryId && bookConversationKey(entry.conversation) === key
+  )
+}
+
 export function upsertBookEntry(catalog: BookCatalog, entry: BookEntry): BookCatalog {
   const exists = catalog.entries.some((candidate) => candidate.id === entry.id)
   return {

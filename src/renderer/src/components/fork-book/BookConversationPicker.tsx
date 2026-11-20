@@ -9,7 +9,8 @@ import {
 import { getIntlLocale, translate } from '@/i18n/i18n'
 import { useTranslate } from '@/i18n/use-translate'
 import type { BookConversation } from '../../../../shared/fork-book/book-catalog-types'
-import { bookConversationKey, type BookConversationCandidate } from './book-conversations'
+import { bookConversationKey } from '../../../../shared/fork-book/book-catalog-operations'
+import type { BookConversationCandidate } from './book-conversations'
 
 const WORKSPACE_ONLY_VALUE = '__workspace__'
 
