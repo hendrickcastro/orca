@@ -5,12 +5,12 @@ import { activateAndRevealWorkspace } from '@/lib/workspace/activation/worktree-
 import { upsertBookEntry } from '../../../../shared/fork-book/book-catalog-operations'
 import type { BookEntry } from '../../../../shared/fork-book/book-catalog-types'
 import type { Worktree } from '../../../../shared/worktree/types'
-import { useBookStore } from './book-store'
+import { useBookStore, type BookWorkspacePrompt } from './book-store'
 import { findBookWorktree } from './book-entry-snapshot'
 import { openBookEntry } from './book-conversation-open'
 import { handOffBookEntry } from './book-handoff'
 import { findImportedContextConversation } from './book-imported-context'
-import { locateBookRepo, recreateBookEntryWorkspace } from './book-workspace-recreate'
+import { applyBookWorkspaceSetup, type BookMemberChoice } from './book-workspace-setup'
 
 function latestEntry(entryId: string): BookEntry | undefined {
   return useBookStore.getState().catalog.entries.find((entry) => entry.id === entryId)
@@ -27,7 +27,7 @@ function commitEntry(entryId: string, update: (entry: BookEntry) => BookEntry): 
 export async function openBookEntryAction(entry: BookEntry): Promise<void> {
   const outcome = await openBookEntry(entry)
   if (outcome === 'workspace-gone') {
-    useBookStore.getState().setRecreatePrompt({ entryId: entry.id, next: 'open' })
+    useBookStore.getState().setWorkspacePrompt({ entryId: entry.id, next: 'open' })
   } else if (outcome === 'conversation-missing') {
     await recoverBookConversation(entry)
   }
@@ -76,54 +76,32 @@ export function handOffBookEntryAction(entry: BookEntry): void {
     void handOffBookEntry(entry, worktree)
     return
   }
-  useBookStore.getState().setRecreatePrompt({ entryId: entry.id, next: 'handoff' })
+  useBookStore.getState().setWorkspacePrompt({ entryId: entry.id, next: 'handoff' })
 }
 
 /**
- * Recreates the removed workspace, then reopens the conversation. A terminal agent resumes only
- * when the new checkout sits where it ran before; anywhere else it continues in a new agent.
+ * Sets the entry up on the chosen repositories and checkouts, then reopens the conversation. A
+ * terminal agent resumes only when its folder is still the workspace's; elsewhere it continues in
+ * a new agent. `save` only re-points the entry.
  */
-export async function recreateAndContinueBookEntry(
+export async function setUpAndContinueBookEntry(
   entryId: string,
-  next: 'open' | 'handoff'
+  choices: readonly BookMemberChoice[],
+  next: BookWorkspacePrompt['next']
 ): Promise<boolean> {
   const entry = latestEntry(entryId)
-  if (!entry) {
+  const workspace = entry ? await applyBookWorkspaceSetup(entry, choices) : null
+  if (!entry || !workspace) {
     return false
   }
-  const worktree = await recreateBookEntryWorkspace(entry, (update) => commitEntry(entryId, update))
-  if (!worktree) {
-    return false
+  const updated = latestEntry(entryId) ?? entry
+  if (next === 'save') {
+    return true
   }
-  const updated = latestEntry(entryId) ?? {
-    ...entry,
-    workspaceId: worktree.id,
-    path: worktree.path
-  }
-  await (next === 'open' && resumesInPlace(updated, worktree)
+  await (next === 'open' && resumesInPlace(updated, workspace)
     ? openBookEntryAction(updated)
-    : handOffBookEntry(updated, worktree))
+    : handOffBookEntry(updated, workspace))
   return true
-}
-
-/** Links the entry to its repository on this computer (existing clone or a new one), then recreates. */
-export async function locateRepoAndContinueBookEntry(
-  entryId: string,
-  how: 'folder' | 'clone',
-  next: 'open' | 'handoff'
-): Promise<boolean> {
-  const entry = latestEntry(entryId)
-  const repo = entry ? await locateBookRepo(entry.repo, how) : null
-  if (!repo) {
-    return false
-  }
-  commitEntry(entryId, (current) => ({
-    ...current,
-    repo: { ...current.repo, repoId: repo.id },
-    repoName: current.repoName ?? repo.displayName,
-    updatedAt: Date.now()
-  }))
-  return recreateAndContinueBookEntry(entryId, next)
 }
 
 function resumesInPlace(entry: BookEntry, worktree: Worktree): boolean {

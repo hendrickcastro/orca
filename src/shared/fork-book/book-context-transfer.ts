@@ -1,4 +1,4 @@
-import type { BookLinkedTask, BookRepoRef } from './book-catalog-types'
+import type { BookLinkedTask, BookRepoRef, BookWorkspaceMember } from './book-catalog-types'
 import type { BookContextManifest, BookPendingWork } from './book-context-manifest'
 
 /** Placeholder for the repository checkout, so exported paths work on any computer. */
@@ -181,6 +181,7 @@ export type BookContextExportRequest = {
   linkedTask?: BookLinkedTask
   repo?: BookRepoRef
   repoName?: string
+  members?: BookWorkspaceMember[]
   /** The local checkout; git and the export run here. */
   workspacePath: string
   /** Paths written as `<REPO_ROOT>` in the files: the checkout and where the agent ran. */

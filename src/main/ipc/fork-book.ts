@@ -29,18 +29,24 @@ const LinkedTask = z.object({
   url: PathText.optional()
 })
 
+const RepoRef = z.object({
+  repoId: ShortText.optional(),
+  projectId: ShortText.optional(),
+  remoteUrl: PathText.optional()
+})
+
 const ExportBookContextRequest = z.object({
   title: ShortText,
   description: LongText,
   linkedTask: LinkedTask.optional(),
-  repo: z
-    .object({
-      repoId: ShortText.optional(),
-      projectId: ShortText.optional(),
-      remoteUrl: PathText.optional()
-    })
-    .optional(),
+  repo: RepoRef.optional(),
   repoName: ShortText.optional(),
+  members: z
+    .array(
+      z.object({ repo: RepoRef, repoName: ShortText.optional(), branch: ShortText.optional() })
+    )
+    .max(50)
+    .optional(),
   workspacePath: PathText,
   roots: z.array(PathText).max(20),
   conversation: z

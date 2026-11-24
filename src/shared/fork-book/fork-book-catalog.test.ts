@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { deleteBookFolder, moveBookFolder, normalizeBookCatalog } from './book-catalog-operations'
+import { deleteBookFolder, moveBookFolder } from './book-catalog-operations'
+import { normalizeBookCatalog } from './book-catalog-normalization'
 import { parseBookEntryAnswer } from './book-entry-text'
 import type { BookCatalog } from './book-catalog-types'
 

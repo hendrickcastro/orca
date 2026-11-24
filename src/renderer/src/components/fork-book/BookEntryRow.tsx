@@ -5,6 +5,7 @@ import {
   ExternalLink,
   FileDown,
   LoaderCircle,
+  FolderGit2,
   FolderInput,
   Inbox,
   MoreHorizontal,
@@ -29,6 +30,7 @@ import {
   moveBookEntry,
   removeBookEntry
 } from '../../../../shared/fork-book/book-catalog-operations'
+import { bookEntryMembers } from '../../../../shared/fork-book/book-catalog-normalization'
 import type { BookEntry } from '../../../../shared/fork-book/book-catalog-types'
 import { useBookStore } from './book-store'
 import { flattenBookFolders } from './book-folder-options'
@@ -51,6 +53,7 @@ export function BookEntryRow({
   const catalog = useBookStore((s) => s.catalog)
   const commit = useBookStore((s) => s.commit)
   const openEditorForEntry = useBookStore((s) => s.openEditorForEntry)
+  const setWorkspacePrompt = useBookStore((s) => s.setWorkspacePrompt)
   const [opening, setOpening] = useState(false)
   const open = (): void => {
     setOpening(true)
@@ -61,9 +64,11 @@ export function BookEntryRow({
         .map((folder) => folder.name)
         .join(' / ')
     : ''
+  const members = bookEntryMembers(entry)
   const meta = [
-    entry.repoName,
-    entry.branch,
+    ...(members.length > 1
+      ? members.map((member) => [member.repoName, member.branch].filter(Boolean).join(': '))
+      : [entry.repoName, entry.branch]),
     entry.linkedTask?.label,
     new Date(entry.updatedAt).toLocaleDateString(intlLocale)
   ].filter(Boolean)
@@ -166,6 +171,12 @@ export function BookEntryRow({
                   {t('forkBook.openTask', 'Open task')}
                 </DropdownMenuItem>
               ) : null}
+              <DropdownMenuItem
+                onSelect={() => setWorkspacePrompt({ entryId: entry.id, next: 'save' })}
+              >
+                <FolderGit2 className="size-3.5" />
+                {t('forkBook.editRepos', 'Repositories and branches…')}
+              </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void exportBookEntryContext(entry)}>
                 <FileDown className="size-3.5" />
                 {t('forkBook.exportContext', 'Export context…')}

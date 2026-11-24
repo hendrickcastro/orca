@@ -27,6 +27,7 @@ import {
   findBookEntryForConversation,
   upsertBookEntry
 } from '../../../../shared/fork-book/book-catalog-operations'
+import { bookEntryMembers } from '../../../../shared/fork-book/book-catalog-normalization'
 import { draftBookEntryText } from '../../../../shared/fork-book/book-entry-text'
 import { useBookStore } from './book-store'
 import { BOOK_ROOT_FOLDER_VALUE, flattenBookFolders } from './book-folder-options'
@@ -42,6 +43,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
   const updateEditor = useBookStore((s) => s.updateEditor)
   const closeEditor = useBookStore((s) => s.closeEditor)
   const openEditorForEntry = useBookStore((s) => s.openEditorForEntry)
+  const setWorkspacePrompt = useBookStore((s) => s.setWorkspacePrompt)
   const commit = useBookStore((s) => s.commit)
   const [generating, setGenerating] = useState(false)
   const history = useBookHistoryConversations(editor?.snapshot?.fields.path)
@@ -75,6 +77,14 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
   const context = editor.snapshot?.context ?? null
   const folderOptions = flattenBookFolders(catalog)
   const alreadySaved = findBookEntryForConversation(catalog, editor.conversation, editor.entryId)
+  const savedEntry = editor.entryId
+    ? catalog.entries.find((entry) => entry.id === editor.entryId)
+    : undefined
+  const reposSummary = savedEntry
+    ? bookEntryMembers(savedEntry)
+        .map((member) => [member.repoName, member.branch].filter(Boolean).join(': '))
+        .join(' · ')
+    : ''
   const canSave = editor.title.trim().length > 0 && !alreadySaved
 
   const close = (): void => {
@@ -215,6 +225,29 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
               </SelectContent>
             </Select>
           </div>
+          {savedEntry ? (
+            <div className="space-y-1.5">
+              <Label>{t('forkBook.fieldRepos', 'Repositories and branches')}</Label>
+              <div className="flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                  {reposSummary || t('forkBook.noRepos', 'No repository yet')}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!canSave || generating}
+                  onClick={() => {
+                    // Keeps the edits made so far, then picks the repositories.
+                    save()
+                    setWorkspacePrompt({ entryId: savedEntry.id, next: 'save' })
+                  }}
+                >
+                  {t('forkBook.changeRepos', 'Change…')}
+                </Button>
+              </div>
+            </div>
+          ) : null}
           <BookConversationPicker
             candidates={candidates}
             value={editor.conversation}

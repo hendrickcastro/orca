@@ -42,7 +42,8 @@ export type BookContinuationState = {
 }
 
 /** A saved entry whose workspace was removed, waiting for the user to recreate it. */
-export type BookRecreatePrompt = { entryId: string; next: 'open' | 'handoff' }
+/** Choose the entry's repositories and checkouts, then open its agent, hand it off, or just save. */
+export type BookWorkspacePrompt = { entryId: string; next: 'open' | 'handoff' | 'save' }
 
 type BookStore = {
   catalog: BookCatalog
@@ -52,8 +53,8 @@ type BookStore = {
   editor: BookEditorState | null
   continuation: BookContinuationState | null
   setContinuation: (continuation: BookContinuationState | null) => void
-  recreatePrompt: BookRecreatePrompt | null
-  setRecreatePrompt: (prompt: BookRecreatePrompt | null) => void
+  workspacePrompt: BookWorkspacePrompt | null
+  setWorkspacePrompt: (prompt: BookWorkspacePrompt | null) => void
   ensureLoaded: () => Promise<void>
   commit: (update: (catalog: BookCatalog) => BookCatalog) => void
   setSelectedFolder: (folder: BookFolderSelection) => void
@@ -83,8 +84,8 @@ export const useBookStore = create<BookStore>((set, get) => ({
   editor: null,
   continuation: null,
   setContinuation: (continuation) => set({ continuation }),
-  recreatePrompt: null,
-  setRecreatePrompt: (recreatePrompt) => set({ recreatePrompt }),
+  workspacePrompt: null,
+  setWorkspacePrompt: (workspacePrompt) => set({ workspacePrompt }),
   ensureLoaded: async () => {
     if (get().loadState === 'loading' || get().loadState === 'ready') {
       return

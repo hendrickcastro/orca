@@ -39,6 +39,13 @@ export type BookRepoRef = {
   remoteUrl?: string
 }
 
+/** One repository the entry's work spans, and the branch it was on there. */
+export type BookWorkspaceMember = {
+  repo: BookRepoRef
+  repoName?: string
+  branch?: string
+}
+
 /** A context exported on another computer; a new agent continues from it until one is linked. */
 export type BookImportedContext = {
   /** Copies kept next to the catalog, with `<REPO_ROOT>` still unresolved. */
@@ -65,6 +72,8 @@ export type BookEntry = {
   linkedTask?: BookLinkedTask
   conversation?: BookConversation
   repo?: BookRepoRef
+  /** Every repository of a multi-repo entry; absent means just `repo` on `branch`. */
+  members?: BookWorkspaceMember[]
   importedContext?: BookImportedContext
   createdAt: number
   updatedAt: number

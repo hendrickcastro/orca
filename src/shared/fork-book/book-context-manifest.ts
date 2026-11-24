@@ -1,4 +1,5 @@
-import type { BookLinkedTask, BookRepoRef } from './book-catalog-types'
+import type { BookLinkedTask, BookRepoRef, BookWorkspaceMember } from './book-catalog-types'
+import { normalizeBookMembers } from './book-catalog-normalization'
 
 const MANIFEST_OPEN = '<!-- orca-book-context'
 const MANIFEST_CLOSE = '-->'
@@ -54,6 +55,8 @@ export type BookContextManifest = {
   /** File names, relative to the summary file. */
   conversationFile?: string
   pendingWork?: BookPendingWork
+  /** Every repository of a multi-repo export, so the importer can preselect them. */
+  members?: BookWorkspaceMember[]
 }
 
 export function embedBookContextManifest(markdown: string, manifest: BookContextManifest): string {
@@ -106,7 +109,8 @@ export function readBookContextManifest(markdown: string): BookContextManifest |
     exportedAt: text('exportedAt') ?? '',
     sourcePlatform: text('sourcePlatform') ?? '',
     conversationFile: text('conversationFile'),
-    pendingWork: readPendingWork(raw.get('pendingWork'))
+    pendingWork: readPendingWork(raw.get('pendingWork')),
+    members: normalizeBookMembers(raw.get('members'))
   }
 }
 

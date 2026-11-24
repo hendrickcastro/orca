@@ -11,7 +11,7 @@ import {
 import { useBookStore, BOOK_ALL_ENTRIES } from './book-store'
 import { findBookWorktree } from './book-entry-snapshot'
 import { findBookConversationSession } from './book-conversation-open'
-import { findBookRepo } from './book-workspace-recreate'
+import { findBookRepo } from './book-member-worktrees'
 import { openBookEntryAction } from './book-entry-actions'
 
 function pendingWorkMessage(pending: BookPendingWork): string {
@@ -63,6 +63,7 @@ export async function exportBookEntryContext(entry: BookEntry): Promise<void> {
       linkedTask: entry.linkedTask,
       repo: entry.repo,
       repoName: entry.repoName,
+      members: entry.members,
       workspacePath,
       roots: [workspacePath, entry.path, entry.conversation?.cwd, session?.cwd ?? undefined].filter(
         (root): root is string => Boolean(root)
@@ -139,6 +140,7 @@ export async function importBookContext(): Promise<void> {
     branch: manifest.branch || undefined,
     linkedTask: manifest.linkedTask,
     repo: { ...manifest.repo, repoId: repo?.id },
+    members: manifest.members,
     importedContext: {
       summaryPath: picked.summaryPath,
       conversationPath: picked.conversationPath,

@@ -172,6 +172,7 @@ export async function exportBookContext(
     linkedTask: request.linkedTask,
     repo: request.repo,
     repoName: request.repoName,
+    members: request.members,
     branch: gitState.branch,
     headCommit: gitState.headCommit,
     agent: request.conversation?.agent,

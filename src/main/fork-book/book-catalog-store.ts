@@ -7,7 +7,7 @@ import {
   getProfileUserDataPath
 } from '../orca-profiles/profile-storage-paths'
 import { readProfileIndex } from '../orca-profiles/profile-index-store'
-import { normalizeBookCatalog } from '../../shared/fork-book/book-catalog-operations'
+import { normalizeBookCatalog } from '../../shared/fork-book/book-catalog-normalization'
 import { EMPTY_BOOK_CATALOG, type BookCatalog } from '../../shared/fork-book/book-catalog-types'
 
 const BOOK_CATALOG_FILE_NAME = 'book-catalog.json'
