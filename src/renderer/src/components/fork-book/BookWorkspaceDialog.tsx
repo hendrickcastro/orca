@@ -43,7 +43,7 @@ function BookWorkspaceDialogBody({
   const [choices, setChoices] = useState<BookMemberChoice[]>(initial.choices)
   const [missing, setMissing] = useState<BookWorkspaceMember[]>(initial.missing)
   const [busy, setBusy] = useState(false)
-  const live = findBookWorktree(useAppStore.getState(), entry.workspaceId) !== null
+  const live = useAppStore((s) => findBookWorktree(s, entry.workspaceId) !== null)
 
   const close = (): void => {
     if (!busy) {

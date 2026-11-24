@@ -203,7 +203,7 @@ export function BookEntryEditorDialog(): React.JSX.Element | null {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>{t('forkBook.fieldFolder', 'Folder')}</Label>
+            <Label>{t('forkBook.fieldFolder', 'Book folder')}</Label>
             <Select
               value={editor.folderId ?? BOOK_ROOT_FOLDER_VALUE}
               onValueChange={(value) =>
