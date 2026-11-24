@@ -1,4 +1,5 @@
 import { AgentSessionContinuationDialog } from '@/components/agent-session-continuation/AgentSessionContinuationDialog'
+import { activateAndRevealWorkspace } from '@/lib/workspace/activation/worktree-activation'
 import { useBookStore } from './book-store'
 import { BookWorkspaceDialog } from './BookWorkspaceDialog'
 
@@ -14,7 +15,13 @@ function BookContinuationHost(): React.JSX.Element | null {
       request={continuation.request}
       sourceWorkingDirectory={continuation.sourceWorkingDirectory}
       onOpenChange={(open) => !open && setContinuation(null)}
-      onStarted={() => setContinuation(null)}
+      onStarted={() => {
+        setContinuation(null)
+        // Book is a page of its own: show the workspace where the new agent just started.
+        if (continuation.request) {
+          activateAndRevealWorkspace(continuation.request.worktreeId)
+        }
+      }}
     />
   )
 }
